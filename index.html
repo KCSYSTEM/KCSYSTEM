@@ -880,10 +880,16 @@ async function doLogin(){
   if(USERS[u]&&USERS[u].pass===p){saveSession(u);enterApp(u);}
   else{document.getElementById('login-error').style.display='block';setTimeout(()=>document.getElementById('login-error').style.display='none',3000);}
 }
-document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
 function doLogout(){clearSession();forceLogout();}
-(function tryAutoLogin(){loadUsers();const u=loadSession();if(u)enterApp(u);})();
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
+  (function tryAutoLogin(){loadUsers();const u=loadSession();if(u)enterApp(u);})();
+  // Inicializa data do painel
+  const pd=document.getElementById('painel-date');if(pd&&!pd.value)pd.value=new Date().toISOString().split('T')[0];
+  // Inicializa data dos lançamentos
+  const ld=document.getElementById('lanc-date');if(ld&&!ld.value)ld.value=new Date().toISOString().split('T')[0];
+});
 
 // ===== NAV =====
 function showView(v){
@@ -2170,6 +2176,9 @@ function drawMultiLineCanvas(canvas,labels,series,limit){
     ctx.fillText(v%1===0?v:v.toFixed(1),pad.l-4,pad.t+(i/4)*ch+4);
   }
 }
+
+// ===== GRÁFICOS =====
+function populateChartTankSelect(){
   const sel=document.getElementById('chart-tank-select');
   const prev=sel.value;
   sel.innerHTML='<option value="">Selecione um tanque...</option>';
@@ -2654,14 +2663,14 @@ function formatDate(d){if(!d)return'—';const[y,m,dd]=d.split('-');return`${dd}
 function formatTime(ts){return new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;setTimeout(()=>{t.className='';},3000);}
 
-document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
-document.getElementById('edit-user-overlay').addEventListener('click',function(e){if(e.target===this)closeEditUser();});
-let _ty=0;
-document.getElementById('tank-sheet').addEventListener('touchstart',e=>{_ty=e.touches[0].clientY;},{passive:true});
-document.getElementById('tank-sheet').addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-_ty>80)closeSheet();},{passive:true});
-
-// Inicializa data do painel como hoje
-(function(){const d=new Date().toISOString().split('T')[0];const el=document.getElementById('painel-date');if(el)el.value=d;})();
+// Todos os event listeners após DOM pronto
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('modal-overlay')?.addEventListener('click',function(e){if(e.target===this)closeModal();});
+  document.getElementById('edit-user-overlay')?.addEventListener('click',function(e){if(e.target===this)closeEditUser();});
+  let _ty=0;
+  document.getElementById('tank-sheet')?.addEventListener('touchstart',e=>{_ty=e.touches[0].clientY;},{passive:true});
+  document.getElementById('tank-sheet')?.addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-_ty>80)closeSheet();},{passive:true});
+});
 </script>
 </body>
 </html>
