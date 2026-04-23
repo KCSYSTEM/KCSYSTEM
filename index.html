@@ -699,7 +699,15 @@ function saveSession(u){localStorage.setItem('kc_session',JSON.stringify({userna
 function loadSession(){try{const s=JSON.parse(localStorage.getItem('kc_session'));if(s&&s.day===todayStr()&&USERS[s.username])return s.username;}catch(e){}return null;}
 function clearSession(){localStorage.removeItem('kc_session');}
 function scheduleMidnightLogout(){const now=new Date(),mid=new Date(now);mid.setHours(23,59,59,999);setTimeout(()=>{clearSession();forceLogout();},mid-now+1000);}
-function forceLogout(){currentUser=null;closeSheet();document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';document.getElementById('login-user').value='';document.getElementById('login-pass').value='';showToast('Sessão encerrada. Faça login.','error');}
+function forceLogout(){
+  stopRealtime();
+  currentUser=null;closeSheet();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  showToast('Sessão encerrada. Faça login.','error');
+}
 
 // ===== STORAGE (Supabase + localStorage fallback) =====
 function saveLimits(){localStorage.setItem('kc_limits',JSON.stringify(LIMITS));}
@@ -729,7 +737,6 @@ function save(){
   localStorage.setItem('kc_tanks',JSON.stringify(tanks));
   localStorage.setItem('kc_records',JSON.stringify(records));
   localStorage.setItem('kc_racoes',JSON.stringify(racoes));
-  // Sync assíncrono para o Supabase (não bloqueia UI)
   saveTanks_sb().catch(()=>{});
   saveRacoes_sb().catch(()=>{});
 }
@@ -741,6 +748,145 @@ async function saveOneRecord(rec){
   const ok=await saveRecord_sb(rec);
   if(!ok)showToast('⚠ Salvo localmente (sem conexão)','error');
 }
+
+// ===== SUPABASE REALTIME =====
+let _realtimeWs=null;
+let _realtimeReconnectTimer=null;
+let _realtimeHeartbeat=null;
+
+function startRealtime(){
+  if(_realtimeWs&&_realtimeWs.readyState===WebSocket.OPEN)return;
+
+  const wsUrl=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SB_KEY+'&vsn=1.0.0';
+
+  try{
+    _realtimeWs=new WebSocket(wsUrl);
+  }catch(e){
+    console.warn('Realtime WS error',e);
+    scheduleRealtimeReconnect();
+    return;
+  }
+
+  _realtimeWs.onopen=()=>{
+    console.log('Realtime conectado ✓');
+
+    // Envia join no canal de records
+    const joinRecords={
+      topic:'realtime:public:records',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'records'},
+        {event:'UPDATE',schema:'public',table:'records'},
+      ]}},
+      ref:'1'
+    };
+    const joinTanks={
+      topic:'realtime:public:tanks',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'tanks'},
+        {event:'UPDATE',schema:'public',table:'tanks'},
+      ]}},
+      ref:'2'
+    };
+    _realtimeWs.send(JSON.stringify(joinRecords));
+    _realtimeWs.send(JSON.stringify(joinTanks));
+
+    // Heartbeat a cada 25s para manter conexão viva
+    _realtimeHeartbeat=setInterval(()=>{
+      if(_realtimeWs&&_realtimeWs.readyState===WebSocket.OPEN){
+        _realtimeWs.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'}));
+      }
+    },25000);
+  };
+
+  _realtimeWs.onmessage=(ev)=>{
+    try{
+      const msg=JSON.parse(ev.data);
+      if(msg.event==='postgres_changes'||msg.event==='INSERT'||msg.event==='UPDATE'){
+        const payload=msg.payload?.data||msg.payload;
+        if(!payload)return;
+        const table=payload.table||msg.topic?.split(':')[2];
+        const row=payload.record||payload.new;
+        if(!row)return;
+
+        if(table==='records'&&row.data){
+          onRealtimeRecord(row.data);
+        }
+        if(table==='tanks'&&row.data){
+          onRealtimeTank(row.data);
+        }
+      }
+    }catch(e){}
+  };
+
+  _realtimeWs.onclose=()=>{
+    clearInterval(_realtimeHeartbeat);
+    console.warn('Realtime desconectado, reconectando em 5s...');
+    scheduleRealtimeReconnect();
+  };
+
+  _realtimeWs.onerror=()=>{
+    _realtimeWs.close();
+  };
+}
+
+function scheduleRealtimeReconnect(){
+  clearTimeout(_realtimeReconnectTimer);
+  _realtimeReconnectTimer=setTimeout(()=>{
+    if(currentUser)startRealtime();
+  },5000);
+}
+
+function stopRealtime(){
+  clearInterval(_realtimeHeartbeat);
+  clearTimeout(_realtimeReconnectTimer);
+  if(_realtimeWs){_realtimeWs.close();_realtimeWs=null;}
+}
+
+function onRealtimeRecord(rec){
+  if(!rec||!rec.id)return;
+  // Ignora registros salvos pelo próprio usuário (já estão em memória)
+  if(rec.username===currentUser?.username)return;
+
+  const idx=records.findIndex(r=>r.id===rec.id);
+  if(idx>=0){
+    if(rec.timestamp>records[idx].timestamp)records[idx]=rec;
+    else return;
+  } else {
+    records.push(rec);
+  }
+
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  renderTankView();updateMapSub();
+
+  // Atualiza view ativa
+  const activeView=document.querySelector('.view.active')?.id;
+  if(activeView==='view-painel')renderPainel();
+  if(activeView==='view-graficos')renderCharts();
+  if(activeView==='view-history')renderGlobalHistory();
+
+  // Badge discreto de atualização
+  showSyncBadge(`↻ ${rec.tankName||'Tanque'} atualizado por ${rec.user||'usuário'}`);
+}
+
+function onRealtimeTank(tank){
+  if(!tank||!tank.id)return;
+  const idx=tanks.findIndex(t=>t.id===tank.id);
+  if(idx>=0)tanks[idx]=tank;
+  localStorage.setItem('kc_tanks',JSON.stringify(tanks));
+  renderTankView();updateMapSub();
+}
+
+function showSyncBadge(msg){
+  const el=document.getElementById('sync-status');
+  if(!el)return;
+  el.textContent=msg||'↻ Sincronizado';
+  el.style.display='block';
+  el.style.background='var(--ok)';
+  setTimeout(()=>{el.style.display='none';},3000);
+}
+
 
 async function load(){
   loadUsers();loadLimits();
@@ -829,6 +975,7 @@ async function enterApp(u){
   try{await injectBioQty2604();}catch(e){console.warn('injectBioQty2604 error',e);}
   try{await injectQualidadeAgua();}catch(e){console.warn('injectQualidadeAgua error',e);}
   renderTankView();updateMapSub();populateChartTankSelect();
+  startRealtime(); // inicia sync em tempo real
 }
 
 function _loadFromLocalStorage(){
