@@ -1415,6 +1415,9 @@ function buildHistoricoEl(){
     item.className='history-item'+(r.overridden?' overridden':'');
     const pctLabel=r.racaoIdealG&&r.racaoG?` · ${Math.round(r.racaoG/r.racaoIdealG*100)}% consumido`:'';
     const hapaBadge=r.hapa?`<span class="hapa-badge">🪣 ${hapaLabel(activeTank,r.hapa)}</span>`:'';
+    const temAlimentacao=r.racao||r.racaoIdealG||r.sobra||r.racaoG||r.tratosIdeal||r.tratos;
+    const mortLine=r.mort>0?`<div style="margin-top:5px;font-size:12px;font-weight:700;color:var(--danger);">💀 Mortalidade: ${r.mort} peixes</div>`:'';
+    const pct=r.racaoIdealG&&r.racaoG?`<span style="font-weight:700;color:${Math.round(r.racaoG/r.racaoIdealG*100)>=90?'var(--ok)':Math.round(r.racaoG/r.racaoIdealG*100)>=70?'var(--warn)':'var(--danger)'}"> (${Math.round(r.racaoG/r.racaoIdealG*100)}%)</span>`:'';
     item.innerHTML=`<div class="history-header"><div>
       ${r.overridden?`<div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:2px;">⬜ SUBSTITUÍDO</div>`:''}
       ${r.lote?`<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:2px;">📦 ${r.lote}${hapaBadge}</div>`:`<div>${hapaBadge}</div>`}
@@ -1430,14 +1433,19 @@ function buildHistoricoEl(){
       ${hP('Biometria',r.bio,'g')}
       ${hP('Mort.',r.mort||null,'un',r.mort>0)}
     </div>
-    <div class="history-params" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);">
-      ${hPText('Ração',r.racao||null)}
-      ${hP('Ideal',r.racaoIdealG,'g')}
-      ${hP('Sobra',r.sobra,'g')}
-      ${hP('Real',r.racaoG,'g',false)}
-      ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
-      ${hP('Tratos Real',r.tratos,'/dia')}
-    </div>
+    ${mortLine}
+    ${temAlimentacao?`
+    <div style="margin-top:8px;padding-top:8px;border-top:1.5px dashed var(--border);">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
+      <div class="history-params">
+        ${hPText('Tipo',r.racao||null)}
+        ${hP('Ideal',r.racaoIdealG,'g')}
+        ${hP('Sobra',r.sobra,'g')}
+        ${hP('Real',r.racaoG?r.racaoG+pct:null,'g',false)}
+        ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
+        ${hP('Tratos Real',r.tratos,'/dia')}
+      </div>
+    </div>`:''}
     ${r.obs?`<div style="margin-top:4px;font-size:11px;color:var(--text2);">💬 ${r.obs}</div>`:''}`;
     div.appendChild(item);
   });
@@ -1699,16 +1707,40 @@ function renderGlobalHistory(){
   const sorted=records.filter(r=>!r.overridden).slice().sort((a,b)=>b.timestamp.localeCompare(a.timestamp));
   if(!sorted.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
   el.innerHTML=sorted.map(r=>{
-    const pct=r.racaoIdealG&&r.racaoG?` · ${Math.round(r.racaoG/r.racaoIdealG*100)}% consumido`:'';
-    return`<div class="history-item"><div class="history-header"><div>
-      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px;">${r.tankName}</div>
-      ${r.lote?`<div style="font-size:11px;font-weight:600;color:var(--accent);">📦 ${r.lote}</div>`:''}
-      <div class="history-date">${formatDate(r.date)} · ${formatTime(r.timestamp)}</div>
-      <div class="history-user">por ${r.user}</div>
-    </div></div>
-    <div class="history-params">${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}${hP('pH',r.ph,'')}${hP('Peixes',r.qty,'un')}${hP('Biometria',r.bio,'g')}</div>
-    ${(r.mort>0)?`<div style="margin-top:5px;font-size:11px;color:var(--danger);font-weight:600;">💀 Mortalidade: ${r.mort}</div>`:''}
-    ${r.racao?`<div style="margin-top:5px;font-size:11px;color:var(--text2);font-weight:500;">🌾 ${r.racao}${r.racaoIdealG?' · ideal:'+r.racaoIdealG+'g':''}${r.racaoG?' · real:'+r.racaoG+'g':''}${pct}</div>`:''}</div>`;
+    const temAlimentacao=r.racao||r.racaoIdealG||r.sobra||r.racaoG||r.tratosIdeal||r.tratos;
+    const mortLine=r.mort>0?`<div style="margin-top:5px;font-size:12px;font-weight:700;color:var(--danger);">💀 Mortalidade: ${r.mort} peixes</div>`:'';
+    const pct=r.racaoIdealG&&r.racaoG?`<span style="font-weight:700;color:${Math.round(r.racaoG/r.racaoIdealG*100)>=90?'var(--ok)':Math.round(r.racaoG/r.racaoIdealG*100)>=70?'var(--warn)':'var(--danger)'}"> (${Math.round(r.racaoG/r.racaoIdealG*100)}%)</span>`:'';
+    return`<div class="history-item">
+      <div class="history-header"><div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px;">${r.tankName}${r.hapa?' — Hapa '+r.hapa:''}</div>
+        ${r.lote?`<div style="font-size:11px;font-weight:600;color:var(--accent);">📦 ${r.lote}</div>`:''}
+        <div class="history-date">${formatDate(r.date)} · ${formatTime(r.timestamp)}</div>
+        <div class="history-user">por ${r.user}</div>
+      </div></div>
+      <div class="history-params">
+        ${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}
+        ${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}
+        ${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}
+        ${hP('pH',r.ph,'')}
+        ${hP('Peixes',r.qty,'un')}
+        ${hP('Biometria',r.bio,'g')}
+        ${hP('Mort.',r.mort||null,'un',r.mort>0)}
+      </div>
+      ${mortLine}
+      ${temAlimentacao?`
+      <div style="margin-top:8px;padding-top:8px;border-top:1.5px dashed var(--border);">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
+        <div class="history-params">
+          ${hPText('Tipo',r.racao||null)}
+          ${hP('Ideal',r.racaoIdealG,'g')}
+          ${hP('Sobra',r.sobra,'g')}
+          ${hP('Real',r.racaoG?r.racaoG+pct:null,'g',false)}
+          ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
+          ${hP('Tratos Real',r.tratos,'/dia')}
+        </div>
+      </div>`:''}
+      ${r.obs?`<div style="margin-top:4px;font-size:11px;color:var(--text2);">💬 ${r.obs}</div>`:''}
+    </div>`;
   }).join('');
 }
 
