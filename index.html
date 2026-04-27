@@ -422,8 +422,13 @@ canvas.chart-canvas{display:block;}
     <div id="view-graficos" class="view">
       <div class="view-header"><div><div class="view-title">Gráficos</div><div class="view-sub">Evolução dos parâmetros por tanque</div></div></div>
       <div class="chart-selector">
-        <select id="chart-tank-select" onchange="renderCharts()">
+        <select id="chart-tank-select" onchange="onChartTankChange()">
           <option value="">Selecione um tanque...</option>
+        </select>
+      </div>
+      <div id="chart-lote-row" style="display:none;padding:0 13px 10px;">
+        <select id="chart-lote-select" onchange="renderCharts()" style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;">
+          <option value="">Todos os lotes</option>
         </select>
       </div>
       <div id="charts-container"></div>
@@ -1214,6 +1219,14 @@ function renderSheetBody(){const body=document.getElementById('sheet-body');if(a
 
 // ===== REGISTRO FORM =====
 function buildRegistroForm(){
+  // Bloqueia se tanque vazio
+  if(activeTank?.empty){
+    return`<div style="text-align:center;padding:40px 20px;">
+      <div style="font-size:40px;margin-bottom:12px;">🚫</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text2);">Tanque Vazio</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px;">Este tanque está marcado como vazio.<br>Reative em Configurar para lançar registros.</div>
+    </div>`;
+  }
   const today=new Date().toISOString().split('T')[0];
   const names=activeTank?.hapaNames;
   if(names&&names.length&&activeHapa===null){
@@ -1387,13 +1400,23 @@ async function saveRecord(){
 }
 
 // ===== CONFIRM DIALOG =====
-function showConfirm(title,msg,onOk){
+function showConfirm(title,msg,onOk,opts={}){
   document.getElementById('confirm-title').textContent=title;
   document.getElementById('confirm-msg').textContent=msg;
   confirmCallback=onOk;
+  // Modo somente OK (sem cancelar)
+  const cancelBtn=document.getElementById('confirm-overlay').querySelector('.btn-secondary');
+  if(cancelBtn)cancelBtn.style.display=opts.okOnly?'none':'';
+  document.getElementById('confirm-ok-btn').textContent=opts.okLabel||'Confirmar';
   document.getElementById('confirm-overlay').classList.add('show');
 }
-function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('show');confirmCallback=null;}
+function closeConfirm(){
+  document.getElementById('confirm-overlay').classList.remove('show');
+  confirmCallback=null;
+  const cancelBtn=document.getElementById('confirm-overlay').querySelector('.btn-secondary');
+  if(cancelBtn)cancelBtn.style.display='';
+  document.getElementById('confirm-ok-btn').textContent='Confirmar';
+}
 document.getElementById('confirm-ok-btn').addEventListener('click',()=>{if(confirmCallback)confirmCallback();closeConfirm();});
 
 // ===== HISTÓRICO =====
@@ -1509,6 +1532,18 @@ function buildConfigForm(){
       </div>
     </div>
   </div>
+  <div class="form-section"><div class="form-section-title">Status do Tanque</div>
+    <div class="hapa-toggle-row">
+      <div>
+        <div class="hapa-toggle-label">🚫 Tanque Vazio</div>
+        <div class="hapa-toggle-sub">Bloqueia novos registros e lançamentos</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="cfg-empty" ${t.empty?'checked':''} onchange="toggleEmptyTank(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
   <button class="btn-save" onclick="saveTankConfig()">Salvar</button>
   <button class="btn-ghost" onclick="confirmDeleteTank()">Remover Tanque</button>
   <div style="height:14px;"></div>`;
@@ -1517,6 +1552,30 @@ function buildConfigForm(){
 function toggleHapasInput(on){
   document.getElementById('hapas-qty-row').style.display=on?'block':'none';
   if(on) updateHapaNameFields();
+}
+
+async function toggleEmptyTank(empty){
+  if(!activeTank)return;
+  const prev=!!activeTank.empty;
+  if(prev===empty)return;
+  activeTank.empty=empty;
+  save();
+  // Registra no histórico quem ativou/desativou
+  const rec={
+    id:'empty_'+activeTank.id+'_'+Date.now(),
+    tankId:activeTank.id,tankName:activeTank.name,
+    date:new Date().toISOString().split('T')[0],
+    user:currentUser.name,username:currentUser.username,
+    timestamp:new Date().toISOString(),
+    lote:'',temp:null,o2:null,amonia:null,ph:null,mort:0,
+    qty:null,bio:null,racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+    tratosIdeal:null,tratos:null,
+    obs:empty?'🚫 Tanque marcado como VAZIO':'✅ Tanque reativado',
+    overridden:false,hapa:null,
+  };
+  await saveOneRecord(rec);
+  renderTankView();updateMapSub();
+  showToast(empty?`${activeTank.name} marcado como vazio`:`${activeTank.name} reativado`,'ok');
 }
 
 function updateHapaNameFields(){
@@ -1557,12 +1616,12 @@ function saveTankConfig(){
     activeTank.hapaNames=[];
     activeTank.hapas=0;
   }
-  save(); // salva localmente + Supabase async
+  save();
   renderTankView();updateMapSub();
   document.getElementById('sheet-tank-name').textContent=activeTank.name+(activeTank.hapas?' 🪣':'');
   document.getElementById('sheet-tank-meta').textContent=`${activeTank.species} · ${activeTank.volume}m³${activeTank.hapas?' · '+activeTank.hapas+' hapas':''}`;
   renderHapaSelector();
-  showToast('Configurações salvas ✓','ok');
+  showConfirm('Configurações salvas ✓',`As alterações do ${activeTank.name} foram salvas com sucesso.`,()=>{},{okOnly:true});
 }
 
 // ===== ADD TANK =====
@@ -1786,8 +1845,8 @@ function renderLancamentos(){
     return;
   }
 
-  // Monta linhas: cada tanque com registros OU todos os tanques ativos
-  const activeTanks=tanks.filter(t=>records.some(r=>r.tankId===t.id));
+  // Filtra tanques: apenas com registros E não vazios
+  const activeTanks=tanks.filter(t=>!t.empty&&records.some(r=>r.tankId===t.id));
 
   let rows=[];
   activeTanks.forEach(t=>{
@@ -1882,35 +1941,37 @@ async function _doSaveLancamentos(toSave,param,date){
     const tank=tanks.find(t=>t.id===item.tankId);
     if(!tank)continue;
 
-    let existing=recForDate(item.tankId,date,item.hapaNum);
-    let rec;
+    const existing=recForDate(item.tankId,date,item.hapaNum);
+
+    // 1. Registro histórico independente para este lançamento
+    const lastR=lastRec(item.tankId);
+    const histRec={
+      id:'lanc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      tankId:item.tankId,tankName:tank.name,date,
+      user:currentUser.name,username:currentUser.username,
+      timestamp:new Date().toISOString(),
+      lote:existing?.lote||lastR?.lote||tank.lote||'',
+      temp:null,o2:null,amonia:null,ph:null,mort:0,
+      qty:existing?.qty??lastR?.qty??null,
+      bio:existing?.bio??lastR?.bio??null,
+      racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+      tratosIdeal:null,tratos:null,obs:'',
+      overridden:false,hapa:item.hapaNum||null,
+    };
+    histRec[param]=item.value;
+    if(param==='racaoReal'){histRec.sobra=item.value;}
+    records.push(histRec);
+
+    // 2. Mescla também no registro consolidado do dia (para painel/gráficos)
     if(existing){
       existing[param]=item.value;
       if(param==='racaoReal'){existing.sobra=item.value;if(existing.racaoIdealG)existing.racaoG=Math.max(0,existing.racaoIdealG-item.value);}
-      existing.timestamp=new Date().toISOString();
-      existing.user=currentUser.name;existing.username=currentUser.username;
       const idx=records.findIndex(r=>r.id===existing.id);
       if(idx>=0)records[idx]=existing;
-      rec=existing;
-    } else {
-      const lastR=lastRec(item.tankId);
-      rec={
-        id:'lanc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
-        tankId:item.tankId,tankName:tank.name,date,
-        user:currentUser.name,username:currentUser.username,
-        timestamp:new Date().toISOString(),
-        lote:lastR?.lote||tank.lote||'',
-        temp:null,o2:null,amonia:null,ph:null,mort:0,
-        qty:null,bio:null,racao:'',
-        racaoIdealG:null,sobra:null,racaoG:null,
-        tratosIdeal:null,tratos:null,obs:'',
-        overridden:false,hapa:item.hapaNum||null,
-      };
-      rec[param]=item.value;
-      if(param==='racaoReal'){rec.sobra=item.value;}
-      records.push(rec);
+      await saveRecord_sb(existing);
     }
-    await saveRecord_sb(rec);
+
+    await saveRecord_sb(histRec);
     saved++;
     prog.textContent=`Salvando ${saved}/${toSave.length}...`;
   }
@@ -2196,7 +2257,6 @@ function renderPainel(){
   const date=dateEl.value;
   const cont=document.getElementById('painel-container');
 
-  // TCA acumulada por tanque (consolidada, considera hapas)
   function tcaAcum(t){
     const recs=t.hapas?getOfficialRecords(t.id,null):getOfficialRecords(t.id);
     const totalRacao=recs.reduce((s,r)=>(r.racaoG||0)+s,0);
@@ -2207,11 +2267,9 @@ function renderPainel(){
     return(totalRacao/1000/biomassa).toFixed(3);
   }
 
-  // Registro do dia para um tanque (consolidado se tem hapas)
   function recDodia(t){
     if(!t.hapas)return recForDate(t.id,date);
-    // Consolida hapas: pega oficial do dia somando todos hapas
-    const allRecs=getOfficialRecords(t.id,null); // consolidado
+    const allRecs=getOfficialRecords(t.id,null);
     return allRecs.find(r=>r.date===date)||null;
   }
 
@@ -2230,23 +2288,27 @@ function renderPainel(){
     {k:'_tca',  label:'TCA',    unit:'',    lk:null},
   ];
 
-  // Filtra tanques com pelo menos 1 registro (inclui hapas)
+  // Define, filtra e separa tanques
   const activeTanks=tanks.filter(t=>{
     const names=t.hapaNames;
-    if(names?.length){
-      for(let h=1;h<=names.length;h++){if(records.some(r=>r.tankId===t.id&&r.hapa===h))return true;}
-    }
+    if(names?.length){for(let h=1;h<=names.length;h++){if(records.some(r=>r.tankId===t.id&&r.hapa===h))return true;}}
     return records.some(r=>r.tankId===t.id&&!r.hapa);
   });
-  if(!activeTanks.length){cont.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px 0;font-size:13px;">Nenhum dado registrado ainda.</div>';return;}
+  // Separa ativos e vazios, ambos em ordem crescente por número
+  const sorted=[...activeTanks].sort((a,b)=>(a.num||0)-(b.num||0));
+  const ativos=sorted.filter(t=>!t.empty);
+  const vazios=sorted.filter(t=>t.empty);
 
-  let html=`<div style="min-width:700px;">`;
-  html+=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:4px;">`;
-  html+=`<div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 4px;"></div>`;
-  cols.forEach(c=>{html+=`<div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 2px;text-align:center;white-space:nowrap;">${c.label}<br><span style="font-weight:400;">${c.unit}</span></div>`;});
-  html+=`</div>`;
+  if(!ativos.length&&!vazios.length){cont.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px 0;font-size:13px;">Nenhum dado registrado ainda.</div>';return;}
 
-  activeTanks.forEach(t=>{
+  const renderRow=(t)=>{
+    const isEmpty=!!t.empty;
+    if(isEmpty){
+      let row=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:#e8edf2;border-radius:8px;border:1px solid #c8d3de;opacity:0.7;">`;
+      row+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:#7a8fa3;display:flex;align-items:center;gap:4px;">${t.name}<span style="font-size:9px;background:#b0bec5;color:#fff;border-radius:6px;padding:1px 5px;">VAZIO</span></div>`;
+      cols.forEach(()=>{row+=`<div style="padding:6px 2px;text-align:center;font-size:13px;color:#b0bec5;">—</div>`;});
+      return row+`</div>`;
+    }
     const rec=recDodia(t);
     const tca=tcaAcum(t);
     const vals={};
@@ -2258,8 +2320,8 @@ function renderPainel(){
     const hapaCount=t.hapaNames?.length||0;
     const hapaBadge=hapaCount?`<span style="font-size:9px;color:#7c3aed;background:rgba(124,58,237,0.1);border-radius:6px;padding:1px 5px;margin-left:3px;">🪣${hapaCount}</span>`:'';
     const rowBg=rec?'#fff':'#f8fafc';
-    html+=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
-    html+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${t.name}${hapaBadge}</div>`;
+    let row=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
+    row+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${t.name}${hapaBadge}</div>`;
     cols.forEach(c=>{
       const v=vals[c.k];
       let light='⚪';
@@ -2268,10 +2330,31 @@ function renderPainel(){
         else{light=trafficLight(v,c.lk);}
       }
       const display=v!=null?(Number.isInteger(v)?v:parseFloat(v.toFixed(2))):'—';
-      html+=`<div style="padding:6px 2px;text-align:center;font-size:11px;font-family:'JetBrains Mono',monospace;">${light}<br><span style="font-size:12px;font-weight:600;color:var(--text);">${display}</span></div>`;
+      row+=`<div style="padding:6px 2px;text-align:center;font-size:11px;font-family:'JetBrains Mono',monospace;">${light}<br><span style="font-size:12px;font-weight:600;color:var(--text);">${display}</span></div>`;
     });
-    html+=`</div>`;
-  });
+    return row+`</div>`;
+  };
+
+  // Cabeçalho das colunas
+  const headerRow=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:4px;">
+    <div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 4px;"></div>
+    ${cols.map(c=>`<div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 2px;text-align:center;white-space:nowrap;">${c.label}<br><span style="font-weight:400;">${c.unit}</span></div>`).join('')}
+  </div>`;
+
+  let html=`<div style="min-width:700px;">${headerRow}`;
+
+  // Grupo ativos
+  ativos.forEach(t=>{html+=renderRow(t);});
+
+  // Separador + grupo vazios
+  if(vazios.length){
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin:10px 0 6px;">
+      <div style="height:1px;flex:1;background:var(--border2);"></div>
+      <span style="font-size:10px;font-weight:700;color:#b0bec5;letter-spacing:1px;text-transform:uppercase;">Tanques Vazios</span>
+      <div style="height:1px;flex:1;background:var(--border2);"></div>
+    </div>`;
+    vazios.forEach(t=>{html+=renderRow(t);});
+  }
   html+=`</div><div style="display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap;font-size:11px;color:var(--text3);">
     <span>🟢 Normal</span><span>🟡 Alerta</span><span>🔴 Crítico</span><span>⚪ Sem limite/dado</span>
     <span>🪣N = tem hapas (dados consolidados)</span></div>`;
@@ -2797,14 +2880,53 @@ async function injectHistoricalData(){
   console.log('Dados históricos injetados.');
 }
 
+function onChartTankChange(){
+  const val=document.getElementById('chart-tank-select').value;
+  const loteRow=document.getElementById('chart-lote-row');
+  const loteSelect=document.getElementById('chart-lote-select');
+  if(!val){loteRow.style.display='none';renderCharts();return;}
+  const tid=val.includes('::hapa::')?val.split('::hapa::')[0]:val;
+  const hapaNum=val.includes('::hapa::')?parseInt(val.split('::hapa::')[1]):null;
+
+  // Busca lotes distintos — inclui vazio/null como "(sem lote)"
+  const lotesMap={};
+  records
+    .filter(r=>r.tankId===tid&&(hapaNum?r.hapa===hapaNum:true))
+    .forEach(r=>{
+      const lote=r.lote||''; // normaliza null/undefined para ''
+      if(!lotesMap[lote]||r.date>lotesMap[lote])lotesMap[lote]=r.date;
+    });
+
+  const lotes=Object.entries(lotesMap)
+    .sort((a,b)=>b[1].localeCompare(a[1])) // mais recente primeiro
+    .map(e=>e[0]);
+
+  // Sempre mostra o seletor se há registros
+  if(lotes.length>0){
+    loteSelect.innerHTML=
+      '<option value="__todos__">Todos os lotes</option>'+
+      lotes.map(l=>`<option value="${l===''}__vazio__${''}">${l===''?'(sem lote)':l}</option>`
+        .replace('value="__vazio__"','value="__semLote__"')
+      ).join('');
+    // Corrige: string vazia vira __semLote__
+    loteSelect.innerHTML=
+      '<option value="__todos__">Todos os lotes</option>'+
+      lotes.map(l=>l===''
+        ?`<option value="__semLote__">(sem lote)</option>`
+        :`<option value="${l}">${l}</option>`
+      ).join('');
+    loteRow.style.display='block';
+  } else {
+    loteRow.style.display='none';
+  }
+  renderCharts();
+}
+
 function renderCharts(){
   const val=document.getElementById('chart-tank-select').value;
   const cont=document.getElementById('charts-container');
   cont.innerHTML='';
-  if(!val){
-    cont.innerHTML='<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Selecione um tanque acima para ver os gráficos.</div>';
-    return;
-  }
+  if(!val){cont.innerHTML='<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Selecione um tanque acima para ver os gráficos.</div>';return;}
 
   let tid=val,hapaNum=null,chartTitle='';
   if(val.includes('::hapa::')){
@@ -2817,46 +2939,47 @@ function renderCharts(){
     chartTitle=tank?.hapas?`${tank.name} (Consolidado)`:tank?.name||tid;
   }
 
-  const off=hapaNum?getOfficialRecords(tid,hapaNum):getOfficialRecords(tid,null);
-  if(off.length<1){
-    cont.innerHTML=`<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Sem dados para "${chartTitle}".</div>`;
-    return;
+  const loteFilter=document.getElementById('chart-lote-select')?.value||'__todos__';
+
+  let off=hapaNum?getOfficialRecords(tid,hapaNum):getOfficialRecords(tid,null);
+
+  if(loteFilter==='__semLote__'){
+    off=off.filter(r=>!r.lote||r.lote==='');
+    chartTitle+=` · Lote: (sem lote)`;
+  } else if(loteFilter!=='__todos__'){
+    off=off.filter(r=>r.lote===loteFilter);
+    chartTitle+=` · Lote: ${loteFilter}`;
   }
 
-  const labels=off.map(r=>formatDate(r.date));
+  if(off.length<1){cont.innerHTML=`<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Sem dados para "${chartTitle}".</div>`;return;}
 
-  // Título
+  const labels=off.map(r=>formatDate(r.date));
   const titulo=document.createElement('div');
   titulo.style.cssText='padding:8px 13px;font-size:14px;font-weight:700;color:var(--text2);';
   titulo.textContent='📊 '+chartTitle;
   cont.appendChild(titulo);
 
-  // Definição dos gráficos simples
   const chartDefs=[
-    {title:'Oxigênio',     unit:'mg/L', key:'o2',    color:'#2251a0'},
-    {title:'Amônia',       unit:'mg/L', key:'amonia',color:'#d97706'},
-    {title:'Temperatura',  unit:'°C',   key:'temp',  color:'#dc2626'},
-    {title:'pH',           unit:'',     key:'ph',    color:'#7c3aed'},
-    {title:'Biometria',    unit:'g',    key:'bio',   color:'#059669'},
-    {title:'Qtd. Peixes',  unit:'un',   key:'qty',   color:'#0891b2'},
-    {title:'Mortalidade',  unit:'un',   key:'mort',  color:'#b91c1c'},
+    {title:'Oxigênio',    unit:'mg/L',key:'o2',    color:'#2251a0'},
+    {title:'Amônia',      unit:'mg/L',key:'amonia',color:'#d97706'},
+    {title:'Temperatura', unit:'°C',  key:'temp',  color:'#dc2626'},
+    {title:'pH',          unit:'',    key:'ph',    color:'#7c3aed'},
+    {title:'Biometria',   unit:'g',   key:'bio',   color:'#059669'},
+    {title:'Qtd. Peixes', unit:'un',  key:'qty',   color:'#0891b2'},
+    {title:'Mortalidade', unit:'un',  key:'mort',  color:'#b91c1c'},
   ];
-
   chartDefs.forEach(cfg=>{
     const vals=off.map(r=>r[cfg.key]??null);
     if(vals.every(v=>v===null))return;
     cont.appendChild(makeSVGChart(cfg.title,cfg.unit,labels,vals,cfg.color));
   });
 
-  // Ração ideal vs real
   const ideal=off.map(r=>r.racaoIdealG??null);
   const real=off.map(r=>r.racaoG??null);
   if(!ideal.every(v=>v===null)||!real.every(v=>v===null)){
     cont.appendChild(makeSVGDualChart('Ração','g',labels,ideal,'#1a3a6b',real,'#16a34a','Ideal','Real'));
     cont.appendChild(makeRacaoTable(labels,off));
   }
-
-  // TCA
   const tcaBlock=makeTCATable(off);
   if(tcaBlock)cont.appendChild(tcaBlock);
 }
