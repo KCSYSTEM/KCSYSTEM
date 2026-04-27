@@ -1421,15 +1421,37 @@ function buildHistoricoEl(){
       <div class="history-date">${formatDate(r.date)}${r.timestamp?' · '+formatTime(r.timestamp):''}</div>
       <div class="history-user">por ${r.user}</div>
     </div></div>
-    <div class="history-params">${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}${hP('pH',r.ph,'')}${hP('Peixes',r.qty,'un')}${hP('Biometria',r.bio,'g')}</div>
-    ${(r.mort>0)?`<div style="margin-top:5px;font-size:11px;color:var(--danger);font-weight:600;">💀 Mortalidade: ${r.mort} peixes</div>`:''}
-    ${r.racao?`<div style="margin-top:5px;font-size:11px;color:var(--text2);font-weight:500;">🌾 ${r.racao}${r.racaoIdealG?' · ideal:'+r.racaoIdealG+'g':''}${r.sobra?' · sobra:'+r.sobra+'g':''}${r.racaoG?' · real:'+r.racaoG+'g':''}${pctLabel}${r.tratosIdeal?' · '+r.tratosIdeal+' tratos ideal':''}${r.tratos?' / '+r.tratos+' real':''}</div>`:''}
+    <div class="history-params">
+      ${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}
+      ${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}
+      ${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}
+      ${hP('pH',r.ph,'')}
+      ${hP('Peixes',r.qty,'un')}
+      ${hP('Biometria',r.bio,'g')}
+      ${hP('Mort.',r.mort||null,'un',r.mort>0)}
+    </div>
+    <div class="history-params" style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);">
+      ${hPText('Ração',r.racao||null)}
+      ${hP('Ideal',r.racaoIdealG,'g')}
+      ${hP('Sobra',r.sobra,'g')}
+      ${hP('Real',r.racaoG,'g',false)}
+      ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
+      ${hP('Tratos Real',r.tratos,'/dia')}
+    </div>
     ${r.obs?`<div style="margin-top:4px;font-size:11px;color:var(--text2);">💬 ${r.obs}</div>`:''}`;
     div.appendChild(item);
   });
   const s=document.createElement('div');s.style.height='14px';div.appendChild(s);return div;
 }
-function hP(label,val,unit,alert=false){const d=val!=null?val+unit:'—';const c=alert?(val<2||val>35?'danger':'alert'):'';return`<div><div class="h-param-label">${label}</div><div class="h-param-val ${c}">${d}</div></div>`;}
+function hP(label,val,unit,alert=false){
+  const d=val!=null?val+unit:'—';
+  const c=alert?'danger':'';
+  return`<div><div class="h-param-label">${label}</div><div class="h-param-val ${c}">${d}</div></div>`;
+}
+function hPText(label,val){
+  const d=val||'—';
+  return`<div style="grid-column:span 2"><div class="h-param-label">${label}</div><div class="h-param-val" style="font-size:11px;">${d}</div></div>`;
+}
 
 function buildConfigForm(){
   const t=activeTank;
