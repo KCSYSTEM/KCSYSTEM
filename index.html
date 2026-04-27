@@ -99,6 +99,9 @@ input,select,textarea,button{font-family:'Space Grotesk',sans-serif;}
 .tank-card.ok{border-color:var(--ok-border);background:rgba(22,163,74,0.03);}
 .tank-card.warn{border-color:var(--warn-border);background:rgba(217,119,6,0.03);}
 .tank-card.danger{border-color:var(--danger-border);background:rgba(220,38,38,0.03);}
+.tank-card.empty{background:#dde3ea;border-color:#b0bec5;opacity:0.8;}
+.tank-card.empty .tank-card-name{color:#607080;}
+.tank-card.empty .tank-status-dot{background:#b0bec5!important;}
 .tank-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .tank-card.ok .tank-status-dot{background:var(--ok);}
 .tank-card.warn .tank-status-dot{background:var(--warn);}
@@ -1142,27 +1145,36 @@ function renderGroups(){
   }).join('')+'</div>';
 }
 function renderGroupTanks(g){
-  const gt=tanks.filter(t=>t.groupId===g.id);
+  // Ordena tanques em ordem crescente por número
+  const gt=tanks.filter(t=>t.groupId===g.id).sort((a,b)=>(a.num||0)-(b.num||0));
   if(!gt.length)return`<div style="padding:36px 13px;text-align:center;color:var(--text3);font-size:13px;">Nenhum tanque.<br>Use o + para adicionar.</div>`;
   if(g.id==='geo-elevada'){
     const small=gt.filter(t=>!t.large),big=gt.filter(t=>t.large);
     return'<div class="tanks-grid paired">'+small.map(t=>tankCardHtml(t)).join('')+big.map(t=>{
       const s=tankStatus(t.id),r=lastRec(t.id);
-      const params=r?`<div class="tank-card-params" style="align-items:center;">${r.temp!=null?`<div class="tank-card-param" style="justify-content:center;">Temp <span class="${r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max?'warn':'ok'}">${r.temp}°C</span></div>`:''}${r.o2!=null?`<div class="tank-card-param" style="justify-content:center;">O₂ <span class="${r.o2<LIMITS.o2.min?'warn':'ok'}">${r.o2}mg/L</span></div>`:''}</div>`:`<div class="tank-card-nodata">sem registros</div>`;
-      return`<div class="tank-card circle-large ${s}" onclick="openTank('${t.id}')"><div class="tank-card-top" style="justify-content:center;gap:8px;"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div><div class="tank-card-species">${t.species} · maior</div>${params}</div>`;
+      const isEmpty=!!t.empty;
+      const params=isEmpty?`<div class="tank-card-nodata" style="color:#b0bec5;">vazio</div>`:r?`<div class="tank-card-params" style="align-items:center;">${r.temp!=null?`<div class="tank-card-param" style="justify-content:center;">Temp <span class="${r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max?'warn':'ok'}">${r.temp}°C</span></div>`:''}${r.o2!=null?`<div class="tank-card-param" style="justify-content:center;">O₂ <span class="${r.o2<LIMITS.o2.min?'warn':'ok'}">${r.o2}mg/L</span></div>`:''}</div>`:`<div class="tank-card-nodata">sem registros</div>`;
+      return`<div class="tank-card circle-large ${isEmpty?'empty':s}" onclick="openTank('${t.id}')"><div class="tank-card-top" style="justify-content:center;gap:8px;"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div><div class="tank-card-species">${isEmpty?'vazio':'ativo'}</div>${params}</div>`;
     }).join('')+'</div>';
   }
   return`<div class="tanks-grid${g.paired?' paired':''}">` + gt.map(t=>tankCardHtml(t)).join('') + '</div>';
 }
 function tankCardHtml(t){
-  const s=tankStatus(t.id),r=lastRec(t.id),isCircle=t.shape==='circle';
+  const isEmpty=!!t.empty;
+  const s=isEmpty?'empty':tankStatus(t.id);
+  const r=lastRec(t.id),isCircle=t.shape==='circle';
   let params='';
-  if(r){
+  if(isEmpty){
+    params=`<div class="tank-card-nodata" style="color:#b0bec5;">vazio</div>`;
+  } else if(r){
     const tc=r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max)?(r.temp<20||r.temp>33?'danger':'warn'):'ok';
     const oc=r.o2&&r.o2<LIMITS.o2.min?(r.o2<4?'danger':'warn'):'ok';
     params=`<div class="tank-card-params">${r.temp!=null?`<div class="tank-card-param">Temp <span class="${tc}">${r.temp}°C</span></div>`:''}${r.o2!=null?`<div class="tank-card-param">O₂ <span class="${oc}">${r.o2}mg/L</span></div>`:''}${r.ph!=null?`<div class="tank-card-param">pH <span class="ok">${r.ph}</span></div>`:''}</div>`;
-  }else{params=`<div class="tank-card-nodata">sem registros</div>`;}
-  return`<div class="tank-card ${s}${isCircle?' circle-shape':''}" onclick="openTank('${t.id}')"><div class="tank-card-top"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div><div class="tank-card-species">${t.species}</div>${params}</div>`;
+  } else {
+    params=`<div class="tank-card-nodata">sem registros</div>`;
+  }
+  const statusLabel=isEmpty?'vazio':'ativo';
+  return`<div class="tank-card ${s}${isCircle?' circle-shape':''}" onclick="openTank('${t.id}')"><div class="tank-card-top"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div><div class="tank-card-species">${statusLabel}</div>${params}</div>`;
 }
 function openGroup(id){currentGroupId=id;renderTankView();document.getElementById('main').scrollTop=0;}
 function goBack(){currentGroupId=null;renderTankView();document.getElementById('main').scrollTop=0;}
@@ -1545,7 +1557,7 @@ function buildConfigForm(){
     </div>
   </div>
   <button class="btn-save" onclick="saveTankConfig()">Salvar</button>
-  <button class="btn-ghost" onclick="confirmDeleteTank()">Remover Tanque</button>
+  ${admin?`<button class="btn-ghost" onclick="confirmDeleteTank()">Remover Tanque</button>`:''}
   <div style="height:14px;"></div>`;
 }
 
