@@ -1,0 +1,3131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>KC System v5.2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f4f8;--surface:#fff;--surface2:#e8edf3;
+  --border:#d0dae6;--border2:#b0bfce;
+  --accent:#1a3a6b;--accent2:#2251a0;
+  --accent-dim:rgba(26,58,107,0.08);--accent-dim2:rgba(26,58,107,0.04);
+  --text:#0d1f35;--text2:#4a6080;--text3:#8a9db5;
+  --ok:#16a34a;--ok-dim:rgba(22,163,74,0.1);--ok-border:rgba(22,163,74,0.35);
+  --danger:#dc2626;--danger-dim:rgba(220,38,38,0.08);--danger-border:rgba(220,38,38,0.35);
+  --warn:#d97706;--warn-dim:rgba(217,119,6,0.1);--warn-border:rgba(217,119,6,0.4);
+  --chart1:#1a3a6b;--chart2:#16a34a;--chart3:#d97706;--chart4:#dc2626;--chart5:#7c3aed;
+  --r:14px;--r-sm:10px;--bottombar:72px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{height:100%;overflow:hidden;}
+body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;overscroll-behavior:none;max-width:100vw;}
+input,select,textarea,button{font-family:'Space Grotesk',sans-serif;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;padding:20px;overflow:hidden;}
+.login-glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,0.08) 0%,transparent 70%);pointer-events:none;}
+.login-box{width:100%;max-width:340px;background:var(--surface);border-radius:20px;padding:32px 24px;position:relative;animation:fadeUp 0.5s ease;box-shadow:0 20px 60px rgba(0,0,0,0.25);}
+.login-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid rgba(26,58,107,0.15);border-radius:20px;padding:4px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;}
+.login-title{font-size:24px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:22px;}
+.field{margin-bottom:11px;}
+.field label{display:block;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.field input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:12px 13px;color:var(--text);font-size:16px;outline:none;transition:border-color 0.2s;-webkit-appearance:none;appearance:none;}
+.field input:focus{border-color:var(--accent);}
+.btn-primary{width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:4px;}
+.btn-primary:active{transform:scale(0.97);}
+.login-error{color:var(--danger);font-size:12px;margin-top:8px;text-align:center;display:none;font-family:'JetBrains Mono',monospace;}
+.login-hint{margin-top:14px;padding:10px;background:var(--bg);border-radius:var(--r-sm);font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.8;text-align:center;}
+
+/* APP */
+#app{display:none;height:100%;flex-direction:column;overflow:hidden;max-width:100vw;}
+.topbar{height:52px;background:var(--accent);display:flex;align-items:center;justify-content:space-between;padding:0 13px;flex-shrink:0;z-index:100;}
+.topbar-brand{display:flex;align-items:center;gap:8px;cursor:pointer;}
+.brand-icon{width:28px;height:28px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:0.5px;font-family:'JetBrains Mono',monospace;color:#fff;}
+.brand-name span{color:rgba(255,255,255,0.7);}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.user-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:3px 8px 3px 3px;}
+.user-avatar{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.user-name{font-size:11px;color:rgba(255,255,255,0.85);font-weight:500;}
+.icon-btn{width:30px;height:30px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:7px;color:rgba(255,255,255,0.8);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+
+#main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--bottombar) + 180px);-webkit-overflow-scrolling:touch;max-width:100vw;}
+.view{display:none;max-width:100%;}
+.view.active{display:block;}
+
+.view-header{padding:13px 13px 5px;display:flex;align-items:flex-start;justify-content:space-between;}
+.view-title{font-size:18px;font-weight:700;color:var(--text);}
+.view-sub{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+.breadcrumb{display:flex;align-items:center;gap:8px;padding:10px 13px 0;overflow:hidden;}
+.breadcrumb-link{color:var(--accent2);cursor:pointer;white-space:nowrap;font-size:16px;font-weight:700;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(26,58,107,0.35);padding:4px 0;}
+.breadcrumb-link:active{opacity:0.6;}
+.breadcrumb-sep{color:var(--text3);flex-shrink:0;font-size:18px;}
+.breadcrumb-cur{color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px;font-weight:500;}
+.legend-bar{display:flex;gap:10px;align-items:center;padding:5px 13px 8px;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);}
+.legend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+
+/* GROUPS */
+.groups-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 13px 8px;}
+.group-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px 12px;cursor:pointer;transition:all 0.18s;position:relative;overflow:hidden;min-height:108px;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.group-card:active{transform:scale(0.95);border-color:var(--accent);}
+.group-card-icon{font-size:22px;margin-bottom:1px;}
+.group-card-name{font-size:12px;font-weight:700;color:var(--text);line-height:1.3;}
+.group-card-count{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.group-card-alerts{margin-top:auto;}
+.group-alert-badge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-family:'JetBrains Mono',monospace;padding:2px 7px;border-radius:10px;}
+.group-alert-badge.danger{background:var(--danger-dim);color:var(--danger);}
+.group-alert-badge.warn{background:var(--warn-dim);color:var(--warn);}
+.group-alert-badge.ok{background:var(--ok-dim);color:var(--ok);}
+.group-card-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;}
+
+/* TANK CARDS */
+.tanks-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 13px 8px;}
+.tank-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:11px 10px;cursor:pointer;transition:all 0.18s;position:relative;overflow:hidden;min-height:96px;display:flex;flex-direction:column;gap:5px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+.tank-card.circle-shape{border-radius:50%;aspect-ratio:1;min-height:unset;width:100%;padding:10px;align-items:center;justify-content:center;text-align:center;}
+.tank-card.circle-shape .tank-card-species{font-size:9px;}
+.tank-card.circle-shape .tank-card-params{align-items:center;}
+.tank-card.circle-shape .tank-card-param{justify-content:center;gap:3px;}
+.tank-card.circle-large{grid-column:1/-1;border-radius:50%;aspect-ratio:1;width:60%;margin:0 auto;min-height:unset;padding:16px;align-items:center;justify-content:center;text-align:center;display:flex;flex-direction:column;gap:6px;}
+.tank-card.circle-large .tank-card-name{font-size:15px;}
+.tank-card.circle-large .tank-card-species{font-size:11px;}
+.tank-card:active{transform:scale(0.95);}
+.tank-card.ok{border-color:var(--ok-border);background:rgba(22,163,74,0.03);}
+.tank-card.warn{border-color:var(--warn-border);background:rgba(217,119,6,0.03);}
+.tank-card.danger{border-color:var(--danger-border);background:rgba(220,38,38,0.03);}
+.tank-card.empty{background:#dde3ea;border-color:#b0bec5;opacity:0.8;}
+.tank-card.empty .tank-card-name{color:#607080;}
+.tank-card.empty .tank-status-dot{background:#b0bec5!important;}
+.tank-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.tank-card.ok .tank-status-dot{background:var(--ok);}
+.tank-card.warn .tank-status-dot{background:var(--warn);}
+.tank-card.danger .tank-status-dot{background:var(--danger);animation:pulse 1.5s infinite;}
+.tank-card.nodata .tank-status-dot{background:var(--text3);}
+.tank-card-top{display:flex;align-items:center;justify-content:space-between;gap:4px;}
+.tank-card-name{font-size:13px;font-weight:700;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tank-card-species{font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tank-card-params{display:flex;flex-direction:column;gap:2px;margin-top:auto;}
+.tank-card-param{font-size:10px;color:var(--text3);display:flex;justify-content:space-between;}
+.tank-card-param span{font-family:'JetBrains Mono',monospace;font-weight:600;}
+.tank-card-param span.ok{color:var(--ok);}
+.tank-card-param span.warn{color:var(--warn);}
+.tank-card-param span.danger{color:var(--danger);}
+.tank-card-nodata{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:auto;}
+
+/* FAB */
+.fab{position:fixed;right:14px;bottom:calc(var(--bottombar)+12px);width:46px;height:46px;background:var(--accent);color:#fff;border:none;border-radius:50%;font-size:22px;cursor:pointer;z-index:90;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(26,58,107,0.35);transition:all 0.2s;}
+.fab:active{transform:scale(0.9);}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--bottombar);background:var(--surface);border-top:1.5px solid var(--border);display:flex;align-items:center;padding:0 4px;padding-bottom:env(safe-area-inset-bottom);z-index:100;max-width:100vw;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;cursor:pointer;border-radius:10px;transition:all 0.15s;color:var(--text3);min-height:50px;}
+.nav-item.active{color:var(--accent);background:var(--accent-dim);}
+.nav-item:active{background:var(--accent-dim2);}
+.nav-icon{font-size:18px;line-height:1;}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:0.2px;}
+
+/* SHEET */
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.3s;backdrop-filter:blur(2px);}
+.sheet-overlay.open{opacity:1;pointer-events:all;}
+#tank-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1.5px solid var(--border);border-radius:22px 22px 0 0;z-index:201;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);display:flex;flex-direction:column;max-height:92vh;max-width:100vw;}
+#tank-sheet.open{transform:translateY(0);}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:10px auto 0;flex-shrink:0;}
+.sheet-header{padding:10px 16px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;}
+.sheet-tank-name{font-size:19px;font-weight:700;color:var(--text);}
+.sheet-tank-meta{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+.sheet-close{width:28px;height:28px;background:var(--bg);border:1.5px solid var(--border);border-radius:50%;color:var(--text2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.sheet-tabs{display:flex;border-bottom:1.5px solid var(--border);padding:0 16px;margin-top:10px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.sheet-tabs::-webkit-scrollbar{display:none;}
+.sheet-tab{padding:9px 13px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.sheet-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.sheet-body{flex:1;overflow-y:auto;padding:13px 16px;-webkit-overflow-scrolling:touch;}
+
+/* FORM */
+.form-section{margin-bottom:16px;}
+.form-section-title{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;padding-bottom:5px;border-bottom:1.5px solid var(--border);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.form-field{display:flex;flex-direction:column;gap:4px;}
+.form-field.full{grid-column:1/-1;}
+.form-field label{font-size:11px;color:var(--text2);font-weight:600;}
+.form-field input,.form-field select,.form-field textarea{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;color:var(--text);font-size:16px;outline:none;transition:border-color 0.2s;width:100%;-webkit-appearance:none;appearance:none;}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{border-color:var(--accent);}
+.form-field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9db5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.form-field textarea{resize:none;min-height:60px;font-size:14px;}
+.param-alert{font-size:11px;color:var(--warn);margin-top:3px;display:none;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.param-alert.show{display:block;}
+.param-alert.danger{color:var(--danger);}
+/* Banner de registro existente */
+.rec-exists-banner{background:rgba(217,119,6,0.1);border:1.5px solid var(--warn-border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--warn);font-weight:600;display:flex;align-items:center;gap:6px;}
+.btn-save{width:100%;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;transition:all 0.2s;}
+.btn-save:active{transform:scale(0.97);}
+.btn-secondary{width:100%;background:transparent;border:1.5px solid var(--border2);color:var(--text2);border-radius:var(--r-sm);padding:12px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;}
+.btn-secondary:active{background:var(--bg);}
+
+/* HISTORY */
+.history-item{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:11px;margin-bottom:8px;}
+.history-item.amended{border-color:var(--warn-border);background:rgba(217,119,6,0.03);}
+.history-item.overridden{opacity:0.5;border-style:dashed;}
+.history-header{display:flex;justify-content:space-between;margin-bottom:7px;}
+.history-date{font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:600;}
+.history-user{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+.history-params{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+.h-param-label{font-size:9px;color:var(--text3);margin-bottom:1px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;}
+.h-param-val{font-size:12px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;}
+.h-param-val.alert{color:var(--warn);}
+.h-param-val.danger{color:var(--danger);}
+.history-empty{text-align:center;color:var(--text3);font-size:13px;padding:36px 0;line-height:1.8;}
+
+/* CONFIG */
+.config-field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.config-field label{font-size:11px;color:var(--text2);font-weight:600;}
+.config-field input,.config-field select{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;color:var(--text);font-size:16px;outline:none;transition:border-color 0.2s;width:100%;-webkit-appearance:none;appearance:none;}
+.config-field input:focus{border-color:var(--accent);}
+.config-field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9db5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.btn-ghost{width:100%;background:transparent;border:1.5px solid var(--danger);color:var(--danger);border-radius:var(--r-sm);padding:12px;font-size:13px;font-weight:600;cursor:pointer;margin-top:6px;}
+.btn-ghost:active{background:var(--danger-dim);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;display:none;align-items:flex-end;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--surface);border:1.5px solid var(--border);border-radius:22px 22px 0 0;padding:22px 18px 30px;width:100%;animation:slideUp 0.3s cubic-bezier(0.32,0.72,0,1);max-width:100vw;}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:3px;color:var(--text);}
+.modal p{font-size:12px;color:var(--text2);margin-bottom:14px;}
+.modal-actions{display:flex;gap:8px;margin-top:12px;}
+
+/* SETTINGS MENU estilo iPhone */
+.cfg-menu-list{padding:0 13px;}
+.cfg-menu-item{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:15px 16px;margin-bottom:10px;cursor:pointer;transition:all 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+.cfg-menu-item:active{transform:scale(0.98);background:var(--accent-dim);}
+.cfg-menu-left{display:flex;align-items:center;gap:12px;}
+.cfg-menu-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.cfg-menu-label{font-size:14px;font-weight:600;color:var(--text);}
+.cfg-menu-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.cfg-menu-arrow{color:var(--text3);font-size:16px;}
+/* Settings sub-page */
+.cfg-back-bar{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1.5px solid var(--border);background:var(--surface);}
+.cfg-back-btn{display:flex;align-items:center;gap:4px;color:var(--accent2);font-size:14px;font-weight:600;cursor:pointer;background:none;border:none;padding:4px 0;}
+.cfg-back-btn:active{opacity:0.6;}
+.cfg-page-title{font-size:15px;font-weight:700;color:var(--text);flex:1;text-align:center;margin-right:50px;}
+/* User list items */
+.user-item{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);}
+.user-item-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-dim);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.user-item-info{flex:1;min-width:0;}
+.user-item-name{font-size:14px;font-weight:700;color:var(--text);}
+.user-item-login{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.user-item-role{display:inline-block;font-size:10px;font-weight:700;border-radius:8px;padding:2px 8px;margin-top:3px;}
+.user-item-actions{display:flex;gap:6px;flex-shrink:0;}
+.user-action-btn{width:34px;height:34px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all 0.15s;}
+.user-action-btn.edit:active{background:var(--accent-dim);border-color:var(--accent);}
+.user-action-btn.del:active{background:var(--danger-dim);border-color:var(--danger);}
+/* Edit user modal */
+#edit-user-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:none;align-items:flex-end;justify-content:center;}
+#edit-user-overlay.show{display:flex;}
+.edit-user-box{background:var(--surface);border-radius:22px 22px 0 0;padding:24px 20px 36px;width:100%;max-width:100vw;animation:slideUp 0.3s cubic-bezier(0.32,0.72,0,1);}
+.edit-user-box h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;}
+/* SETTINGS sections (rações) */
+.settings-section{padding:0 13px;margin-bottom:20px;}
+.settings-section-title{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding:12px 0 8px;border-bottom:1.5px solid var(--border);}
+.racao-item{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04);}
+.racao-item-name{flex:1;font-size:14px;font-weight:500;color:var(--text);}
+.racao-item-kg{font-size:13px;color:var(--text2);font-family:'JetBrains Mono',monospace;min-width:52px;text-align:right;}
+.racao-item-del{width:28px;height:28px;background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;}
+.racao-item-del:active{background:var(--danger-dim);color:var(--danger);}
+.add-racao-row{display:grid;grid-template-columns:1fr auto auto;gap:6px;margin-top:8px;align-items:end;}
+.add-racao-row input{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;}
+.add-racao-row input:focus{border-color:var(--accent);}
+.add-racao-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:10px 14px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+/* HAPAS */
+.hapa-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);margin-bottom:10px;}
+.hapa-toggle-label{font-size:14px;font-weight:600;color:var(--text);}
+.hapa-toggle-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:24px;cursor:pointer;transition:0.2s;}
+.toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:0.2s;}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent);}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px);}
+.hapa-selector{display:flex;gap:6px;padding:0 13px 10px;overflow-x:auto;scrollbar-width:none;}
+.hapa-selector::-webkit-scrollbar{display:none;}
+.hapa-chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);transition:all 0.15s;}
+.hapa-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.hapa-chip.has-data{border-color:var(--accent2);color:var(--accent);}
+.hapa-chip:active{transform:scale(0.95);}
+.hapa-badge{display:inline-block;font-size:10px;font-weight:700;background:rgba(22,163,74,0.12);color:var(--ok);border-radius:8px;padding:1px 6px;margin-left:4px;vertical-align:middle;}
+
+/* CHARTS */
+#view-graficos{padding-bottom:20px;}
+.chart-selector{padding:12px 13px 0;}
+.chart-selector select{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9db5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;font-family:'Space Grotesk',sans-serif;font-weight:600;}
+.chart-block{margin:16px 13px 0;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:0 1px 4px rgba(0,0,0,0.05);}
+.chart-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.chart-sub{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:10px;}
+.chart-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+canvas.chart-canvas{display:block;}
+.chart-empty{text-align:center;color:var(--text3);font-size:12px;padding:20px 0;}
+/* Taxa conversão tabela */
+.tca-table{width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;}
+.tca-table th{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:4px 6px;border-bottom:1.5px solid var(--border);text-align:left;}
+.tca-table td{padding:5px 6px;border-bottom:1px solid var(--border);color:var(--text2);}
+.tca-table td:first-child{color:var(--text);font-weight:600;}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(var(--bottombar)+14px);left:50%;transform:translateX(-50%) translateY(14px);background:var(--text);color:#fff;border-radius:20px;padding:9px 18px;font-size:12px;font-family:'JetBrains Mono',monospace;z-index:500;transition:all 0.3s ease;opacity:0;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 28px);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+#toast.ok{background:var(--ok);}
+#toast.error{background:var(--danger);}
+
+/* CONFIRM DIALOG */
+#confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;}
+#confirm-overlay.show{display:flex;}
+.confirm-box{background:var(--surface);border-radius:20px;padding:24px 20px;width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:fadeUp 0.2s ease;}
+.confirm-box h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.confirm-box p{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:18px;}
+.confirm-actions{display:flex;gap:8px;}
+.confirm-btn-ok{flex:1;background:var(--warn);color:#fff;border:none;border-radius:var(--r-sm);padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+.confirm-btn-cancel{flex:1;background:transparent;border:1.5px solid var(--border2);color:var(--text2);border-radius:var(--r-sm);padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+
+/* HAPAS */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:10px;}
+.toggle-label{font-size:13px;font-weight:600;color:var(--text);}
+.toggle-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:24px;transition:0.3s;cursor:pointer;}
+.toggle-slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s;}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent);}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px);}
+.hapa-selector{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;border-bottom:1.5px solid var(--border);flex-shrink:0;background:var(--bg);}
+.hapa-selector::-webkit-scrollbar{display:none;}
+.hapa-chip{flex-shrink:0;padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.hapa-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.hapa-chip.consolidated{background:var(--accent-dim);border-color:var(--accent2);color:var(--accent);}
+.hapa-chip:active{transform:scale(0.95);}
+.hapa-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;background:rgba(124,58,237,0.12);color:#7c3aed;border-radius:6px;padding:1px 5px;}
+
+/* LANÇAMENTOS */
+.lancamento-table{width:100%;border-collapse:collapse;}
+.lancamento-table th{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:8px 10px;border-bottom:2px solid var(--border);text-align:left;background:var(--bg);position:sticky;top:0;z-index:1;}
+.lancamento-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.lancamento-table tr:last-child td{border-bottom:none;}
+.lancamento-table tr.has-hapas td{background:rgba(124,58,237,0.03);}
+.lancamento-tank-name{font-size:13px;font-weight:700;color:var(--text);}
+.lancamento-hapa-name{font-size:11px;color:#7c3aed;font-family:'JetBrains Mono',monospace;}
+.lancamento-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;transition:border-color 0.15s;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.lancamento-input:focus{border-color:var(--accent);background:#fff;}
+.lancamento-input.filled{border-color:var(--ok);background:rgba(22,163,74,0.04);}
+.lancamento-param-bar{display:flex;gap:8px;align-items:center;padding:12px 13px;border-bottom:1.5px solid var(--border);background:var(--surface);flex-wrap:wrap;}
+.lancamento-param-select{flex:1;min-width:180px;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;font-weight:600;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9db5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.lancamento-date-input{background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;}
+.lancamento-save-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.lancamento-save-btn:active{background:var(--accent2);}
+.lancamento-progress{font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;padding:4px 0;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-glow"></div>
+  <div class="login-box">
+    <div class="login-badge">🐟 KC System</div>
+    <div class="login-title">Bem-vindo de<br>volta</div>
+    <div class="login-sub">Acesse sua conta para continuar</div>
+    <div class="field"><label>Usuário</label><input type="text" id="login-user" placeholder="seu.usuario" autocomplete="username" inputmode="text"></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Usuário ou senha incorretos</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand" onclick="goHome()">
+      <div class="brand-icon">🐟</div>
+      <div class="brand-name">KC<span>System</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="topbar-avatar">--</div>
+        <div class="user-name" id="topbar-name">--</div>
+        <span id="topbar-role" style="display:none;font-size:9px;font-weight:700;background:rgba(255,255,255,0.25);color:#fff;border-radius:8px;padding:1px 6px;margin-left:2px;letter-spacing:0.5px;">Admin</span>
+      </div>
+      <button class="icon-btn" onclick="doLogout()">⏏</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <!-- TANQUES -->
+    <div id="view-tanques" class="view active">
+      <div id="breadcrumb-bar"></div>
+      <div class="view-header">
+        <div><div class="view-title" id="view-tanques-title">Tanques</div><div class="view-sub" id="map-sub">Carregando...</div></div>
+      </div>
+      <div class="legend-bar">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ok)"></div>Normal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--warn)"></div>Alerta</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Crítico</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--text3)"></div>Sem dados</div>
+      </div>
+      <div id="tank-content"></div>
+    </div>
+
+    <!-- LANÇAMENTOS -->
+    <div id="view-lancamentos" class="view">
+      <div class="view-header"><div><div class="view-title">Lançamentos</div><div class="view-sub">Registrar um parâmetro para todos os tanques</div></div></div>
+      <div class="lancamento-param-bar">
+        <select class="lancamento-param-select" id="lanc-param" onchange="renderLancamentos()">
+          <option value="">Selecione o parâmetro...</option>
+          <option value="temp">🌡 Temperatura (°C)</option>
+          <option value="o2">💧 Oxigênio (mg/L)</option>
+          <option value="amonia">⚗️ Amônia (mg/L)</option>
+          <option value="ph">🔬 pH</option>
+          <option value="qty">🐟 Qtd. de Peixes</option>
+          <option value="bio">⚖️ Biometria (g)</option>
+          <option value="mort">💀 Mortalidade</option>
+          <option id="lanc-opt-racaoIdealG" value="racaoIdealG">🌾 Ração Ideal (g)</option>
+          <option value="racaoReal">🌾 Ração Real / Sobra (g)</option>
+          <option id="lanc-opt-tratosIdeal" value="tratosIdeal">🕐 Tratos Ideal/dia</option>
+          <option value="tratos">🕐 Tratos Real/dia</option>
+        </select>
+        <input type="date" class="lancamento-date-input" id="lanc-date">
+        <button class="lancamento-save-btn" onclick="saveLancamentos()">Salvar Todos</button>
+      </div>
+      <div class="lancamento-progress" id="lanc-progress" style="padding:6px 13px;display:none;"></div>
+      <div style="overflow-x:auto;padding:0 13px 16px;">
+        <table class="lancamento-table" id="lanc-table">
+          <tbody id="lanc-tbody">
+            <tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text3);font-size:13px;">Selecione um parâmetro acima</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAINEL -->
+    <div id="view-painel" class="view">
+      <div class="view-header"><div><div class="view-title">Painel</div><div class="view-sub">Visão geral do dia</div></div></div>
+      <div style="padding:0 13px 12px;">
+        <input type="date" id="painel-date" onchange="renderPainel()" style="width:100%;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;color:var(--text);font-size:16px;outline:none;-webkit-appearance:none;appearance:none;">
+      </div>
+      <div id="painel-container" style="overflow-x:auto;padding:0 13px;"></div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div id="view-graficos" class="view">
+      <div class="view-header"><div><div class="view-title">Gráficos</div><div class="view-sub">Evolução dos parâmetros por tanque</div></div></div>
+      <div class="chart-selector">
+        <select id="chart-tank-select" onchange="onChartTankChange()">
+          <option value="">Selecione um tanque...</option>
+        </select>
+      </div>
+      <div id="chart-lote-row" style="display:none;padding:0 13px 10px;">
+        <select id="chart-lote-select" onchange="renderCharts()" style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;">
+          <option value="">Todos os lotes</option>
+        </select>
+      </div>
+      <div id="charts-container"></div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div id="view-history" class="view">
+      <div class="view-header"><div><div class="view-title">Histórico Geral</div><div class="view-sub">Todos os registros</div></div></div>
+      <div style="padding:0 13px;" id="global-history-list"></div>
+    </div>
+
+    <!-- CONFIGURAÇÕES -->
+    <div id="view-settings" class="view">
+      <!-- Página: menu principal -->
+      <div id="cfg-page-menu">
+        <div class="view-header"><div><div class="view-title">Configurações</div><div class="view-sub">Administração do sistema</div></div></div>
+        <div class="cfg-menu-list">
+          <div class="cfg-menu-item" onclick="openCfgPage('racoes')">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#fef3c7;">🌾</div>
+              <div><div class="cfg-menu-label">Tabela de Rações</div><div class="cfg-menu-sub">Cadastrar e editar tipos de ração</div></div>
+            </div>
+            <div class="cfg-menu-arrow">›</div>
+          </div>
+          <div class="cfg-menu-item" onclick="openCfgPage('parametros')">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#dcfce7;">⚖️</div>
+              <div><div class="cfg-menu-label">Parâmetros de Alerta</div><div class="cfg-menu-sub">Ajustar limites mín/máx de cada indicador</div></div>
+            </div>
+            <div class="cfg-menu-arrow">›</div>
+          </div>
+          <div class="cfg-menu-item" onclick="openCfgPage('usuarios')">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#dbeafe;">👥</div>
+              <div><div class="cfg-menu-label">Gerenciar Usuários</div><div class="cfg-menu-sub">Criar, editar e remover acessos</div></div>
+            </div>
+            <div class="cfg-menu-arrow">›</div>
+          </div>
+        </div>
+      </div>
+      <!-- Página: parâmetros -->
+      <div id="cfg-page-parametros" style="display:none;">
+        <div class="cfg-back-bar">
+          <button class="cfg-back-btn" onclick="closeCfgPage()">‹ Configurações</button>
+          <div class="cfg-page-title">Parâmetros</div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Limites de Alerta</div>
+          <div id="params-form"></div>
+          <button class="btn-save" onclick="saveParams()" style="margin-top:8px;">Salvar Parâmetros</button>
+        </div>
+      </div>
+      <!-- Página: rações -->
+      <div id="cfg-page-racoes" style="display:none;">
+        <div class="cfg-back-bar">
+          <button class="cfg-back-btn" onclick="closeCfgPage()">‹ Configurações</button>
+          <div class="cfg-page-title">Rações</div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Tabela de Rações (g/copo)</div>
+          <div id="racao-list"></div>
+          <div class="add-racao-row">
+            <input type="text" id="new-racao-nome" placeholder="Nome da ração">
+            <input type="number" id="new-racao-kg" placeholder="g/copo" step="0.001" inputmode="decimal" style="width:90px;">
+            <button class="add-racao-btn" onclick="addRacao()">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <!-- Página: usuários -->
+      <div id="cfg-page-usuarios" style="display:none;">
+        <div class="cfg-back-bar">
+          <button class="cfg-back-btn" onclick="closeCfgPage()">‹ Configurações</button>
+          <div class="cfg-page-title">Usuários</div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Usuários Cadastrados</div>
+          <div id="users-list"></div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Criar Novo Usuário</div>
+          <div style="display:grid;gap:8px;">
+            <div class="config-field"><label>Login (sem espaços)</label><input type="text" id="new-user-login" placeholder="ex: joao.silva" autocomplete="off"></div>
+            <div class="config-field"><label>Nome completo</label><input type="text" id="new-user-name" placeholder="ex: João Silva"></div>
+            <div class="config-field"><label>Senha</label><input type="password" id="new-user-pass" placeholder="mínimo 4 caracteres" autocomplete="new-password"></div>
+            <div class="config-field"><label>Perfil</label>
+              <select id="new-user-role">
+                <option value="usuario">Usuário</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <button class="btn-save" onclick="createUser()">Criar Usuário</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-tanques" onclick="showView('tanques')">
+      <div class="nav-icon">⬡</div><div class="nav-label">Tanques</div>
+    </div>
+    <div class="nav-item" id="nav-lancamentos" onclick="showView('lancamentos')">
+      <div class="nav-icon">✏️</div><div class="nav-label">Lançar</div>
+    </div>
+    <div class="nav-item" id="nav-painel" onclick="showView('painel')">
+      <div class="nav-icon">📋</div><div class="nav-label">Painel</div>
+    </div>
+    <div class="nav-item" id="nav-graficos" onclick="showView('graficos')">
+      <div class="nav-icon">📈</div><div class="nav-label">Gráficos</div>
+    </div>
+    <div class="nav-item" id="nav-history" onclick="showView('history')">
+      <div class="nav-icon">↻</div><div class="nav-label">Histórico</div>
+    </div>
+    <div class="nav-item" id="nav-settings" onclick="showView('settings')" style="display:none;">
+      <div class="nav-icon">⚙️</div><div class="nav-label">Config.</div>
+    </div>
+  </div>
+  <button class="fab" id="fab-btn" onclick="openAddTank()" style="display:none;">+</button>
+</div>
+
+<!-- TANK SHEET -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+<div id="tank-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div><div class="sheet-tank-name" id="sheet-tank-name">—</div><div class="sheet-tank-meta" id="sheet-tank-meta">—</div></div>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <!-- Seletor de hapa (só aparece se tanque tiver hapas) -->
+  <div id="hapa-selector-bar" style="display:none;"></div>
+  <div class="sheet-tabs">
+    <div class="sheet-tab active" onclick="switchTab('registro')">Registro</div>
+    <div class="sheet-tab" onclick="switchTab('historico')">Histórico</div>
+    <div class="sheet-tab" onclick="switchTab('configurar')">Configurar</div>
+  </div>
+  <!-- Seletor de hapa (aparece só quando o tanque tem hapas) -->
+  <div class="hapa-selector" id="hapa-selector" style="display:none;"></div>
+  <div class="sheet-body" id="sheet-body"></div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Novo Tanque</h3><p>Preencha os dados do novo tanque</p>
+    <div class="config-field"><label>Nome</label><input type="text" id="new-tank-name" placeholder="Ex: Tanque A1"></div>
+    <div class="config-field"><label>Espécie</label><input type="text" id="new-tank-species" placeholder="Ex: Tilápia"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="config-field"><label>Volume (m³)</label><input type="number" id="new-tank-vol" placeholder="500" inputmode="decimal"></div>
+      <div class="config-field"><label>Grupo</label>
+        <select id="new-tank-group">
+          <option value="escavados">Escavados</option>
+          <option value="geomembrana">Geo. Escavada</option>
+          <option value="geo-elevada">Geo. Elevada</option>
+          <option value="laboratorio">Laboratório</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" style="flex:1;" onclick="confirmAddTank()">Criar</button>
+      <button class="btn-ghost" style="width:auto;padding:12px 16px;margin:0;" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <h3 id="confirm-title">Registro existente</h3>
+    <p id="confirm-msg"></p>
+    <div class="confirm-actions">
+      <button class="confirm-btn-ok" id="confirm-ok-btn">Sobreescrever</button>
+      <button class="confirm-btn-cancel" onclick="closeConfirm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div id="edit-user-overlay">
+  <div class="edit-user-box">
+    <h3 id="edit-user-title">Editar Usuário</h3>
+    <div class="config-field"><label>Nome completo</label><input type="text" id="edit-user-name" placeholder="Nome"></div>
+    <div class="config-field"><label>Nova senha <span style="color:var(--text3);font-weight:400;">(deixe em branco para manter)</span></label><input type="password" id="edit-user-pass" placeholder="Nova senha" autocomplete="new-password"></div>
+    <div class="config-field"><label>Perfil</label>
+      <select id="edit-user-role">
+        <option value="usuario">Usuário</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn-save" style="flex:1;" onclick="saveEditUser()">Salvar</button>
+      <button class="btn-secondary" style="width:auto;padding:12px 18px;" onclick="closeEditUser()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// Usuários padrão fixos (nunca apagados)
+const DEFAULT_USERS={
+  'lucas':  {pass:'010722', name:'Lucas',  role:'admin'},
+  'giovana':{pass:'893458', name:'Giovana',role:'admin'},
+  'kiko':   {pass:'347650', name:'Kiko',   role:'usuario'},
+  'bili':   {pass:'092347', name:'Bili',   role:'usuario'},
+};
+// USERS é mesclado com usuários extras criados pelos admins
+let USERS={...DEFAULT_USERS};
+function loadUsers(){
+  try{const u=JSON.parse(localStorage.getItem('kc_users'));if(u)USERS={...DEFAULT_USERS,...u};}catch(e){}
+}
+function saveUsers(){
+  // salva apenas os criados dinamicamente (exclui os padrões)
+  const extra={};
+  Object.entries(USERS).forEach(([k,v])=>{if(!DEFAULT_USERS[k])extra[k]=v;});
+  localStorage.setItem('kc_users',JSON.stringify(extra));
+}
+const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70}};
+const GROUPS=[
+  {id:'escavados',name:'Escavados',icon:'🟫',shape:'rect',paired:true,tanks:Array.from({length:15},(_,i)=>({num:i+1,name:`Tanque ${i+1}`,shape:'rect',volume:600,large:false}))},
+  {id:'geomembrana',name:'Geo. Escavada',icon:'🟦',shape:'rect',paired:false,tanks:Array.from({length:4},(_,i)=>({num:i+16,name:`Tanque ${i+16}`,shape:'rect',volume:800,large:false}))},
+  {id:'geo-elevada',name:'Geo. Elevada',icon:'🔵',shape:'circle',paired:true,tanks:[...Array.from({length:12},(_,i)=>({num:i+40,name:`Tanque ${i+40}`,shape:'circle',volume:30,large:false})),{num:52,name:'Tanque 52',shape:'circle',volume:120,large:true}]},
+  {id:'laboratorio',name:'Laboratório',icon:'🔬',shape:'rect',paired:false,tanks:[]},
+];
+const DEFAULT_RACOES=[
+  {nome:'Farelada Copo',kg:0.354},{nome:'Farelada Copo Reversão',kg:0.354},{nome:'Farelada Copo Manejo',kg:0.354},
+  {nome:'1.0 mm Copo',kg:0.282},{nome:'1.3 mm Copo',kg:null},{nome:'1.7 mm Copo',kg:0.265},
+  {nome:'2 mm Copo',kg:0.276},{nome:'3/4 mm Copo',kg:0.276},{nome:'4/6 mm Copo',kg:0.244},
+  {nome:'4/6 mm Ração Reprodução Copo',kg:0.244},{nome:'Farelada Medida',kg:0.010},
+  {nome:'Farelada "Medida" Laboratório',kg:0.001},{nome:'Farelada Medida Manejo',kg:0.010},
+  {nome:'Farelada Reversão Medida',kg:0.010},{nome:'Farelada Reversão Lab',kg:0.010},
+  {nome:'1.0 mm Medida',kg:0.007},{nome:'1.3 mm Medida',kg:null},{nome:'1.7 mm Medida',kg:0.006},
+  {nome:'2 mm Medida',kg:0.007},
+];
+
+let currentUser=null,tanks=[],records=[],racoes=[],activeTank=null,activeTab='registro',currentGroupId=null,activeHapa=null;
+let confirmCallback=null;
+
+// ===== SUPABASE =====
+const SB_URL='https://fsxoyytkmzqonrgfapgm.supabase.co';
+const SB_KEY='sb_publishable_hc1kFz6iao7_YRfTnlB6xw_4gYcLE3A';
+function sbHeaders(){return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};}
+
+async function sbGet(table,filters=''){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/${table}?${filters}&limit=10000`,{headers:sbHeaders()});
+    if(!r.ok)throw new Error(await r.text());
+    return await r.json();
+  }catch(e){console.warn('sbGet error',table,e);return null;}
+}
+async function sbUpsert(table,rows){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/${table}`,{
+      method:'POST',
+      headers:{...sbHeaders(),'Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify(Array.isArray(rows)?rows:[rows])
+    });
+    if(!r.ok)throw new Error(await r.text());
+    return true;
+  }catch(e){console.warn('sbUpsert error',table,e);return false;}
+}
+async function sbDelete(table,id){
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:sbHeaders()});
+    if(!r.ok)throw new Error(await r.text());
+    return true;
+  }catch(e){console.warn('sbDelete error',table,e);return false;}
+}
+
+// ===== SESSÃO =====
+function todayStr(){const d=new Date();return`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;}
+function saveSession(u){localStorage.setItem('kc_session',JSON.stringify({username:u,day:todayStr()}));}
+function loadSession(){try{const s=JSON.parse(localStorage.getItem('kc_session'));if(s&&s.day===todayStr()&&USERS[s.username])return s.username;}catch(e){}return null;}
+function clearSession(){localStorage.removeItem('kc_session');}
+function scheduleMidnightLogout(){const now=new Date(),mid=new Date(now);mid.setHours(23,59,59,999);setTimeout(()=>{clearSession();forceLogout();},mid-now+1000);}
+function forceLogout(){
+  stopRealtime();
+  currentUser=null;closeSheet();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-user').value='';
+  document.getElementById('login-pass').value='';
+  showToast('Sessão encerrada. Faça login.','error');
+}
+
+// ===== STORAGE (Supabase + localStorage fallback) =====
+function saveLimits(){localStorage.setItem('kc_limits',JSON.stringify(LIMITS));}
+function loadLimits(){try{const l=JSON.parse(localStorage.getItem('kc_limits'));if(l)Object.assign(LIMITS,l);}catch(e){}}
+
+// Salva um registro individual no Supabase
+async function saveRecord_sb(rec){
+  return sbUpsert('records',[{
+    id:rec.id, tank_id:rec.tankId, tank_name:rec.tankName,
+    date:rec.date, username:rec.username, user_name:rec.user,
+    timestamp:rec.timestamp, data:rec
+  }]);
+}
+// Salva configuração de todos os tanques
+async function saveTanks_sb(){
+  const rows=tanks.map(t=>({id:t.id,data:t}));
+  return sbUpsert('tanks',rows);
+}
+// Salva rações
+async function saveRacoes_sb(){
+  const rows=racoes.map(r=>({id:r.id||'r_'+r.nome,data:r}));
+  return sbUpsert('racoes',rows);
+}
+
+// Save geral — persiste localmente e no Supabase
+function save(){
+  localStorage.setItem('kc_tanks',JSON.stringify(tanks));
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  localStorage.setItem('kc_racoes',JSON.stringify(racoes));
+  saveTanks_sb().catch(()=>{});
+  saveRacoes_sb().catch(()=>{});
+}
+
+// Salva apenas um registro novo/atualizado
+async function saveOneRecord(rec){
+  records.push(rec);
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  const ok=await saveRecord_sb(rec);
+  if(!ok)showToast('⚠ Salvo localmente (sem conexão)','error');
+}
+
+// ===== SUPABASE REALTIME =====
+let _realtimeWs=null;
+let _realtimeReconnectTimer=null;
+let _realtimeHeartbeat=null;
+
+function startRealtime(){
+  if(_realtimeWs&&_realtimeWs.readyState===WebSocket.OPEN)return;
+
+  const wsUrl=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SB_KEY+'&vsn=1.0.0';
+
+  try{
+    _realtimeWs=new WebSocket(wsUrl);
+  }catch(e){
+    console.warn('Realtime WS error',e);
+    scheduleRealtimeReconnect();
+    return;
+  }
+
+  _realtimeWs.onopen=()=>{
+    console.log('Realtime conectado ✓');
+
+    // Envia join no canal de records
+    const joinRecords={
+      topic:'realtime:public:records',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'records'},
+        {event:'UPDATE',schema:'public',table:'records'},
+      ]}},
+      ref:'1'
+    };
+    const joinTanks={
+      topic:'realtime:public:tanks',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'tanks'},
+        {event:'UPDATE',schema:'public',table:'tanks'},
+      ]}},
+      ref:'2'
+    };
+    _realtimeWs.send(JSON.stringify(joinRecords));
+    _realtimeWs.send(JSON.stringify(joinTanks));
+
+    // Heartbeat a cada 25s para manter conexão viva
+    _realtimeHeartbeat=setInterval(()=>{
+      if(_realtimeWs&&_realtimeWs.readyState===WebSocket.OPEN){
+        _realtimeWs.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'}));
+      }
+    },25000);
+  };
+
+  _realtimeWs.onmessage=(ev)=>{
+    try{
+      const msg=JSON.parse(ev.data);
+      if(msg.event==='postgres_changes'||msg.event==='INSERT'||msg.event==='UPDATE'){
+        const payload=msg.payload?.data||msg.payload;
+        if(!payload)return;
+        const table=payload.table||msg.topic?.split(':')[2];
+        const row=payload.record||payload.new;
+        if(!row)return;
+
+        if(table==='records'&&row.data){
+          onRealtimeRecord(row.data);
+        }
+        if(table==='tanks'&&row.data){
+          onRealtimeTank(row.data);
+        }
+      }
+    }catch(e){}
+  };
+
+  _realtimeWs.onclose=()=>{
+    clearInterval(_realtimeHeartbeat);
+    console.warn('Realtime desconectado, reconectando em 5s...');
+    scheduleRealtimeReconnect();
+  };
+
+  _realtimeWs.onerror=()=>{
+    _realtimeWs.close();
+  };
+}
+
+function scheduleRealtimeReconnect(){
+  clearTimeout(_realtimeReconnectTimer);
+  _realtimeReconnectTimer=setTimeout(()=>{
+    if(currentUser)startRealtime();
+  },5000);
+}
+
+function stopRealtime(){
+  clearInterval(_realtimeHeartbeat);
+  clearTimeout(_realtimeReconnectTimer);
+  if(_realtimeWs){_realtimeWs.close();_realtimeWs=null;}
+}
+
+function onRealtimeRecord(rec){
+  if(!rec||!rec.id)return;
+  // Ignora registros salvos pelo próprio usuário (já estão em memória)
+  if(rec.username===currentUser?.username)return;
+
+  const idx=records.findIndex(r=>r.id===rec.id);
+  if(idx>=0){
+    if(rec.timestamp>records[idx].timestamp)records[idx]=rec;
+    else return;
+  } else {
+    records.push(rec);
+  }
+
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  renderTankView();updateMapSub();
+
+  // Atualiza view ativa
+  const activeView=document.querySelector('.view.active')?.id;
+  if(activeView==='view-painel')renderPainel();
+  if(activeView==='view-graficos')renderCharts();
+  if(activeView==='view-history')renderGlobalHistory();
+
+  // Badge discreto de atualização
+  showSyncBadge(`↻ ${rec.tankName||'Tanque'} atualizado por ${rec.user||'usuário'}`);
+}
+
+function onRealtimeTank(tank){
+  if(!tank||!tank.id)return;
+  const idx=tanks.findIndex(t=>t.id===tank.id);
+  if(idx>=0)tanks[idx]=tank;
+  localStorage.setItem('kc_tanks',JSON.stringify(tanks));
+  renderTankView();updateMapSub();
+}
+
+function showSyncBadge(msg){
+  const el=document.getElementById('sync-status');
+  if(!el)return;
+  el.textContent=msg||'↻ Sincronizado';
+  el.style.display='block';
+  el.style.background='var(--ok)';
+  setTimeout(()=>{el.style.display='none';},3000);
+}
+
+
+async function load(){
+  loadUsers();loadLimits();
+  showSyncStatus('Sincronizando...');
+  try{
+    // 1. Tanques do Supabase
+    const sbTanks=await sbGet('tanks','select=id,data');
+    if(sbTanks&&sbTanks.length){
+      tanks=sbTanks.map(r=>r.data).filter(Boolean);
+    }
+  }catch(e){console.warn('load tanks error',e);}
+
+  try{
+    // 2. Registros do Supabase
+    const sbRecs=await sbGet('records','select=data&order=timestamp.asc');
+    if(sbRecs&&sbRecs.length){
+      records=sbRecs.map(r=>r.data).filter(Boolean);
+    }
+  }catch(e){console.warn('load records error',e);}
+
+  try{
+    // 3. Rações do Supabase
+    const sbRac=await sbGet('racoes','select=data');
+    if(sbRac&&sbRac.length){
+      racoes=sbRac.map(r=>r.data).filter(Boolean);
+    }
+  }catch(e){console.warn('load racoes error',e);}
+
+  // 4. Remove fantasmas e garante tanques dos grupos
+  const validIds=new Set();
+  GROUPS.forEach(g=>g.tanks.forEach(td=>validIds.add('tank_'+g.id+'_'+td.num)));
+  tanks=tanks.filter(t=>validIds.has(t.id)||!t.id.startsWith('tank_'));
+  GROUPS.forEach(g=>g.tanks.forEach(td=>{
+    if(!tanks.find(x=>x.id==='tank_'+g.id+'_'+td.num))
+      tanks.push({id:'tank_'+g.id+'_'+td.num,groupId:g.id,name:td.name,num:td.num,species:'Não informado',volume:td.volume,shape:td.shape,large:td.large||false});
+  }));
+
+  // 5. Garante rações
+  if(!racoes.length)racoes=DEFAULT_RACOES.map((x,i)=>({...x,id:'r'+i}));
+
+  // 6. Persiste localmente como cache
+  localStorage.setItem('kc_tanks',JSON.stringify(tanks));
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  localStorage.setItem('kc_racoes',JSON.stringify(racoes));
+
+  hideSyncStatus();
+}
+
+function showSyncStatus(msg){
+  let el=document.getElementById('sync-status');
+  if(!el){
+    el=document.createElement('div');el.id='sync-status';
+    el.style.cssText='position:fixed;top:52px;left:0;right:0;background:var(--accent);color:#fff;text-align:center;font-size:11px;font-family:"JetBrains Mono",monospace;padding:5px;z-index:999;';
+    document.body.appendChild(el);
+  }
+  el.textContent=msg;el.style.display='block';
+}
+function hideSyncStatus(){
+  const el=document.getElementById('sync-status');if(el)el.style.display='none';
+}
+
+// ===== AUTH =====
+function isAdmin(){return currentUser?.role==='admin';}
+async function enterApp(u){
+  currentUser={username:u,...USERS[u]};
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('topbar-name').textContent=currentUser.name.split(' ')[0];
+  document.getElementById('topbar-avatar').textContent=currentUser.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+  document.getElementById('topbar-role').textContent=isAdmin()?'Admin':'';
+  document.getElementById('topbar-role').style.display=isAdmin()?'inline':'none';
+  document.getElementById('nav-settings').style.display=isAdmin()?'flex':'none';
+
+  // Primeiro renderiza com dados do localStorage para não travar a tela
+  loadLimits();loadUsers();
+  _loadFromLocalStorage();
+  currentGroupId=null;renderTankView();updateMapSub();scheduleMidnightLogout();
+  populateChartTankSelect();
+
+  // Depois sincroniza com Supabase em background
+  try{await load();}catch(e){console.warn('load error',e);}
+  renderTankView();updateMapSub();populateChartTankSelect();
+
+  // Injeta dados históricos em background sem bloquear
+  try{await injectHistoricalData();}catch(e){console.warn('injectHistoricalData error',e);}
+  try{await injectBioQty2604();}catch(e){console.warn('injectBioQty2604 error',e);}
+  try{await injectQualidadeAgua();}catch(e){console.warn('injectQualidadeAgua error',e);}
+  renderTankView();updateMapSub();populateChartTankSelect();
+  startRealtime(); // inicia sync em tempo real
+}
+
+function _loadFromLocalStorage(){
+  // Carrega do cache local imediatamente (sem await)
+  const t=localStorage.getItem('kc_tanks'),r=localStorage.getItem('kc_records'),rc=localStorage.getItem('kc_racoes');
+  if(t)tanks=JSON.parse(t);
+  if(r)records=JSON.parse(r);
+  if(rc)racoes=JSON.parse(rc);
+  else if(!racoes.length)racoes=DEFAULT_RACOES.map((x,i)=>({...x,id:'r'+i}));
+  // Garante tanques dos grupos
+  const validIds=new Set();
+  GROUPS.forEach(g=>g.tanks.forEach(td=>validIds.add('tank_'+g.id+'_'+td.num)));
+  tanks=tanks.filter(t=>validIds.has(t.id)||!t.id.startsWith('tank_'));
+  GROUPS.forEach(g=>g.tanks.forEach(td=>{
+    if(!tanks.find(x=>x.id==='tank_'+g.id+'_'+td.num))
+      tanks.push({id:'tank_'+g.id+'_'+td.num,groupId:g.id,name:td.name,num:td.num,species:'Não informado',volume:td.volume,shape:td.shape,large:td.large||false});
+  }));
+}
+
+async function doLogin(){
+  const u=document.getElementById('login-user').value.trim().toLowerCase(),p=document.getElementById('login-pass').value;
+  loadUsers();
+  if(USERS[u]&&USERS[u].pass===p){saveSession(u);enterApp(u);}
+  else{document.getElementById('login-error').style.display='block';setTimeout(()=>document.getElementById('login-error').style.display='none',3000);}
+}
+function doLogout(){clearSession();forceLogout();}
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
+  (function tryAutoLogin(){loadUsers();const u=loadSession();if(u)enterApp(u);})();
+  // Inicializa data do painel
+  const pd=document.getElementById('painel-date');if(pd&&!pd.value)pd.value=new Date().toISOString().split('T')[0];
+  // Inicializa data dos lançamentos
+  const ld=document.getElementById('lanc-date');if(ld&&!ld.value)ld.value=new Date().toISOString().split('T')[0];
+});
+
+// ===== NAV =====
+function showView(v){
+  if(v==='settings'&&!isAdmin()){showToast('Acesso restrito a administradores','error');return;}
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
+  if(v==='history')renderGlobalHistory();
+  if(v==='tanques')renderTankView();
+  if(v==='settings')renderSettings();
+  if(v==='graficos'){populateChartTankSelect();renderCharts();}
+  if(v==='lancamentos'){initLancamentos();}
+  if(v==='painel')renderPainel();
+  document.getElementById('main').scrollTop=0;
+}
+function goHome(){currentGroupId=null;showView('tanques');}
+
+// ===== STATUS & ALERTAS =====
+function isAlert(val,key){
+  if(val==null)return false;
+  const L=LIMITS[key];if(!L)return false;
+  if(L.min!=null&&val<L.min)return true;
+  if(L.max!=null&&val>L.max)return true;
+  return false;
+}
+function alertLevel(val,key){
+  if(!isAlert(val,key))return'ok';
+  const L=LIMITS[key];
+  // nível crítico: >20% fora do limite
+  if(L.min!=null&&val<L.min*0.8)return'danger';
+  if(L.max!=null&&val>L.max*1.2)return'danger';
+  return'warn';
+}
+function trafficLight(val,key){
+  if(val==null)return'⚪';
+  const lv=alertLevel(val,key);
+  if(lv==='danger')return'🔴';
+  if(lv==='warn')return'🟡';
+  return'🟢';
+}
+function tankStatus(id){
+  const official=getOfficialRecords(id);
+  if(!official.length)return'nodata';
+  const l=official[official.length-1];
+  if(isAlert(l.temp,'temp')||isAlert(l.o2,'o2')||(l.amonia&&l.amonia>LIMITS.amonia.max*2))return'danger';
+  if((l.o2&&l.o2<(LIMITS.o2.min||5)+1)||isAlert(l.amonia,'amonia'))return'warn';
+  return'ok';
+}
+// Retorna apenas o registro oficial (último por dia) para cada dia, ordenado por data
+// Se tankId tiver hapas, pode filtrar por hapa (null = consolidado = soma)
+function getOfficialRecords(tankId, hapa=undefined){
+  const byDay={};
+  let recs=records.filter(r=>r.tankId===tankId&&!r.overridden);
+  if(hapa!==undefined&&hapa!==null){
+    // Hapa específico
+    recs=recs.filter(r=>r.hapa===hapa);
+  }
+  // Se hapa===null (consolidado) e tanque tem hapas: agrega por dia somando hapas
+  const tank=tanks.find(t=>t.id===tankId);
+  if((hapa===undefined||hapa===null)&&tank?.hapaNames?.length){
+    // Agrupa por dia e soma campos numéricos
+    recs.forEach(r=>{
+      if(!byDay[r.date]){byDay[r.date]={...r,_hapasCount:1};}
+      else{
+        // soma campos numéricos relevantes
+        const d=byDay[r.date];
+        ['qty','mort','racaoIdealG','sobra','racaoG'].forEach(k=>{
+          if(r[k]!=null)d[k]=(d[k]||0)+r[k];
+        });
+        // biometria: média ponderada por qty
+        if(r.bio!=null&&r.qty!=null){
+          const prevBio=d.bio||0;const prevQty=d.qty-r.qty||0;
+          d.bio=(prevBio*prevQty+r.bio*r.qty)/(prevQty+r.qty);
+        }
+        // parâmetros de água: média
+        ['temp','o2','amonia','ph'].forEach(k=>{
+          if(r[k]!=null){d[k]=((d[k]||0)*d._hapasCount+r[k])/(d._hapasCount+1);}
+        });
+        d._hapasCount++;
+        d.hapa=null; // consolidado
+      }
+    });
+    return Object.values(byDay).sort((a,b)=>a.date.localeCompare(b.date));
+  }
+  // Sem hapas ou hapa específico: último por dia
+  recs.forEach(r=>{
+    if(!byDay[r.date]||r.timestamp>byDay[r.date].timestamp)byDay[r.date]=r;
+  });
+  return Object.values(byDay).sort((a,b)=>a.date.localeCompare(b.date));
+}
+function lastRec(id){const off=getOfficialRecords(id,null);return off.length?off[off.length-1]:null;}
+function lastRecHapa(id,hapa){
+  if(!hapa)return lastRec(id);
+  const off=getOfficialRecords(id,hapa);return off.length?off[off.length-1]:null;
+}
+function recForDate(tankId,date,hapa=null){
+  let dayRecs=records.filter(r=>r.tankId===tankId&&r.date===date&&!r.overridden);
+  if(hapa)dayRecs=dayRecs.filter(r=>r.hapa===hapa);
+  else{const tank=tanks.find(t=>t.id===tankId);if(!tank?.hapas)dayRecs=dayRecs.filter(r=>!r.hapa);}
+  if(!dayRecs.length)return null;
+  return dayRecs.reduce((a,b)=>a.timestamp>b.timestamp?a:b);
+}
+function groupStatus(gid){const gt=tanks.filter(t=>t.groupId===gid);if(gt.some(t=>tankStatus(t.id)==='danger'))return'danger';if(gt.some(t=>tankStatus(t.id)==='warn'))return'warn';if(gt.every(t=>tankStatus(t.id)==='nodata'))return'nodata';return'ok';}
+function updateMapSub(){const total=tanks.length,alerts=tanks.filter(t=>['warn','danger'].includes(tankStatus(t.id))).length;document.getElementById('map-sub').textContent=`${total} tanque${total!==1?'s':''}${alerts?` · ⚠ ${alerts} com alerta`:' · todos normais'}`;}
+
+// ===== RENDER TANKS =====
+function renderTankView(){
+  const content=document.getElementById('tank-content'),title=document.getElementById('view-tanques-title'),crumb=document.getElementById('breadcrumb-bar'),fab=document.getElementById('fab-btn');
+  if(!currentGroupId){title.textContent='Tanques';crumb.innerHTML='';fab.style.display='none';content.innerHTML=renderGroups();}
+  else{
+    const g=GROUPS.find(x=>x.id===currentGroupId);
+    title.textContent=g.name;
+    crumb.innerHTML=`<div class="breadcrumb"><span class="breadcrumb-link" onclick="goBack()">Tanques</span><span class="breadcrumb-sep">›</span><span class="breadcrumb-cur">${g.name}</span></div>`;
+    fab.style.display='flex';content.innerHTML=renderGroupTanks(g);
+  }
+}
+function renderGroups(){
+  return'<div class="groups-grid">'+GROUPS.map(g=>{
+    const gt=tanks.filter(t=>t.groupId===g.id);
+    const dc=gt.filter(t=>tankStatus(t.id)==='danger').length,wc=gt.filter(t=>tankStatus(t.id)==='warn').length;
+    const badge=dc?`<span class="group-alert-badge danger">⚠ ${dc} crítico${dc>1?'s':''}</span>`:wc?`<span class="group-alert-badge warn">⚠ ${wc} alerta${wc>1?'s':''}</span>`:gt.length?`<span class="group-alert-badge ok">✓ normais</span>`:'';
+    return`<div class="group-card" onclick="openGroup('${g.id}')"><div class="group-card-icon">${g.icon}</div><div class="group-card-name">${g.name}</div><div class="group-card-count">${gt.length} tanque${gt.length!==1?'s':''}</div><div class="group-card-alerts">${badge}</div><div class="group-card-arrow">›</div></div>`;
+  }).join('')+'</div>';
+}
+function renderGroupTanks(g){
+  // Ordena tanques em ordem crescente por número
+  const gt=tanks.filter(t=>t.groupId===g.id).sort((a,b)=>(a.num||0)-(b.num||0));
+  if(!gt.length)return`<div style="padding:36px 13px;text-align:center;color:var(--text3);font-size:13px;">Nenhum tanque.<br>Use o + para adicionar.</div>`;
+  if(g.id==='geo-elevada'){
+    const small=gt.filter(t=>!t.large),big=gt.filter(t=>t.large);
+    return'<div class="tanks-grid paired">'+small.map(t=>tankCardHtml(t)).join('')+big.map(t=>{
+      const s=tankStatus(t.id),r=lastRec(t.id);
+      const isEmpty=!!t.empty;
+      const params=isEmpty?`<div class="tank-card-nodata" style="color:#b0bec5;">vazio</div>`:r?`<div class="tank-card-params" style="align-items:center;">${r.temp!=null?`<div class="tank-card-param" style="justify-content:center;">Temp <span class="${r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max?'warn':'ok'}">${r.temp}°C</span></div>`:''}${r.o2!=null?`<div class="tank-card-param" style="justify-content:center;">O₂ <span class="${r.o2<LIMITS.o2.min?'warn':'ok'}">${r.o2}mg/L</span></div>`:''}</div>`:`<div class="tank-card-nodata">sem registros</div>`;
+      return`<div class="tank-card circle-large ${isEmpty?'empty':s}" onclick="openTank('${t.id}')"><div class="tank-card-top" style="justify-content:center;gap:8px;"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div><div class="tank-card-species">${isEmpty?'vazio':'ativo'}</div>${params}</div>`;
+    }).join('')+'</div>';
+  }
+  return`<div class="tanks-grid${g.paired?' paired':''}">` + gt.map(t=>tankCardHtml(t)).join('') + '</div>';
+}
+function tankCardHtml(t){
+  const isEmpty=!!t.empty;
+  const s=isEmpty?'empty':tankStatus(t.id);
+  const r=lastRec(t.id),isCircle=t.shape==='circle';
+  let params='';
+  if(isEmpty){
+    params=`<div class="tank-card-nodata" style="color:#b0bec5;">vazio</div>`;
+  } else if(r){
+    const tc=r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max)?(r.temp<20||r.temp>33?'danger':'warn'):'ok';
+    const oc=r.o2&&r.o2<LIMITS.o2.min?(r.o2<4?'danger':'warn'):'ok';
+    params=`<div class="tank-card-params">${r.temp!=null?`<div class="tank-card-param">Temp <span class="${tc}">${r.temp}°C</span></div>`:''}${r.o2!=null?`<div class="tank-card-param">O₂ <span class="${oc}">${r.o2}mg/L</span></div>`:''}${r.ph!=null?`<div class="tank-card-param">pH <span class="ok">${r.ph}</span></div>`:''}</div>`;
+  } else {
+    params=`<div class="tank-card-nodata">sem registros</div>`;
+  }
+  const statusLabel=isEmpty?'vazio':'ativo';
+  return`<div class="tank-card ${s}${isCircle?' circle-shape':''}" onclick="openTank('${t.id}')"><div class="tank-card-top"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div><div class="tank-card-species">${statusLabel}</div>${params}</div>`;
+}
+function openGroup(id){currentGroupId=id;renderTankView();document.getElementById('main').scrollTop=0;}
+function goBack(){currentGroupId=null;renderTankView();document.getElementById('main').scrollTop=0;}
+
+// ===== TANK SHEET =====
+function openTank(id){
+  activeTank=tanks.find(t=>t.id===id);if(!activeTank)return;
+  activeHapa=null;
+  const hapaCount=activeTank.hapaNames?.length||0;
+  document.getElementById('sheet-tank-name').textContent=activeTank.name+(hapaCount?' 🪣':'');
+  document.getElementById('sheet-tank-meta').textContent=`${activeTank.species} · ${activeTank.volume}m³${hapaCount?' · '+hapaCount+' hapas':''}`;
+  renderHapaSelector();
+  activeTab='registro';renderSheetTabs();renderSheetBody();
+  document.getElementById('tank-sheet').classList.add('open');
+  document.getElementById('sheet-overlay').classList.add('open');
+}
+function closeSheet(){
+  activeTank=null;activeHapa=null;
+  document.getElementById('tank-sheet').classList.remove('open');
+  document.getElementById('sheet-overlay').classList.remove('open');
+  const bar=document.getElementById('hapa-selector');
+  if(bar){bar.style.display='none';bar.innerHTML='';}
+}
+
+function renderHapaSelector(){
+  const bar=document.getElementById('hapa-selector');
+  if(!bar)return;
+  const names=activeTank?.hapaNames;
+  if(!names||!names.length){bar.style.display='none';bar.innerHTML='';return;}
+  bar.style.display='flex';
+  let html=`<div class="hapa-chip${activeHapa===null?' active consolidated':' consolidated'}" onclick="selectHapa(null)">📊 Consolidado</div>`;
+  names.forEach((nm,i)=>{
+    const hapaNum=i+1;
+    const hasData=records.some(r=>r.tankId===activeTank.id&&r.hapa===hapaNum);
+    html+=`<div class="hapa-chip${activeHapa===hapaNum?' active':''}" onclick="selectHapa(${hapaNum})">${nm}${hasData?' ●':''}</div>`;
+  });
+  bar.innerHTML=html;
+}
+
+// Helper: nome do hapa a partir do número
+function hapaLabel(tank,hapaNum){
+  if(!hapaNum)return null;
+  return tank?.hapaNames?.[hapaNum-1]||`Hapa ${hapaNum}`;
+}
+
+function selectHapa(h){
+  activeHapa=h;
+  renderHapaSelector();
+  renderSheetBody(); // re-renderiza o form/histórico para o hapa selecionado
+}
+function switchTab(t){activeTab=t;renderSheetTabs();renderSheetBody();}
+function renderSheetTabs(){document.querySelectorAll('.sheet-tab').forEach((el,i)=>el.classList.toggle('active',['registro','historico','configurar'][i]===activeTab));}
+function renderSheetBody(){const body=document.getElementById('sheet-body');if(activeTab==='registro')body.innerHTML=buildRegistroForm();if(activeTab==='historico'){body.innerHTML='';body.appendChild(buildHistoricoEl());}if(activeTab==='configurar')body.innerHTML=buildConfigForm();}
+
+// ===== REGISTRO FORM =====
+function buildRegistroForm(){
+  // Bloqueia se tanque vazio
+  if(activeTank?.empty){
+    return`<div style="text-align:center;padding:40px 20px;">
+      <div style="font-size:40px;margin-bottom:12px;">🚫</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text2);">Tanque Vazio</div>
+      <div style="font-size:13px;color:var(--text3);margin-top:6px;">Este tanque está marcado como vazio.<br>Reative em Configurar para lançar registros.</div>
+    </div>`;
+  }
+  const today=new Date().toISOString().split('T')[0];
+  const names=activeTank?.hapaNames;
+  if(names&&names.length&&activeHapa===null){
+    return`<div style="padding:20px 0;text-align:center;color:var(--text2);">
+      <div style="font-size:32px;margin-bottom:12px;">🪣</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">Visão Consolidada</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;">Selecione um hapa acima para registrar.</div>
+      <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">
+        ${names.map((nm,i)=>`<button onclick="selectHapa(${i+1})" style="padding:8px 16px;background:var(--accent-dim);border:1.5px solid var(--accent2);color:var(--accent);border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;">🪣 ${nm}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+  return buildRegistroFormForDate(today);
+}
+
+function buildRegistroFormForDate(date){
+  const hapa=activeHapa;
+  const hapaName=hapa?hapaLabel(activeTank,hapa):null;
+  const last=hapa?lastRecHapa(activeTank.id,hapa):lastRec(activeTank.id);
+  const existing=recForDate(activeTank.id,date,hapa);
+  const src=existing||null;
+  const admin=isAdmin();
+
+  // Banner de hapa ativo com nome
+  const hapaBanner=hapa?`<div style="background:rgba(22,163,74,0.08);border:1.5px solid var(--ok-border);border-radius:var(--r-sm);padding:8px 12px;margin-bottom:10px;font-size:12px;font-weight:600;color:var(--ok);">🪣 Registrando: ${hapaName}</div>`:'';
+
+  // Lote: prioridade = registro existente > último registro > lote salvo no tanque > vazio
+  const lastLote=src?.lote||last?.lote||activeTank.lote||'';
+  const lastQty=src?.qty??last?.qty??'';
+  const lastBio=src?.bio??last?.bio??'';
+  const lastRacaoNome=src?.racao||last?.racao||'';
+  const lastRacaoIdeal=src?.racaoIdealG??last?.racaoIdealG??'';
+  // Sobra: só do registro existente (não pré-preenche do dia anterior)
+  const lastSobra=src?.sobra??'';
+  // Ração real = ideal - sobra (calculado automaticamente)
+  const lastRacaoReal=src?.racaoG??'';
+  const lastTratosIdeal=src?.tratosIdeal??last?.tratosIdeal??'';
+  const lastTratosReal=src?.tratos??'';
+  const lastTemp=src?.temp??'';
+  const lastO2=src?.o2??'';
+  const lastAmonia=src?.amonia??'';
+  const lastPh=src?.ph??'';
+  const lastMort=src?.mort??0;
+
+  const racaoOpts=racoes.map(r=>`<option value="${r.nome}" ${lastRacaoNome===r.nome?'selected':''}>${r.nome}${r.kg?' ('+Math.round(r.kg*1000)+'g/copo)':''}</option>`).join('');
+
+  const existsBanner=existing?`<div class="rec-exists-banner">⚠️ Já existe registro para este dia. Os dados foram carregados. Salvar vai sobreescrever.</div>`:'';
+
+  // Helper: campo bloqueado para não-admin
+  const lock=(id)=>admin?'':` readonly style="background:#f0f4f8;color:#8a9db5;cursor:not-allowed;"`;
+  const admBadge=`<span style="font-size:9px;color:var(--accent);font-weight:700;background:var(--accent-dim);border-radius:6px;padding:1px 5px;">ADM</span>`;
+  const opBadge=`<span style="font-size:9px;color:var(--ok);font-weight:700;background:var(--ok-dim);border-radius:6px;padding:1px 5px;">OP</span>`;
+
+  return `${existsBanner}${hapaBanner}
+  <div class="form-section"><div class="form-section-title">Identificação</div><div class="form-grid">
+    <div class="form-field full"><label>Lote</label><input type="text" id="reg-lote" placeholder="Ex: Lote A - Jan/25" value="${lastLote}" onchange="updateTankLote(this.value)"></div>
+    <div class="form-field full"><label>Data</label><input type="date" id="reg-date" value="${date}" onchange="onDateChange()"></div>
+  </div></div>
+  <div class="form-section"><div class="form-section-title">Parâmetros da água</div><div class="form-grid">
+    <div class="form-field"><label>Temperatura (°C)</label><input type="number" id="reg-temp" placeholder="27.0" step="0.1" inputmode="decimal" value="${lastTemp}" oninput="checkAlerts()"><div class="param-alert" id="alert-temp"></div></div>
+    <div class="form-field"><label>Oxigênio (mg/L)</label><input type="number" id="reg-o2" placeholder="7.0" step="0.1" inputmode="decimal" value="${lastO2}" oninput="checkAlerts()"><div class="param-alert" id="alert-o2"></div></div>
+    <div class="form-field"><label>Amônia (mg/L)</label><input type="number" id="reg-amonia" placeholder="0.1" step="0.01" inputmode="decimal" value="${lastAmonia}" oninput="checkAlerts()"><div class="param-alert" id="alert-amonia"></div></div>
+    <div class="form-field"><label>pH</label><input type="number" id="reg-ph" placeholder="7.0" step="0.1" inputmode="decimal" value="${lastPh}"></div>
+  </div></div>
+  <div class="form-section"><div class="form-section-title">Estoque</div><div class="form-grid">
+    <div class="form-field"><label>Mortalidade do dia</label><input type="number" id="reg-mort" placeholder="0" inputmode="numeric" value="${lastMort}" oninput="calcQty()"></div>
+    <div class="form-field"><label>Qtd. de peixes <span style="font-size:10px;color:var(--text3);">(auto)</span></label><input type="number" id="reg-qty" placeholder="—" inputmode="numeric" value="${lastQty}"></div>
+    <div class="form-field full"><label>Biometria (g)</label><input type="number" id="reg-bio" placeholder="250" step="0.1" inputmode="decimal" value="${lastBio}"></div>
+  </div></div>
+  <div class="form-section"><div class="form-section-title">Ração</div><div class="form-grid">
+    <div class="form-field full"><label>Tipo de ração</label><select id="reg-racao"${!admin?' disabled style="background:#f0f4f8;color:#8a9db5;"':''}><option value="">Selecione...</option>${racaoOpts}</select></div>
+    <div class="form-field"><label>Ração Ideal (g) ${admBadge}</label><input type="number" id="reg-racao-ideal" placeholder="500" step="0.001" inputmode="decimal" value="${lastRacaoIdeal}"${lock('reg-racao-ideal')} oninput="calcRacaoReal()"></div>
+    <div class="form-field"><label>Sobra (g) ${opBadge}</label><input type="number" id="reg-sobra" placeholder="0" step="0.001" inputmode="decimal" value="${lastSobra}" oninput="calcRacaoReal()"></div>
+    <div class="form-field"><label>Ração Real (g) <span style="font-size:9px;color:var(--text3);">(auto)</span></label><input type="number" id="reg-racao-real" placeholder="—" step="0.001" inputmode="decimal" value="${lastRacaoReal}" readonly style="background:#f0f4f8;color:#0d1f35;font-weight:600;"></div>
+    <div class="form-field"><label>Tratos Ideal/dia ${admBadge}</label><input type="number" id="reg-tratos-ideal" placeholder="3" inputmode="numeric" value="${lastTratosIdeal}"${lock('reg-tratos-ideal')}></div>
+    <div class="form-field"><label>Tratos Real/dia ${opBadge}</label><input type="number" id="reg-tratos" placeholder="—" inputmode="numeric" value="${lastTratosReal}"></div>
+  </div></div>
+  <div class="form-section"><div class="form-section-title">Observações</div><div class="form-field full"><textarea id="reg-obs" placeholder="Anotações...">${src?.obs||''}</textarea></div></div>
+  <button class="btn-save" onclick="saveRecord()">Salvar Registro</button><div style="height:14px;"></div>`;
+}
+
+function calcRacaoReal(){
+  const ideal=parseFloat(document.getElementById('reg-racao-ideal')?.value)||0;
+  const sobra=parseFloat(document.getElementById('reg-sobra')?.value)||0;
+  const real=Math.max(0,ideal-sobra);
+  const el=document.getElementById('reg-racao-real');
+  if(el&&(ideal||sobra))el.value=parseFloat(real.toFixed(3));
+}
+
+function updateTankLote(val){
+  if(activeTank&&val.trim()){activeTank.lote=val.trim();save();}
+}
+
+function onDateChange(){
+  const date=document.getElementById('reg-date')?.value;
+  if(!date||!activeTank)return;
+  document.getElementById('sheet-body').innerHTML=buildRegistroFormForDate(date);
+}
+
+function calcQty(){
+  const mort=parseInt(document.getElementById('reg-mort')?.value)||0;
+  const last=lastRec(activeTank.id);
+  const base=last?.qty??null;
+  const qtyEl=document.getElementById('reg-qty');
+  if(qtyEl&&base!=null)qtyEl.value=Math.max(0,base-mort);
+}
+
+function checkAlerts(){
+  const temp=parseFloat(document.getElementById('reg-temp')?.value);
+  const o2=parseFloat(document.getElementById('reg-o2')?.value);
+  const amonia=parseFloat(document.getElementById('reg-amonia')?.value);
+  const at=document.getElementById('alert-temp'),ao=document.getElementById('alert-o2'),aa=document.getElementById('alert-amonia');
+  if(at){if(!isNaN(temp)&&(temp<LIMITS.temp.min||temp>LIMITS.temp.max)){at.textContent=`⚠ Ideal: ${LIMITS.temp.min}–${LIMITS.temp.max}°C`;at.className='param-alert show'+(temp<20||temp>33?' danger':'');}else at.className='param-alert';}
+  if(ao){if(!isNaN(o2)&&o2<LIMITS.o2.min){ao.textContent=`⚠ O₂ baixo — mín ${LIMITS.o2.min}mg/L`;ao.className='param-alert show'+(o2<4?' danger':'');}else ao.className='param-alert';}
+  if(aa){if(!isNaN(amonia)&&amonia>LIMITS.amonia.max){aa.textContent=`⚠ Amônia alta — máx ${LIMITS.amonia.max}mg/L`;aa.className='param-alert show'+(amonia>1?' danger':'');}else aa.className='param-alert';}
+}
+
+function collectRecord(){
+  const tempVal=parseFloat(document.getElementById('reg-temp').value);
+  const ideal=parseFloat(document.getElementById('reg-racao-ideal').value)||null;
+  const sobra=parseFloat(document.getElementById('reg-sobra').value)||null;
+  let racaoG=parseFloat(document.getElementById('reg-racao-real').value)||null;
+  if(ideal!=null&&sobra!=null)racaoG=parseFloat(Math.max(0,ideal-sobra).toFixed(3));
+  return{
+    id:'rec_'+Date.now(),
+    tankId:activeTank.id,tankName:activeTank.name,
+    hapa:activeHapa||null,
+    date:document.getElementById('reg-date').value,
+    user:currentUser.name,username:currentUser.username,
+    timestamp:new Date().toISOString(),
+    lote:document.getElementById('reg-lote').value.trim(),
+    temp:!isNaN(tempVal)?Math.round(tempVal*10)/10:null,
+    o2:parseFloat(document.getElementById('reg-o2').value)||null,
+    amonia:parseFloat(document.getElementById('reg-amonia').value)||null,
+    ph:parseFloat(document.getElementById('reg-ph').value)||null,
+    mort:parseInt(document.getElementById('reg-mort').value)||0,
+    qty:parseInt(document.getElementById('reg-qty').value)||null,
+    bio:parseFloat(document.getElementById('reg-bio').value)||null,
+    racao:document.getElementById('reg-racao').value,
+    racaoIdealG:ideal,
+    sobra:sobra,
+    racaoG:racaoG,
+    tratosIdeal:parseInt(document.getElementById('reg-tratos-ideal')?.value)||null,
+    tratos:parseInt(document.getElementById('reg-tratos').value)||null,
+    obs:document.getElementById('reg-obs').value,
+    hapa:activeHapa||null,
+  };
+}
+
+async function saveRecord(){
+  if(!activeTank)return;
+  const rec=collectRecord();
+  const date=rec.date;
+  const existing=recForDate(activeTank.id,date,activeHapa);
+
+  if(existing){
+    showConfirm(
+      'Registro existente',
+      `Já existe um registro para ${formatDate(date)}${activeHapa?` (${hapaLabel(activeTank,activeHapa)})`:''} neste tanque.\nSalvar manterá o original no histórico e usará este como o registro oficial do dia.`,
+      async()=>{
+        const idx=records.findIndex(r=>r.id===existing.id);
+        if(idx>=0){records[idx].overridden=true;await saveRecord_sb(records[idx]);}
+        await saveOneRecord(rec);
+        renderTankView();updateMapSub();showToast('Registro atualizado ✓','ok');switchTab('historico');
+      }
+    );
+  } else {
+    await saveOneRecord(rec);
+    renderTankView();updateMapSub();showToast('Registro salvo ✓','ok');switchTab('historico');
+  }
+}
+
+// ===== CONFIRM DIALOG =====
+function showConfirm(title,msg,onOk,opts={}){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  confirmCallback=onOk;
+  // Modo somente OK (sem cancelar)
+  const cancelBtn=document.getElementById('confirm-overlay').querySelector('.btn-secondary');
+  if(cancelBtn)cancelBtn.style.display=opts.okOnly?'none':'';
+  document.getElementById('confirm-ok-btn').textContent=opts.okLabel||'Confirmar';
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function closeConfirm(){
+  document.getElementById('confirm-overlay').classList.remove('show');
+  confirmCallback=null;
+  const cancelBtn=document.getElementById('confirm-overlay').querySelector('.btn-secondary');
+  if(cancelBtn)cancelBtn.style.display='';
+  document.getElementById('confirm-ok-btn').textContent='Confirmar';
+}
+document.getElementById('confirm-ok-btn').addEventListener('click',()=>{if(confirmCallback)confirmCallback();closeConfirm();});
+
+// ===== HISTÓRICO =====
+function buildHistoricoEl(){
+  const div=document.createElement('div');
+  let recs=records.filter(r=>r.tankId===activeTank.id).slice().reverse();
+
+  // Filtra por hapa se necessário
+  if(activeTank?.hapas&&activeHapa!==null){
+    recs=recs.filter(r=>r.hapa===activeHapa);
+  }
+
+  if(!recs.length){
+    const msg=activeTank?.hapaNames?.length&&activeHapa!==null?`Nenhum registro para ${hapaLabel(activeTank,activeHapa)} ainda.`:'Nenhum registro ainda.<br>Use a aba Registro para adicionar.';
+    div.innerHTML=`<div class="history-empty">${msg}</div>`;return div;
+  }
+  recs.forEach(r=>{
+    const item=document.createElement('div');
+    item.className='history-item'+(r.overridden?' overridden':'');
+    const pctLabel=r.racaoIdealG&&r.racaoG?` · ${Math.round(r.racaoG/r.racaoIdealG*100)}% consumido`:'';
+    const hapaBadge=r.hapa?`<span class="hapa-badge">🪣 ${hapaLabel(activeTank,r.hapa)}</span>`:'';
+    const temAlimentacao=r.racao||r.racaoIdealG||r.sobra||r.racaoG||r.tratosIdeal||r.tratos;
+    const mortLine=r.mort>0?`<div style="margin-top:5px;font-size:12px;font-weight:700;color:var(--danger);">💀 Mortalidade: ${r.mort} peixes</div>`:'';
+    const pct=r.racaoIdealG&&r.racaoG?`<span style="font-weight:700;color:${Math.round(r.racaoG/r.racaoIdealG*100)>=90?'var(--ok)':Math.round(r.racaoG/r.racaoIdealG*100)>=70?'var(--warn)':'var(--danger)'}"> (${Math.round(r.racaoG/r.racaoIdealG*100)}%)</span>`:'';
+    item.innerHTML=`<div class="history-header"><div>
+      ${r.overridden?`<div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:2px;">⬜ SUBSTITUÍDO</div>`:''}
+      ${r.lote?`<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:2px;">📦 ${r.lote}${hapaBadge}</div>`:`<div>${hapaBadge}</div>`}
+      <div class="history-date">${formatDate(r.date)}${r.timestamp?' · '+formatTime(r.timestamp):''}</div>
+      <div class="history-user">por ${r.user}</div>
+    </div></div>
+    <div class="history-params">
+      ${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}
+      ${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}
+      ${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}
+      ${hP('pH',r.ph,'')}
+      ${hP('Peixes',r.qty,'un')}
+      ${hP('Biometria',r.bio,'g')}
+      ${hP('Mort.',r.mort||null,'un',r.mort>0)}
+    </div>
+    ${mortLine}
+    ${temAlimentacao?`
+    <div style="margin-top:8px;padding-top:8px;border-top:1.5px dashed var(--border);">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
+      <div class="history-params">
+        ${hPText('Tipo',r.racao||null)}
+        ${hP('Ideal',r.racaoIdealG,'g')}
+        ${hP('Sobra',r.sobra,'g')}
+        ${hP('Real',r.racaoG?r.racaoG+pct:null,'g',false)}
+        ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
+        ${hP('Tratos Real',r.tratos,'/dia')}
+      </div>
+    </div>`:''}
+    ${r.obs?`<div style="margin-top:4px;font-size:11px;color:var(--text2);">💬 ${r.obs}</div>`:''}`;
+    div.appendChild(item);
+  });
+  const s=document.createElement('div');s.style.height='14px';div.appendChild(s);return div;
+}
+function hP(label,val,unit,alert=false){
+  const d=val!=null?val+unit:'—';
+  const c=alert?'danger':'';
+  return`<div><div class="h-param-label">${label}</div><div class="h-param-val ${c}">${d}</div></div>`;
+}
+function hPText(label,val){
+  const d=val||'—';
+  return`<div style="grid-column:span 2"><div class="h-param-label">${label}</div><div class="h-param-val" style="font-size:11px;">${d}</div></div>`;
+}
+
+function buildConfigForm(){
+  const t=activeTank;
+  const admin=isAdmin();
+  const opts=GROUPS.map(g=>`<option value="${g.id}" ${t.groupId===g.id?'selected':''}>${g.name}</option>`).join('');
+  const hapasOn=!!(t.hapaNames&&t.hapaNames.length>0);
+  const hapaQty=hapasOn?t.hapaNames.length:'';
+
+  // Gera campos de nome para cada hapa existente
+  const hapaNameFields=hapasOn?t.hapaNames.map((nm,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;width:22px;flex-shrink:0;">#${i+1}</span>
+      <input type="text" id="cfg-hapa-name-${i}" value="${nm}" placeholder="Nome do hapa ${i+1}"
+        style="flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;color:var(--text);font-size:15px;outline:none;">
+    </div>`).join(''):'';
+
+  return`<div class="form-section"><div class="form-section-title">Dados do tanque</div>
+    <div class="config-field"><label>Nome</label><input type="text" id="cfg-name" value="${t.name}"></div>
+    <div class="config-field"><label>Espécie</label><input type="text" id="cfg-species" value="${t.species}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="config-field"><label>Volume (m³)</label><input type="number" id="cfg-vol" value="${t.volume}" inputmode="decimal"></div>
+      <div class="config-field"><label>Forma</label><select id="cfg-shape"><option value="rect" ${t.shape==='rect'?'selected':''}>Retangular</option><option value="circle" ${t.shape==='circle'?'selected':''}>Circular</option></select></div>
+    </div>
+    <div class="config-field"><label>Grupo</label><select id="cfg-group">${opts}</select></div>
+  </div>
+  <div class="form-section"><div class="form-section-title">Hapas ${admin?'':'<span style="font-size:10px;color:var(--text3);">(somente ADM)</span>'}</div>
+    <div class="hapa-toggle-row">
+      <div>
+        <div class="hapa-toggle-label">🪣 Possui Hapas</div>
+        <div class="hapa-toggle-sub">Subtanques dentro deste tanque</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="cfg-hapas-on" ${hapasOn?'checked':''} ${!admin?'disabled':''} onchange="toggleHapasInput(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="hapas-qty-row" style="display:${hapasOn?'block':'none'};">
+      <div class="config-field">
+        <label>Quantidade de Hapas</label>
+        <input type="number" id="cfg-hapas-qty" value="${hapaQty}" min="1" max="30"
+          inputmode="numeric" placeholder="Ex: 4" ${!admin?'readonly style="background:#f0f4f8;color:#8a9db5;"':''}
+          oninput="updateHapaNameFields()">
+      </div>
+      <div style="margin-top:10px;">
+        <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Nomes dos Hapas</div>
+        <div id="hapa-names-list">${hapaNameFields}</div>
+      </div>
+    </div>
+  </div>
+  <div class="form-section"><div class="form-section-title">Status do Tanque</div>
+    <div class="hapa-toggle-row">
+      <div>
+        <div class="hapa-toggle-label">🚫 Tanque Vazio</div>
+        <div class="hapa-toggle-sub">Bloqueia novos registros e lançamentos</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="cfg-empty" ${t.empty?'checked':''} onchange="toggleEmptyTank(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+  <button class="btn-save" onclick="saveTankConfig()">Salvar</button>
+  ${admin?`<button class="btn-ghost" onclick="confirmDeleteTank()">Remover Tanque</button>`:''}
+  <div style="height:14px;"></div>`;
+}
+
+function toggleHapasInput(on){
+  document.getElementById('hapas-qty-row').style.display=on?'block':'none';
+  if(on) updateHapaNameFields();
+}
+
+async function toggleEmptyTank(empty){
+  if(!activeTank)return;
+  const prev=!!activeTank.empty;
+  if(prev===empty)return;
+  activeTank.empty=empty;
+  save();
+  // Registra no histórico quem ativou/desativou
+  const rec={
+    id:'empty_'+activeTank.id+'_'+Date.now(),
+    tankId:activeTank.id,tankName:activeTank.name,
+    date:new Date().toISOString().split('T')[0],
+    user:currentUser.name,username:currentUser.username,
+    timestamp:new Date().toISOString(),
+    lote:'',temp:null,o2:null,amonia:null,ph:null,mort:0,
+    qty:null,bio:null,racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+    tratosIdeal:null,tratos:null,
+    obs:empty?'🚫 Tanque marcado como VAZIO':'✅ Tanque reativado',
+    overridden:false,hapa:null,
+  };
+  await saveOneRecord(rec);
+  renderTankView();updateMapSub();
+  showToast(empty?`${activeTank.name} marcado como vazio`:`${activeTank.name} reativado`,'ok');
+}
+
+function updateHapaNameFields(){
+  const qty=parseInt(document.getElementById('cfg-hapas-qty')?.value)||0;
+  const t=activeTank;
+  const existing=t.hapaNames||[];
+  const list=document.getElementById('hapa-names-list');
+  if(!list)return;
+  let html='';
+  for(let i=0;i<qty;i++){
+    const val=existing[i]||`Hapa ${i+1}`;
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;width:22px;flex-shrink:0;">#${i+1}</span>
+      <input type="text" id="cfg-hapa-name-${i}" value="${val}" placeholder="Nome do hapa ${i+1}"
+        style="flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;color:var(--text);font-size:15px;outline:none;">
+    </div>`;
+  }
+  list.innerHTML=html;
+}
+
+function saveTankConfig(){
+  activeTank.name=document.getElementById('cfg-name').value;
+  activeTank.species=document.getElementById('cfg-species').value;
+  activeTank.volume=parseFloat(document.getElementById('cfg-vol').value)||activeTank.volume;
+  activeTank.shape=document.getElementById('cfg-shape').value;
+  activeTank.groupId=document.getElementById('cfg-group').value;
+  const hapasOn=document.getElementById('cfg-hapas-on').checked;
+  if(hapasOn){
+    const qty=parseInt(document.getElementById('cfg-hapas-qty').value)||0;
+    const names=[];
+    for(let i=0;i<qty;i++){
+      const v=document.getElementById(`cfg-hapa-name-${i}`)?.value.trim();
+      names.push(v||`Hapa ${i+1}`);
+    }
+    activeTank.hapaNames=names;
+    activeTank.hapas=qty;
+  } else {
+    activeTank.hapaNames=[];
+    activeTank.hapas=0;
+  }
+  save();
+  renderTankView();updateMapSub();
+  document.getElementById('sheet-tank-name').textContent=activeTank.name+(activeTank.hapas?' 🪣':'');
+  document.getElementById('sheet-tank-meta').textContent=`${activeTank.species} · ${activeTank.volume}m³${activeTank.hapas?' · '+activeTank.hapas+' hapas':''}`;
+  renderHapaSelector();
+  showConfirm('Configurações salvas ✓',`As alterações do ${activeTank.name} foram salvas com sucesso.`,()=>{},{okOnly:true});
+}
+
+// ===== ADD TANK =====
+function openAddTank(){const sel=document.getElementById('new-tank-group');if(currentGroupId)sel.value=currentGroupId;document.getElementById('modal-overlay').classList.add('show');}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show');}
+function confirmAddTank(){
+  const name=document.getElementById('new-tank-name').value.trim();if(!name){showToast('Digite um nome','error');return;}
+  const gid=document.getElementById('new-tank-group').value;
+  const tank={id:'tank_'+Date.now(),groupId:gid,name,num:Date.now(),species:document.getElementById('new-tank-species').value||'Não informado',volume:parseFloat(document.getElementById('new-tank-vol').value)||0,shape:GROUPS.find(g=>g.id===gid)?.shape||'rect',large:false};
+  tanks.push(tank);save();renderTankView();updateMapSub();closeModal();showToast(`${name} adicionado ✓`,'ok');
+  document.getElementById('new-tank-name').value='';document.getElementById('new-tank-species').value='';document.getElementById('new-tank-vol').value='';
+  populateChartTankSelect();
+}
+
+// ===== SETTINGS NAVIGATION =====
+let currentCfgPage=null;
+function renderSettings(){
+  closeCfgPage(true); // volta ao menu principal sem animação
+}
+function openCfgPage(page){
+  currentCfgPage=page;
+  document.getElementById('cfg-page-menu').style.display='none';
+  document.querySelectorAll('[id^="cfg-page-"]').forEach(el=>el.style.display='none');
+  document.getElementById('cfg-page-'+page).style.display='block';
+  document.getElementById('main').scrollTop=0;
+  if(page==='racoes')renderRacaoList();
+  if(page==='usuarios')renderUsersList();
+  if(page==='parametros')renderParamsForm();
+}
+function closeCfgPage(silent=false){
+  currentCfgPage=null;
+  document.querySelectorAll('[id^="cfg-page-"]').forEach(el=>el.style.display='none');
+  document.getElementById('cfg-page-menu').style.display='block';
+  if(!silent)document.getElementById('main').scrollTop=0;
+}
+
+// ===== RAÇÕES =====
+function renderRacaoList(){
+  const el=document.getElementById('racao-list');
+  if(!racoes.length){el.innerHTML='<div style="padding:16px 0;color:var(--text3);font-size:13px;">Nenhuma ração cadastrada.</div>';return;}
+  el.innerHTML=racoes.map((r,i)=>`<div class="racao-item"><div class="racao-item-name">${r.nome}</div><div class="racao-item-kg">${r.kg!=null?Math.round(r.kg*1000)+'g':'—'}</div><button class="racao-item-del" onclick="deleteRacao(${i})">✕</button></div>`).join('');
+}
+function addRacao(){
+  const nome=document.getElementById('new-racao-nome').value.trim();
+  const kg=parseFloat(document.getElementById('new-racao-kg').value);
+  if(!nome){showToast('Digite o nome da ração','error');return;}
+  racoes.push({nome,kg:isNaN(kg)?null:kg/1000,id:'r'+Date.now()});
+  save();renderRacaoList();document.getElementById('new-racao-nome').value='';document.getElementById('new-racao-kg').value='';
+  showToast('Ração adicionada ✓','ok');
+}
+function deleteRacao(i){if(confirm(`Remover "${racoes[i].nome}"?`)){racoes.splice(i,1);save();renderRacaoList();showToast('Ração removida','ok');}}
+
+// ===== GERENCIAR USUÁRIOS =====
+const ROLE_LABEL={'admin':'Administrador','usuario':'Usuário'};
+const ROLE_COLOR={'admin':'var(--accent)','usuario':'var(--ok)'};
+const ROLE_BG={'admin':'rgba(26,58,107,0.1)','usuario':'rgba(22,163,74,0.1)'};
+let editingUserLogin=null;
+
+function renderUsersList(){
+  const el=document.getElementById('users-list');
+  const all=Object.entries(USERS).map(([login,u])=>({login,...u}));
+  el.innerHTML=all.map(u=>{
+    const isDefault=!!DEFAULT_USERS[u.login];
+    const initials=u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const roleColor=ROLE_COLOR[u.role]||'var(--text2)';
+    const roleBg=ROLE_BG[u.role]||'var(--accent-dim)';
+    return`<div class="user-item">
+      <div class="user-item-avatar">${initials}</div>
+      <div class="user-item-info">
+        <div class="user-item-name">${u.name}</div>
+        <div class="user-item-login">@${u.login}</div>
+        <span class="user-item-role" style="color:${roleColor};background:${roleBg};">${ROLE_LABEL[u.role]||u.role}</span>
+      </div>
+      <div class="user-item-actions">
+        <button class="user-action-btn edit" onclick="openEditUser('${u.login}')" title="Editar">✏️</button>
+        ${!isDefault
+          ?`<button class="user-action-btn del" onclick="deleteUser('${u.login}')" title="Excluir">🗑️</button>`
+          :`<div style="width:34px;"></div>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openEditUser(login){
+  editingUserLogin=login;
+  const u=USERS[login];
+  document.getElementById('edit-user-title').textContent=`Editar: ${u.name}`;
+  document.getElementById('edit-user-name').value=u.name;
+  document.getElementById('edit-user-pass').value='';
+  document.getElementById('edit-user-role').value=u.role;
+  // Bloqueia mudança de perfil para usuários padrão
+  document.getElementById('edit-user-role').disabled=!!DEFAULT_USERS[login];
+  document.getElementById('edit-user-overlay').classList.add('show');
+}
+function closeEditUser(){
+  document.getElementById('edit-user-overlay').classList.remove('show');
+  editingUserLogin=null;
+}
+function saveEditUser(){
+  if(!editingUserLogin)return;
+  const name=document.getElementById('edit-user-name').value.trim();
+  const pass=document.getElementById('edit-user-pass').value;
+  const role=document.getElementById('edit-user-role').value;
+  if(!name){showToast('Nome não pode ser vazio','error');return;}
+  USERS[editingUserLogin].name=name;
+  if(pass){
+    if(pass.length<4){showToast('Senha muito curta (mín. 4 caracteres)','error');return;}
+    USERS[editingUserLogin].pass=pass;
+  }
+  if(!DEFAULT_USERS[editingUserLogin])USERS[editingUserLogin].role=role;
+  saveUsers();renderUsersList();closeEditUser();
+  showToast('Usuário atualizado ✓','ok');
+}
+function createUser(){
+  const login=document.getElementById('new-user-login').value.trim().toLowerCase().replace(/\s/g,'');
+  const name=document.getElementById('new-user-name').value.trim();
+  const pass=document.getElementById('new-user-pass').value;
+  const role=document.getElementById('new-user-role').value;
+  if(!login){showToast('Digite o login','error');return;}
+  if(!name){showToast('Digite o nome','error');return;}
+  if(pass.length<4){showToast('Senha deve ter no mínimo 4 caracteres','error');return;}
+  if(USERS[login]){showToast('Este login já existe','error');return;}
+  USERS[login]={pass,name,role};
+  saveUsers();renderUsersList();
+  document.getElementById('new-user-login').value='';
+  document.getElementById('new-user-name').value='';
+  document.getElementById('new-user-pass').value='';
+  showToast(`Usuário ${name} criado ✓`,'ok');
+}
+function deleteUser(login){
+  if(DEFAULT_USERS[login]){showToast('Usuários padrão não podem ser removidos','error');return;}
+  if(login===currentUser?.username){showToast('Não é possível remover seu próprio usuário','error');return;}
+  showConfirm('Remover usuário',`Deseja remover o acesso de @${login}? Esta ação não pode ser desfeita.`,()=>{
+    delete USERS[login];saveUsers();renderUsersList();showToast('Usuário removido','ok');
+  });
+}
+
+// ===== GLOBAL HISTORY =====
+function renderGlobalHistory(){
+  const el=document.getElementById('global-history-list');
+  const sorted=records.filter(r=>!r.overridden).slice().sort((a,b)=>b.timestamp.localeCompare(a.timestamp));
+  if(!sorted.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
+  el.innerHTML=sorted.map(r=>{
+    const temAlimentacao=r.racao||r.racaoIdealG||r.sobra||r.racaoG||r.tratosIdeal||r.tratos;
+    const mortLine=r.mort>0?`<div style="margin-top:5px;font-size:12px;font-weight:700;color:var(--danger);">💀 Mortalidade: ${r.mort} peixes</div>`:'';
+    const pct=r.racaoIdealG&&r.racaoG?`<span style="font-weight:700;color:${Math.round(r.racaoG/r.racaoIdealG*100)>=90?'var(--ok)':Math.round(r.racaoG/r.racaoIdealG*100)>=70?'var(--warn)':'var(--danger)'}"> (${Math.round(r.racaoG/r.racaoIdealG*100)}%)</span>`:'';
+    return`<div class="history-item">
+      <div class="history-header"><div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px;">${r.tankName}${r.hapa?' — Hapa '+r.hapa:''}</div>
+        ${r.lote?`<div style="font-size:11px;font-weight:600;color:var(--accent);">📦 ${r.lote}</div>`:''}
+        <div class="history-date">${formatDate(r.date)} · ${formatTime(r.timestamp)}</div>
+        <div class="history-user">por ${r.user}</div>
+      </div></div>
+      <div class="history-params">
+        ${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}
+        ${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}
+        ${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}
+        ${hP('pH',r.ph,'')}
+        ${hP('Peixes',r.qty,'un')}
+        ${hP('Biometria',r.bio,'g')}
+        ${hP('Mort.',r.mort||null,'un',r.mort>0)}
+      </div>
+      ${mortLine}
+      ${temAlimentacao?`
+      <div style="margin-top:8px;padding-top:8px;border-top:1.5px dashed var(--border);">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
+        <div class="history-params">
+          ${hPText('Tipo',r.racao||null)}
+          ${hP('Ideal',r.racaoIdealG,'g')}
+          ${hP('Sobra',r.sobra,'g')}
+          ${hP('Real',r.racaoG?r.racaoG+pct:null,'g',false)}
+          ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
+          ${hP('Tratos Real',r.tratos,'/dia')}
+        </div>
+      </div>`:''}
+      ${r.obs?`<div style="margin-top:4px;font-size:11px;color:var(--text2);">💬 ${r.obs}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ===== LANÇAMENTOS =====
+const LANC_PARAMS={
+  temp:     {label:'Temperatura',unit:'°C',   step:'0.1', inputmode:'decimal'},
+  o2:       {label:'Oxigênio',   unit:'mg/L', step:'0.1', inputmode:'decimal'},
+  amonia:   {label:'Amônia',     unit:'mg/L', step:'0.01',inputmode:'decimal'},
+  ph:       {label:'pH',         unit:'',     step:'0.1', inputmode:'decimal'},
+  qty:      {label:'Qtd. Peixes',unit:'un',   step:'1',   inputmode:'numeric'},
+  bio:      {label:'Biometria',  unit:'g',    step:'0.01',inputmode:'decimal'},
+  mort:     {label:'Mortalidade',unit:'un',   step:'1',   inputmode:'numeric'},
+  racaoIdealG:{label:'Ração Ideal',unit:'g',  step:'0.001',inputmode:'decimal'},
+  racaoReal:{label:'Ração Real/Sobra',unit:'g',step:'0.001',inputmode:'decimal'},
+  tratosIdeal:{label:'Tratos Ideal',unit:'',  step:'1',   inputmode:'numeric'},
+  tratos:   {label:'Tratos Real', unit:'',    step:'1',   inputmode:'numeric'},
+};
+
+function initLancamentos(){
+  const d=new Date().toISOString().split('T')[0];
+  const el=document.getElementById('lanc-date');
+  if(el&&!el.value)el.value=d;
+  // Esconde opções restritas a ADM para não-admins
+  const admOpts=['lanc-opt-racaoIdealG','lanc-opt-tratosIdeal'];
+  admOpts.forEach(id=>{
+    const opt=document.getElementById(id);
+    if(opt)opt.style.display=isAdmin()?'':'none';
+  });
+  renderLancamentos();
+}
+
+function renderLancamentos(){
+  const param=document.getElementById('lanc-param')?.value;
+  const tbody=document.getElementById('lanc-tbody');
+  if(!param){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text3);font-size:13px;">Selecione um parâmetro acima</td></tr>';return;}
+  const cfg=LANC_PARAMS[param];
+  const admin=isAdmin();
+
+  // Restringe campos ADM para não-admin
+  const admOnly=['racaoIdealG','tratosIdeal'];
+  if(admOnly.includes(param)&&!admin){
+    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--danger);font-size:13px;">🔒 Parâmetro restrito a administradores</td></tr>';
+    return;
+  }
+
+  // Filtra tanques: apenas com registros E não vazios
+  const activeTanks=tanks.filter(t=>!t.empty&&records.some(r=>r.tankId===t.id));
+
+  let rows=[];
+  activeTanks.forEach(t=>{
+    const names=t.hapaNames;
+    if(names&&names.length){
+      // Linha por hapa
+      names.forEach((nm,i)=>{
+        const h=i+1;
+        const last=lastRecHapa?.(t.id,h)||lastRec(t.id);
+        rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,lastVal:last?.[param]??''});
+      });
+    } else {
+      const last=lastRec(t.id);
+      rows.push({tankId:t.id,tankName:t.name,hapaNum:null,hapaName:null,lastVal:last?.[param]??''});
+    }
+  });
+
+  // Ordena por nome do tanque
+  rows.sort((a,b)=>a.tankName.localeCompare(b.tankName,undefined,{numeric:true}));
+
+  const header=`<thead><tr>
+    <th style="min-width:100px;">Tanque</th>
+    <th style="min-width:90px;">${cfg.label} (${cfg.unit||'—'})</th>
+    <th style="min-width:80px;color:var(--text3);">Último valor</th>
+  </tr></thead>`;
+
+  const rowsHtml=rows.map((r,i)=>`
+    <tr class="${r.hapaNum?'has-hapas':''}">
+      <td>
+        <div class="lancamento-tank-name">${r.tankName}</div>
+        ${r.hapaName?`<div class="lancamento-hapa-name">🪣 ${r.hapaName}</div>`:''}
+      </td>
+      <td>
+        <input class="lancamento-input" type="number"
+          id="lanc-input-${i}"
+          data-tank="${r.tankId}" data-hapa="${r.hapaNum||''}"
+          step="${cfg.step}" inputmode="${cfg.inputmode}"
+          placeholder="—"
+          oninput="this.classList.toggle('filled',this.value!=='')">
+      </td>
+      <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${r.lastVal!==''?r.lastVal:'—'}</td>
+    </tr>`).join('');
+
+  tbody.parentElement.querySelector('thead')?.remove();
+  tbody.insertAdjacentHTML('beforebegin',header);
+  tbody.innerHTML=rowsHtml;
+  document.getElementById('lanc-progress').style.display='none';
+}
+
+async function saveLancamentos(){
+  const param=document.getElementById('lanc-param')?.value;
+  const date=document.getElementById('lanc-date')?.value;
+  if(!param){showToast('Selecione um parâmetro','error');return;}
+  if(!date){showToast('Selecione uma data','error');return;}
+
+  const inputs=document.querySelectorAll('.lancamento-input');
+  const toSave=[];
+  inputs.forEach(inp=>{
+    if(inp.value.trim()==='')return;
+    toSave.push({
+      tankId:inp.dataset.tank,
+      hapaNum:inp.dataset.hapa?parseInt(inp.dataset.hapa):null,
+      value:parseFloat(inp.value),
+      el:inp
+    });
+  });
+  if(!toSave.length){showToast('Nenhum valor preenchido','error');return;}
+
+  // Detecta conflitos (já existe registro com esse parâmetro nessa data)
+  const conflicts=toSave.filter(item=>{
+    const existing=recForDate(item.tankId,date,item.hapaNum);
+    return existing&&existing[param]!=null&&existing[param]!==undefined;
+  });
+
+  if(conflicts.length>0){
+    const tank=tanks.find(t=>t.id===conflicts[0].tankId);
+    const msg=conflicts.length===1
+      ? `Já existe registro de "${LANC_PARAMS[param]?.label}" em ${formatDate(date)} para ${tank?.name||''}${conflicts[0].hapaNum?' ('+hapaLabel(tank,conflicts[0].hapaNum)+')':''}.\nDeseja sobreescrever ${conflicts.length} registro${conflicts.length>1?'s':''}?`
+      : `Já existem ${conflicts.length} registros de "${LANC_PARAMS[param]?.label}" em ${formatDate(date)}.\nDeseja sobreescrever todos?`;
+    showConfirm('Registros existentes', msg, ()=>_doSaveLancamentos(toSave,param,date));
+  } else {
+    _doSaveLancamentos(toSave,param,date);
+  }
+}
+
+async function _doSaveLancamentos(toSave,param,date){
+  const prog=document.getElementById('lanc-progress');
+  prog.style.display='block';prog.textContent=`Salvando 0/${toSave.length}...`;
+
+  let saved=0;
+  for(const item of toSave){
+    const tank=tanks.find(t=>t.id===item.tankId);
+    if(!tank)continue;
+
+    const existing=recForDate(item.tankId,date,item.hapaNum);
+
+    // 1. Registro histórico independente para este lançamento
+    const lastR=lastRec(item.tankId);
+    const histRec={
+      id:'lanc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      tankId:item.tankId,tankName:tank.name,date,
+      user:currentUser.name,username:currentUser.username,
+      timestamp:new Date().toISOString(),
+      lote:existing?.lote||lastR?.lote||tank.lote||'',
+      temp:null,o2:null,amonia:null,ph:null,mort:0,
+      qty:existing?.qty??lastR?.qty??null,
+      bio:existing?.bio??lastR?.bio??null,
+      racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+      tratosIdeal:null,tratos:null,obs:'',
+      overridden:false,hapa:item.hapaNum||null,
+    };
+    histRec[param]=item.value;
+    if(param==='racaoReal'){histRec.sobra=item.value;}
+    records.push(histRec);
+
+    // 2. Mescla também no registro consolidado do dia (para painel/gráficos)
+    if(existing){
+      existing[param]=item.value;
+      if(param==='racaoReal'){existing.sobra=item.value;if(existing.racaoIdealG)existing.racaoG=Math.max(0,existing.racaoIdealG-item.value);}
+      const idx=records.findIndex(r=>r.id===existing.id);
+      if(idx>=0)records[idx]=existing;
+      await saveRecord_sb(existing);
+    }
+
+    await saveRecord_sb(histRec);
+    saved++;
+    prog.textContent=`Salvando ${saved}/${toSave.length}...`;
+  }
+
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  renderTankView();updateMapSub();
+  prog.textContent=`✓ ${saved} registros salvos!`;
+  setTimeout(()=>{prog.style.display='none';},3000);
+  showToast(`${saved} registros salvos ✓`,'ok');
+  renderLancamentos();
+}
+
+// ===== DADOS HISTÓRICOS ITEM 2: Biometria e Qtd. Peixes 16/04 em diante =====
+async function injectBioQty2604(){
+  const KEY='kc_injected_bioqty_apr16';
+  if(localStorage.getItem(KEY))return;
+
+  const TODAY='2026-04-22'; // data atual
+  // Datas de 16/04 até hoje
+  const DATES=[];
+  let d=new Date('2026-04-16');
+  const end=new Date(TODAY);
+  while(d<=end){
+    DATES.push(d.toISOString().split('T')[0]);
+    d.setDate(d.getDate()+1);
+  }
+
+  // Tanques simples (sem hapa)
+  const SIMPLE=[
+    {tid:'tank_escavados_2',     qty:568,   bio:211},
+    {tid:'tank_escavados_3',     qty:2192,  bio:331},
+    {tid:'tank_escavados_4',     qty:538,   bio:1350},
+    {tid:'tank_escavados_6',     qty:79499, bio:0.22},
+    {tid:'tank_escavados_8',     qty:80000, bio:0.5},
+    {tid:'tank_geomembrana_18',  qty:22500, bio:1.00},
+    {tid:'tank_geomembrana_19',  qty:17150, bio:0.65},
+    {tid:'tank_geo-elevada_40',  qty:5777,  bio:2.4},
+    {tid:'tank_geo-elevada_41',  qty:10050, bio:2.7},
+    {tid:'tank_geo-elevada_42',  qty:10431, bio:1.9},
+    {tid:'tank_geo-elevada_43',  qty:1531,  bio:4.35},
+    {tid:'tank_geo-elevada_44',  qty:3709,  bio:2.06},
+    {tid:'tank_geo-elevada_47',  qty:8752,  bio:0.85},
+    {tid:'tank_geo-elevada_48',  qty:10742, bio:7.7},
+    {tid:'tank_geo-elevada_50',  qty:12616, bio:2.5},
+    {tid:'tank_geo-elevada_51',  qty:3000,  bio:2.7},
+  ];
+
+  // Hapas
+  const HAPAS=[
+    // Tanque 11
+    {tid:'tank_escavados_11',hapaNum:1,hapaName:'Hapa 07',qty:80,bio:333},
+    {tid:'tank_escavados_11',hapaNum:2,hapaName:'Hapa 08',qty:80,bio:333},
+    {tid:'tank_escavados_11',hapaNum:3,hapaName:'Hapa 09',qty:80,bio:398},
+    {tid:'tank_escavados_11',hapaNum:4,hapaName:'Hapa 10',qty:80,bio:336},
+    {tid:'tank_escavados_11',hapaNum:5,hapaName:'Hapa 11',qty:80,bio:378},
+    {tid:'tank_escavados_11',hapaNum:6,hapaName:'Hapa 12',qty:80,bio:350},
+    // Tanque 12
+    {tid:'tank_escavados_12',hapaNum:1,hapaName:'Hapa 13',qty:88,bio:314},
+    {tid:'tank_escavados_12',hapaNum:2,hapaName:'Hapa 14',qty:87,bio:331},
+    {tid:'tank_escavados_12',hapaNum:3,hapaName:'Hapa 15',qty:80,bio:331},
+    {tid:'tank_escavados_12',hapaNum:4,hapaName:'Hapa 16',qty:80,bio:331},
+    {tid:'tank_escavados_12',hapaNum:5,hapaName:'Hapa 17',qty:80,bio:331},
+    {tid:'tank_escavados_12',hapaNum:6,hapaName:'Hapa 18',qty:80,bio:331},
+    // Tanque 15
+    {tid:'tank_escavados_15',hapaNum:1,hapaName:'Hapa 25',qty:96,bio:1350},
+    {tid:'tank_escavados_15',hapaNum:2,hapaName:'Hapa 26',qty:96,bio:1350},
+    {tid:'tank_escavados_15',hapaNum:3,hapaName:'Hapa 27',qty:96,bio:1350},
+    {tid:'tank_escavados_15',hapaNum:4,hapaName:'Hapa 28',qty:90,bio:1350},
+    {tid:'tank_escavados_15',hapaNum:5,hapaName:'Hapa 29',qty:90,bio:1350},
+    {tid:'tank_escavados_15',hapaNum:6,hapaName:'Hapa 30',qty:90,bio:1350},
+    {tid:'tank_escavados_15',hapaNum:7,hapaName:'Hapa 31',qty:90,bio:1350},
+  ];
+
+  // Configura hapas nos tanques 11, 12, 15 se ainda não estiver configurado
+  function ensureHapas(tid,hapasList){
+    const tank=tanks.find(t=>t.id===tid);
+    if(!tank)return;
+    if(!tank.hapaNames||!tank.hapaNames.length){
+      const names=[...new Set(hapasList.filter(h=>h.tid===tid).map(h=>h.hapaName))];
+      tank.hapaNames=names;
+      tank.hapas=names.length;
+    }
+  }
+  ensureHapas('tank_escavados_11',HAPAS);
+  ensureHapas('tank_escavados_12',HAPAS);
+  ensureHapas('tank_escavados_15',HAPAS);
+  await saveTanks_sb();
+
+  const newRecs=[];
+  let idx=0;
+
+  for(const date of DATES){
+    // Simples
+    for(const s of SIMPLE){
+      const id=`bioqty16_${s.tid}_${date}`;
+      if(records.some(r=>r.id===id))continue;
+      const tank=tanks.find(t=>t.id===s.tid);
+      const rec={id,tankId:s.tid,tankName:tank?.name||s.tid,date,
+        user:'Sistema (importado)',username:'sistema',
+        timestamp:date+'T09:00:00.000Z',
+        lote:'',temp:null,o2:null,amonia:null,ph:null,mort:0,
+        qty:s.qty,bio:s.bio,racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+        tratosIdeal:null,tratos:null,obs:'',overridden:false,hapa:null};
+      records.push(rec);newRecs.push(rec);
+    }
+    // Hapas
+    for(const h of HAPAS){
+      const id=`bioqty16_${h.tid}_hapa${h.hapaNum}_${date}`;
+      if(records.some(r=>r.id===id))continue;
+      const tank=tanks.find(t=>t.id===h.tid);
+      const rec={id,tankId:h.tid,tankName:tank?.name||h.tid,date,
+        user:'Sistema (importado)',username:'sistema',
+        timestamp:date+'T09:00:00.000Z',
+        lote:'',temp:null,o2:null,amonia:null,ph:null,mort:0,
+        qty:h.qty,bio:h.bio,racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+        tratosIdeal:null,tratos:null,obs:'',overridden:false,hapa:h.hapaNum};
+      records.push(rec);newRecs.push(rec);
+    }
+  }
+
+  if(newRecs.length){
+    // Envia ao Supabase em lotes de 200
+    for(let i=0;i<newRecs.length;i+=200){
+      const chunk=newRecs.slice(i,i+200);
+      await sbUpsert('records',chunk.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r})));
+    }
+    localStorage.setItem('kc_records',JSON.stringify(records));
+    console.log(`injectBioQty2604: ${newRecs.length} registros inseridos.`);
+  }
+  localStorage.setItem(KEY,'1');
+}
+
+// ===== DADOS: Qualidade da água (O₂, Temp, Amônia) =====
+async function injectQualidadeAgua(){
+  const KEY='kc_injected_qualidade_v1';
+  if(localStorage.getItem(KEY))return;
+
+  // Mapeamento número → tankId
+  const TID={
+    '2':'tank_escavados_2','3':'tank_escavados_3','6':'tank_escavados_6',
+    '8':'tank_escavados_8','11':'tank_escavados_11','12':'tank_escavados_12',
+    '15':'tank_escavados_15','17':'tank_geomembrana_17','18':'tank_geomembrana_18',
+    '19':'tank_geomembrana_19','40':'tank_geo-elevada_40','41':'tank_geo-elevada_41',
+    '42':'tank_geo-elevada_42','46':'tank_geo-elevada_46','48':'tank_geo-elevada_48',
+    '50':'tank_geo-elevada_50','51':'tank_geo-elevada_51',
+  };
+
+  const DATA=[
+    // 20/04 - Amônia
+    {date:'2026-04-20',num:'2', amonia:0.0},
+    {date:'2026-04-20',num:'3', amonia:0.5},
+    {date:'2026-04-20',num:'6', amonia:0.25},
+    {date:'2026-04-20',num:'17',amonia:0.5},
+    {date:'2026-04-20',num:'18',amonia:0.25},
+    {date:'2026-04-20',num:'19',amonia:0.25},
+    {date:'2026-04-20',num:'40',amonia:3.5},
+    {date:'2026-04-20',num:'41',amonia:0.25},
+    {date:'2026-04-20',num:'42',amonia:3.5},
+    {date:'2026-04-20',num:'48',amonia:3.5},
+    {date:'2026-04-20',num:'50',amonia:2.0},
+    {date:'2026-04-20',num:'51',amonia:0.25},
+    // 20/04 - O₂ e Temp
+    {date:'2026-04-20',num:'40',o2:10.2,temp:26.1},
+    {date:'2026-04-20',num:'41',o2:8.1, temp:25.6},
+    {date:'2026-04-20',num:'42',o2:8.6, temp:26.4},
+    {date:'2026-04-20',num:'48',o2:8.9, temp:26.3},
+    {date:'2026-04-20',num:'50',o2:7.3, temp:26.5},
+    {date:'2026-04-20',num:'2', o2:7.6, temp:24.8},
+    {date:'2026-04-20',num:'3', o2:8.8, temp:25.0},
+    {date:'2026-04-20',num:'8', o2:6.7, temp:23.7},
+    {date:'2026-04-20',num:'11',o2:7.0, temp:26.0},
+    {date:'2026-04-20',num:'12',o2:7.4, temp:25.2},
+    {date:'2026-04-20',num:'15',o2:6.5, temp:24.2},
+    {date:'2026-04-20',num:'17',o2:5.3, temp:26.4},
+    {date:'2026-04-20',num:'18',o2:5.6, temp:26.9},
+    {date:'2026-04-20',num:'19',o2:2.7, temp:27.1},
+    {date:'2026-04-20',num:'6', o2:8.2, temp:25.9},
+    // 17/04 - Amônia
+    {date:'2026-04-17',num:'2', amonia:0.0},
+    {date:'2026-04-17',num:'3', amonia:2.0},
+    {date:'2026-04-17',num:'6', amonia:0.25},
+    {date:'2026-04-17',num:'8', amonia:0.25},
+    {date:'2026-04-17',num:'17',amonia:0.25},
+    {date:'2026-04-17',num:'18',amonia:0.5},
+    {date:'2026-04-17',num:'19',amonia:0.25},
+    {date:'2026-04-17',num:'40',amonia:0.5},
+    {date:'2026-04-17',num:'41',amonia:1.0},
+    {date:'2026-04-17',num:'42',amonia:0.5},
+    {date:'2026-04-17',num:'46',amonia:0.0},
+    {date:'2026-04-17',num:'48',amonia:0.5},
+    {date:'2026-04-17',num:'50',amonia:0.5},
+    {date:'2026-04-17',num:'51',amonia:0.25},
+    // 16/04 - O₂ e Temp
+    {date:'2026-04-16',num:'51',o2:7.0, temp:25.2},
+    {date:'2026-04-16',num:'12',o2:6.7, temp:24.9},
+    {date:'2026-04-16',num:'6', o2:5.2, temp:25.8},
+    {date:'2026-04-16',num:'2', o2:6.9, temp:24.1},
+    {date:'2026-04-16',num:'8', o2:7.1, temp:23.2},
+    {date:'2026-04-16',num:'3', o2:5.9, temp:24.9},
+    {date:'2026-04-16',num:'19',o2:6.0, temp:26.3},
+    {date:'2026-04-16',num:'15',o2:5.8, temp:23.7},
+    {date:'2026-04-16',num:'18',o2:5.5, temp:26.0},
+    {date:'2026-04-16',num:'17',o2:6.9, temp:25.4},
+    {date:'2026-04-16',num:'11',o2:5.5, temp:25.8},
+    {date:'2026-04-16',num:'40',o2:7.9, temp:25.0},
+    {date:'2026-04-16',num:'48',o2:8.4, temp:25.5},
+    {date:'2026-04-16',num:'50',o2:8.0, temp:25.2},
+    {date:'2026-04-16',num:'42',o2:8.2, temp:25.2},
+    {date:'2026-04-16',num:'41',o2:8.0, temp:25.3},
+    // 16/04 - Amônia
+    {date:'2026-04-16',num:'2', amonia:0.25},
+    {date:'2026-04-16',num:'3', amonia:1.0},
+    {date:'2026-04-16',num:'6', amonia:0.25},
+    {date:'2026-04-16',num:'8', amonia:0.5},
+    {date:'2026-04-16',num:'17',amonia:0.25},
+    {date:'2026-04-16',num:'18',amonia:0.25},
+    {date:'2026-04-16',num:'19',amonia:0.25},
+    {date:'2026-04-16',num:'40',amonia:3.5},
+    {date:'2026-04-16',num:'41',amonia:2.0},
+    {date:'2026-04-16',num:'42',amonia:1.0},
+    {date:'2026-04-16',num:'46',amonia:0.0},
+    {date:'2026-04-16',num:'48',amonia:3.5},
+    {date:'2026-04-16',num:'50',amonia:0.25},
+    {date:'2026-04-16',num:'51',amonia:0.25},
+  ];
+
+  // Agrupa por tankId+data para mesclar campos no mesmo registro
+  const byKey={};
+  DATA.forEach(d=>{
+    const tid=TID[d.num];if(!tid)return;
+    const k=`${tid}__${d.date}`;
+    if(!byKey[k])byKey[k]={tid,date:d.date,num:d.num};
+    if(d.o2!=null)   byKey[k].o2=d.o2;
+    if(d.temp!=null) byKey[k].temp=d.temp;
+    if(d.amonia!=null)byKey[k].amonia=d.amonia;
+  });
+
+  const newRecs=[];
+  Object.values(byKey).forEach(d=>{
+    const id=`qual_${d.tid}_${d.date}`;
+    // Se já existe registro para esse tanque+data, atualiza os campos
+    const idx=records.findIndex(r=>r.tankId===d.tid&&r.date===d.date&&!r.hapa);
+    if(idx>=0){
+      if(d.o2!=null)    records[idx].o2=d.o2;
+      if(d.temp!=null)  records[idx].temp=d.temp;
+      if(d.amonia!=null)records[idx].amonia=d.amonia;
+      records[idx].timestamp=Math.max(records[idx].timestamp||'',d.date+'T10:00:00.000Z')>d.date+'T10:00:00.000Z'?records[idx].timestamp:d.date+'T10:00:00.000Z';
+      newRecs.push(records[idx]);
+    } else {
+      // Cria novo registro mínimo com os dados de qualidade
+      const tank=tanks.find(t=>t.id===d.tid);
+      const lastR=lastRec(d.tid);
+      const rec={
+        id,tankId:d.tid,tankName:tank?.name||d.tid,date:d.date,
+        user:'Sistema (importado)',username:'sistema',
+        timestamp:d.date+'T10:00:00.000Z',
+        lote:lastR?.lote||'',
+        temp:d.temp??null,o2:d.o2??null,amonia:d.amonia??null,ph:null,mort:0,
+        qty:lastR?.qty??null,bio:lastR?.bio??null,
+        racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+        tratosIdeal:null,tratos:null,obs:'',overridden:false,hapa:null,
+      };
+      records.push(rec);
+      newRecs.push(rec);
+    }
+  });
+
+  if(newRecs.length){
+    const rows=newRecs.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r}));
+    for(let i=0;i<rows.length;i+=200){
+      await sbUpsert('records',rows.slice(i,i+200));
+    }
+    localStorage.setItem('kc_records',JSON.stringify(records));
+    console.log(`injectQualidadeAgua: ${newRecs.length} registros processados.`);
+  }
+  localStorage.setItem(KEY,'1');
+}
+
+// ===== PAINEL =====
+function renderPainel(){
+  const dateEl=document.getElementById('painel-date');
+  if(!dateEl.value){dateEl.value=new Date().toISOString().split('T')[0];}
+  const date=dateEl.value;
+  const cont=document.getElementById('painel-container');
+
+  function tcaAcum(t){
+    const recs=t.hapas?getOfficialRecords(t.id,null):getOfficialRecords(t.id);
+    const totalRacao=recs.reduce((s,r)=>(r.racaoG||0)+s,0);
+    const last=recs[recs.length-1];
+    if(!last||!last.qty||!last.bio)return null;
+    const biomassa=last.qty*last.bio/1000;
+    if(!biomassa)return null;
+    return(totalRacao/1000/biomassa).toFixed(3);
+  }
+
+  function recDodia(t){
+    if(!t.hapas)return recForDate(t.id,date);
+    const allRecs=getOfficialRecords(t.id,null);
+    return allRecs.find(r=>r.date===date)||null;
+  }
+
+  const admin=isAdmin();
+  const cols=[
+    {k:'o2',    label:'O₂',     unit:'mg/L',lk:'o2'},
+    {k:'temp',  label:'Temp',   unit:'°C',  lk:'temp'},
+    {k:'amonia',label:'Amônia', unit:'mg/L',lk:'amonia'},
+    {k:'ph',    label:'pH',     unit:'',    lk:'ph'},
+    {k:'mort',  label:'Mort.',  unit:'un',  lk:'mort'},
+    {k:'qty',   label:'Peixes', unit:'un',  lk:null},
+    {k:'bio',   label:'Biom.',  unit:'g',   lk:'bio'},
+    {k:'_ideal',label:'R.Ideal',unit:'g',   lk:null},
+    {k:'_real', label:'R.Real', unit:'g',   lk:null},
+    {k:'_pct',  label:'%Ração', unit:'%',   lk:'racaoPct'},
+    {k:'_tca',  label:'TCA',    unit:'',    lk:null},
+  ];
+
+  // Define, filtra e separa tanques
+  const activeTanks=tanks.filter(t=>{
+    const names=t.hapaNames;
+    if(names?.length){for(let h=1;h<=names.length;h++){if(records.some(r=>r.tankId===t.id&&r.hapa===h))return true;}}
+    return records.some(r=>r.tankId===t.id&&!r.hapa);
+  });
+  // Separa ativos e vazios, ambos em ordem crescente por número
+  const sorted=[...activeTanks].sort((a,b)=>(a.num||0)-(b.num||0));
+  const ativos=sorted.filter(t=>!t.empty);
+  const vazios=sorted.filter(t=>t.empty);
+
+  if(!ativos.length&&!vazios.length){cont.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px 0;font-size:13px;">Nenhum dado registrado ainda.</div>';return;}
+
+  const renderRow=(t)=>{
+    const isEmpty=!!t.empty;
+    if(isEmpty){
+      let row=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:#e8edf2;border-radius:8px;border:1px solid #c8d3de;opacity:0.7;">`;
+      row+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:#7a8fa3;display:flex;align-items:center;gap:4px;">${t.name}<span style="font-size:9px;background:#b0bec5;color:#fff;border-radius:6px;padding:1px 5px;">VAZIO</span></div>`;
+      cols.forEach(()=>{row+=`<div style="padding:6px 2px;text-align:center;font-size:13px;color:#b0bec5;">—</div>`;});
+      return row+`</div>`;
+    }
+    const rec=recDodia(t);
+    const tca=tcaAcum(t);
+    const vals={};
+    if(rec){
+      Object.assign(vals,{o2:rec.o2,temp:rec.temp,amonia:rec.amonia,ph:rec.ph,mort:rec.mort||0,qty:rec.qty,bio:rec.bio,_ideal:rec.racaoIdealG,_real:rec.racaoG});
+      vals._pct=(rec.racaoIdealG&&rec.racaoG)?Math.round(rec.racaoG/rec.racaoIdealG*100):null;
+    }
+    vals._tca=tca?parseFloat(tca):null;
+    const hapaCount=t.hapaNames?.length||0;
+    const hapaBadge=hapaCount?`<span style="font-size:9px;color:#7c3aed;background:rgba(124,58,237,0.1);border-radius:6px;padding:1px 5px;margin-left:3px;">🪣${hapaCount}</span>`:'';
+    const rowBg=rec?'#fff':'#f8fafc';
+    let row=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
+    row+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${t.name}${hapaBadge}</div>`;
+    cols.forEach(c=>{
+      const v=vals[c.k];
+      let light='⚪';
+      if(c.lk&&v!=null){
+        if(c.lk==='racaoPct'){light=v>=(LIMITS.racaoPct?.min||70)?'🟢':v>=50?'🟡':'🔴';}
+        else{light=trafficLight(v,c.lk);}
+      }
+      const display=v!=null?(Number.isInteger(v)?v:parseFloat(v.toFixed(2))):'—';
+      row+=`<div style="padding:6px 2px;text-align:center;font-size:11px;font-family:'JetBrains Mono',monospace;">${light}<br><span style="font-size:12px;font-weight:600;color:var(--text);">${display}</span></div>`;
+    });
+    return row+`</div>`;
+  };
+
+  // Cabeçalho das colunas
+  const headerRow=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:4px;">
+    <div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 4px;"></div>
+    ${cols.map(c=>`<div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 2px;text-align:center;white-space:nowrap;">${c.label}<br><span style="font-weight:400;">${c.unit}</span></div>`).join('')}
+  </div>`;
+
+  let html=`<div style="min-width:700px;">${headerRow}`;
+
+  // Grupo ativos
+  ativos.forEach(t=>{html+=renderRow(t);});
+
+  // Separador + grupo vazios
+  if(vazios.length){
+    html+=`<div style="display:flex;align-items:center;gap:8px;margin:10px 0 6px;">
+      <div style="height:1px;flex:1;background:var(--border2);"></div>
+      <span style="font-size:10px;font-weight:700;color:#b0bec5;letter-spacing:1px;text-transform:uppercase;">Tanques Vazios</span>
+      <div style="height:1px;flex:1;background:var(--border2);"></div>
+    </div>`;
+    vazios.forEach(t=>{html+=renderRow(t);});
+  }
+  html+=`</div><div style="display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap;font-size:11px;color:var(--text3);">
+    <span>🟢 Normal</span><span>🟡 Alerta</span><span>🔴 Crítico</span><span>⚪ Sem limite/dado</span>
+    <span>🪣N = tem hapas (dados consolidados)</span></div>`;
+  cont.innerHTML=html;
+}
+
+// ===== PARÂMETROS DE ALERTA =====
+const PARAM_DEFS=[
+  {key:'temp',  label:'Temperatura',  unit:'°C',   hasMin:true, hasMax:true},
+  {key:'o2',    label:'Oxigênio',     unit:'mg/L', hasMin:true, hasMax:true},
+  {key:'amonia',label:'Amônia',       unit:'mg/L', hasMin:false,hasMax:true},
+  {key:'ph',    label:'pH',           unit:'',     hasMin:true, hasMax:true},
+  {key:'mort',  label:'Mortalidade',  unit:'un',   hasMin:false,hasMax:true},
+  {key:'bio',   label:'Biometria',    unit:'g',    hasMin:true, hasMax:false},
+  {key:'racaoPct',label:'% Ração consumida',unit:'%',hasMin:true,hasMax:false},
+];
+
+function renderParamsForm(){
+  el.innerHTML=PARAM_DEFS.map(p=>`
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">${p.label} ${p.unit?`<span style="color:var(--text3);font-weight:400;">(${p.unit})</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${p.hasMin?`<div class="config-field"><label>Mínimo</label><input type="number" id="param-${p.key}-min" value="${LIMITS[p.key]?.min??''}" step="0.01" inputmode="decimal"></div>`:
+          `<div></div>`}
+        ${p.hasMax?`<div class="config-field"><label>Máximo</label><input type="number" id="param-${p.key}-max" value="${LIMITS[p.key]?.max??''}" step="0.01" inputmode="decimal"></div>`:
+          `<div></div>`}
+      </div>
+    </div>`).join('');
+}
+
+function saveParams(){
+  PARAM_DEFS.forEach(p=>{
+    if(!LIMITS[p.key])LIMITS[p.key]={};
+    if(p.hasMin){const v=parseFloat(document.getElementById(`param-${p.key}-min`)?.value);if(!isNaN(v))LIMITS[p.key].min=v;}
+    if(p.hasMax){const v=parseFloat(document.getElementById(`param-${p.key}-max`)?.value);if(!isNaN(v))LIMITS[p.key].max=v;}
+  });
+  saveLimits();
+  showToast('Parâmetros salvos ✓','ok');
+}
+
+// ===== GRÁFICOS - ABAS =====
+let activeGraficoTab='tanque';
+let selectedAguaTanks=new Set();
+
+function switchGraficoTab(tab){
+  activeGraficoTab=tab;
+  document.getElementById('gtab-tanque').style.color=tab==='tanque'?'var(--accent)':'var(--text3)';
+  document.getElementById('gtab-tanque').style.borderBottom=tab==='tanque'?'2.5px solid var(--accent)':'2.5px solid transparent';
+  document.getElementById('gtab-agua').style.color=tab==='agua'?'var(--accent)':'var(--text3)';
+  document.getElementById('gtab-agua').style.borderBottom=tab==='agua'?'2.5px solid var(--accent)':'2.5px solid transparent';
+  document.getElementById('graficos-tanque').style.display=tab==='tanque'?'block':'none';
+  document.getElementById('graficos-agua').style.display=tab==='agua'?'block':'none';
+  if(tab==='agua')initAguaCharts();
+}
+
+function initAguaCharts(){
+  // Datas padrão: últimos 30 dias
+  const to=new Date().toISOString().split('T')[0];
+  const from=new Date(Date.now()-30*24*3600*1000).toISOString().split('T')[0];
+  const df=document.getElementById('agua-date-from');
+  const dt=document.getElementById('agua-date-to');
+  if(!df.value)df.value=from;
+  if(!dt.value)dt.value=to;
+  renderAguaTankChips();
+}
+
+function renderAguaTankChips(){
+  const cont=document.getElementById('agua-tank-chips');
+  // Tanques com pelo menos um registro de qualidade da água
+  const eligible=tanks.filter(t=>records.some(r=>r.tankId===t.id&&(r.temp||r.o2||r.ph||r.amonia)));
+  const COLORS=['#1a3a6b','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2'];
+  cont.innerHTML=eligible.map((t,i)=>{
+    const sel=selectedAguaTanks.has(t.id);
+    const color=COLORS[i%COLORS.length];
+    return`<div onclick="toggleAguaTank('${t.id}')"
+      style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ${color};
+      background:${sel?color:'transparent'};color:${sel?'#fff':color};transition:all 0.15s;white-space:nowrap;">
+      ${t.name}
+    </div>`;
+  }).join('');
+}
+
+function toggleAguaTank(tid){
+  if(selectedAguaTanks.has(tid)){selectedAguaTanks.delete(tid);}
+  else{
+    if(selectedAguaTanks.size>=6){showToast('Máximo 6 tanques','error');return;}
+    selectedAguaTanks.add(tid);
+  }
+  renderAguaTankChips();
+}
+
+function renderAguaCharts(){
+  const from=document.getElementById('agua-date-from').value;
+  const to=document.getElementById('agua-date-to').value;
+  const cont=document.getElementById('agua-charts-container');
+  cont.innerHTML='';
+
+  if(!selectedAguaTanks.size){showToast('Selecione pelo menos um tanque','error');return;}
+
+  const COLORS=['#1a3a6b','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2'];
+  const selTanks=[...selectedAguaTanks].map(tid=>tanks.find(t=>t.id===tid)).filter(Boolean);
+
+  // Para cada tanque, pega registros no período filtrado
+  const tankData=selTanks.map((t,i)=>{
+    const recs=getOfficialRecords(t.id).filter(r=>(!from||r.date>=from)&&(!to||r.date<=to));
+    return{tank:t,recs,color:COLORS[i%COLORS.length]};
+  });
+
+  // Parâmetros de qualidade da água
+  const params=[
+    {key:'temp',  label:'Temperatura', unit:'°C',   limit:{min:LIMITS.temp?.min,max:LIMITS.temp?.max}},
+    {key:'o2',    label:'Oxigênio',    unit:'mg/L',  limit:{min:LIMITS.o2?.min}},
+    {key:'amonia',label:'Amônia',      unit:'mg/L',  limit:{max:LIMITS.amonia?.max}},
+    {key:'ph',    label:'pH',          unit:'',      limit:{min:LIMITS.ph?.min,max:LIMITS.ph?.max}},
+  ];
+
+  params.forEach(p=>{
+    // Verifica se há pelo menos algum dado desse parâmetro
+    const hasData=tankData.some(td=>td.recs.some(r=>r[p.key]!=null));
+    if(!hasData)return;
+
+    // Coleta todas as datas únicas em ordem
+    const allDates=[...new Set(tankData.flatMap(td=>td.recs.map(r=>r.date)))].sort();
+    if(!allDates.length)return;
+
+    const block=document.createElement('div');block.className='chart-block';
+    // Legenda
+    const legend=selTanks.map((t,i)=>`<div style="display:flex;align-items:center;gap:4px;font-size:11px;"><div style="width:14px;height:3px;background:${COLORS[i%COLORS.length]};border-radius:2px;"></div>${t.name}</div>`).join('');
+    block.innerHTML=`
+      <div class="chart-title">${p.label}</div>
+      <div class="chart-sub">${p.unit}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;">${legend}</div>
+      <div class="chart-wrap"><canvas class="chart-canvas" id="aguacc_${p.key}" height="180"></canvas></div>`;
+    cont.appendChild(block);
+
+    requestAnimationFrame(()=>{
+      const canvas=document.getElementById('aguacc_'+p.key);
+      if(!canvas)return;
+      drawMultiLineCanvas(canvas,allDates,tankData.map(td=>({
+        vals:allDates.map(d=>{const r=td.recs.find(x=>x.date===d);return r?.[p.key]??null;}),
+        color:td.color,
+      })),p.limit);
+    });
+  });
+
+  if(!cont.children.length){
+    cont.innerHTML='<div style="padding:20px 13px;text-align:center;color:var(--text3);font-size:13px;">Nenhum dado de qualidade da água no período selecionado.</div>';
+  }
+}
+
+function drawMultiLineCanvas(canvas,labels,series,limit){
+  const W=Math.max(labels.length*44,canvas.parentElement.clientWidth-4||320);
+  const H=180;canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  const pad={t:18,r:12,b:32,l:44};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const allVals=series.flatMap(s=>s.vals).filter(v=>v!=null);
+  if(!allVals.length)return;
+  let mn=Math.min(...allVals),mx=Math.max(...allVals);
+  // Inclui limites no range para mostrar banda
+  if(limit?.min!=null)mn=Math.min(mn,limit.min);
+  if(limit?.max!=null)mx=Math.max(mx,limit.max);
+  const range=mx-mn||1;
+  const toY=v=>pad.t+ch-(((v-mn)/range)*ch);
+  const toX=i=>pad.l+(i/(Math.max(labels.length-1,1)))*cw;
+
+  ctx.clearRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad.t+(i/4)*ch;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();}
+
+  // Banda de limite
+  if(limit){
+    ctx.fillStyle='rgba(220,38,38,0.05)';
+    if(limit.min!=null&&limit.max!=null){
+      const y1=toY(limit.max),y2=toY(limit.min);
+      ctx.fillStyle='rgba(22,163,74,0.07)';
+      ctx.fillRect(pad.l,y1,cw,y2-y1);
+    }
+    if(limit.min!=null){
+      ctx.strokeStyle='rgba(220,38,38,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(pad.l,toY(limit.min));ctx.lineTo(W-pad.r,toY(limit.min));ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if(limit.max!=null){
+      ctx.strokeStyle='rgba(220,38,38,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(pad.l,toY(limit.max));ctx.lineTo(W-pad.r,toY(limit.max));ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Séries
+  series.forEach(s=>{
+    ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';
+    ctx.beginPath();let started=false;
+    s.vals.forEach((v,i)=>{
+      if(v===null)return;
+      const x=toX(i),y=toY(v);
+      started?ctx.lineTo(x,y):ctx.moveTo(x,y);started=true;
+    });
+    ctx.stroke();
+    // Dots
+    s.vals.forEach((v,i)=>{
+      if(v===null)return;
+      ctx.fillStyle=s.color;ctx.beginPath();ctx.arc(toX(i),toY(v),3,0,Math.PI*2);ctx.fill();
+    });
+  });
+
+  // X labels (datas)
+  ctx.fillStyle='#8a9db5';ctx.font='9px Space Grotesk,sans-serif';ctx.textAlign='center';
+  // Mostra só algumas labels para não sobrecarregar
+  const step=Math.max(1,Math.floor(labels.length/8));
+  labels.forEach((l,i)=>{if(i%step===0)ctx.fillText(l.slice(0,5),toX(i),H-8);});
+
+  // Y labels
+  ctx.fillStyle='#8a9db5';ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    const v=(mn+range*(1-i/4));
+    ctx.fillText(v%1===0?v:v.toFixed(1),pad.l-4,pad.t+(i/4)*ch+4);
+  }
+}
+
+// ===== GRÁFICOS =====
+function populateChartTankSelect(){
+  const sel=document.getElementById('chart-tank-select');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">Selecione um tanque...</option>';
+  tanks.filter(t=>records.some(r=>r.tankId===t.id)).forEach(t=>{
+    const names=t.hapaNames;
+    const o=document.createElement('option');
+    o.value=t.id;
+    o.textContent=names?.length?`${t.name} (Consolidado 🪣)`:t.name;
+    if(t.id===prev)o.selected=true;
+    sel.appendChild(o);
+    // Hapas individuais com nomes
+    if(names?.length){
+      names.forEach((nm,i)=>{
+        const hapaNum=i+1;
+        const hasData=records.some(r=>r.tankId===t.id&&r.hapa===hapaNum);
+        if(hasData){
+          const oh=document.createElement('option');
+          oh.value=`${t.id}::hapa::${hapaNum}`;
+          oh.textContent=`  └ ${t.name} — ${nm}`;
+          if(`${t.id}::hapa::${hapaNum}`===prev)oh.selected=true;
+          sel.appendChild(oh);
+        }
+      });
+    }
+  });
+}
+
+
+// ===== INJEÇÃO DE DADOS HISTÓRICOS =====
+async function injectHistoricalData(){
+  async function inject(tankId,tankName,prefix,raw){
+    const hasRecs=records.some(r=>r.tankId===tankId&&r.id.startsWith('hist_'+prefix));
+    if(hasRecs)return;
+    const newRecs=raw.map((d,i)=>({
+      id:`hist_${prefix}_${i}`,tankId,tankName,
+      date:d.date,user:'Sistema (importado)',username:'sistema',
+      timestamp:d.date+'T08:00:00.000Z',
+      lote:'',temp:null,o2:null,amonia:null,ph:null,mort:0,
+      qty:d.qty??null,bio:d.bio??null,racao:'',
+      racaoIdealG:d.idealG??null,racaoG:d.realG??null,
+      tratos:null,obs:'',overridden:false,hapa:null,
+    }));
+    newRecs.forEach(r=>records.push(r));
+    // Envia ao Supabase em lote
+    const rows=newRecs.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r}));
+    await sbUpsert('records',rows);
+  }
+
+  await inject('tank_geo-elevada_40','Tanque 40','tq40',[
+    {date:'2026-02-18',bio:0.02,qty:70000,idealG:89, realG:98},
+    {date:'2026-02-20',bio:0.02,qty:70000,idealG:89, realG:null},
+    {date:'2026-03-04',bio:0.02,qty:70000,idealG:89, realG:89},
+    {date:'2026-03-19',bio:0.81,qty:6326, idealG:948,realG:468},
+    {date:'2026-03-24',bio:0.81,qty:6326, idealG:615,realG:615},
+    {date:'2026-03-25',bio:0.81,qty:6326, idealG:615,realG:287},
+    {date:'2026-03-26',bio:0.81,qty:6326, idealG:615,realG:615},
+    {date:'2026-03-27',bio:0.81,qty:6326, idealG:615,realG:327},
+    {date:'2026-03-28',bio:0.81,qty:6326, idealG:615,realG:615},
+    {date:'2026-04-01',bio:0.81,qty:6326, idealG:891,realG:891},
+    {date:'2026-04-10',bio:1.5, qty:5777, idealG:770,realG:770},
+    {date:'2026-04-11',bio:1.5, qty:5777, idealG:763,realG:341},
+    {date:'2026-04-12',bio:1.5, qty:5777, idealG:763,realG:673},
+    {date:'2026-04-13',bio:1.5, qty:5777, idealG:763,realG:763},
+    {date:'2026-04-14',bio:1.5, qty:5777, idealG:763,realG:763},
+    {date:'2026-04-16',bio:2.4, qty:5777, idealG:763,realG:763},
+    {date:'2026-04-17',bio:2.4, qty:5777, idealG:244,realG:244},
+    {date:'2026-04-18',bio:2.4, qty:5777, idealG:244,realG:172},
+    {date:'2026-04-19',bio:2.4, qty:5777, idealG:244,realG:244},
+  ]);
+
+  await inject('tank_geo-elevada_41','Tanque 41','tq41',[
+    {date:'2026-02-18',bio:2.6,qty:7062, idealG:1616,realG:1224},
+    {date:'2026-02-20',bio:2.6,qty:7062, idealG:1616,realG:698},
+    {date:'2026-02-21',bio:3.5,qty:7062, idealG:1616,realG:1616},
+    {date:'2026-03-04',bio:3.6,qty:7062, idealG:1780,realG:1780},
+    {date:'2026-03-06',bio:3.6,qty:7062, idealG:1780,realG:1780},
+    {date:'2026-04-02',bio:0.49,qty:10050,idealG:591,realG:454},
+    {date:'2026-04-03',bio:0.49,qty:10050,idealG:591,realG:359},
+    {date:'2026-04-07',bio:0.49,qty:10050,idealG:591,realG:591},
+    {date:'2026-04-08',bio:0.49,qty:10050,idealG:591,realG:591},
+    {date:'2026-04-09',bio:1.5, qty:10050,idealG:591,realG:591},
+    {date:'2026-04-10',bio:1.5, qty:10050,idealG:1327,realG:1327},
+    {date:'2026-04-11',bio:1.5, qty:10050,idealG:1327,realG:831},
+    {date:'2026-04-12',bio:1.5, qty:10050,idealG:1327,realG:1327},
+    {date:'2026-04-13',bio:1.5, qty:10050,idealG:1327,realG:1327},
+    {date:'2026-04-14',bio:1.5, qty:10050,idealG:1327,realG:1327},
+    {date:'2026-04-16',bio:1.5, qty:10050,idealG:1327,realG:1327},
+    {date:'2026-04-17',bio:2.7, qty:10050,idealG:478,realG:478},
+    {date:'2026-04-18',bio:2.7, qty:10050,idealG:478,realG:478},
+    {date:'2026-04-19',bio:2.7, qty:10050,idealG:478,realG:478},
+  ]);
+
+  await inject('tank_geo-elevada_42','Tanque 42','tq42',[
+    {date:'2026-04-02',bio:0.6,qty:10431,idealG:751,realG:751},
+    {date:'2026-04-03',bio:0.6,qty:10431,idealG:751,realG:501},
+    {date:'2026-04-07',bio:0.6,qty:10431,idealG:751,realG:751},
+    {date:'2026-04-08',bio:0.6,qty:10431,idealG:751,realG:751},
+    {date:'2026-04-09',bio:1.1,qty:10431,idealG:751,realG:751},
+    {date:'2026-04-10',bio:1.1,qty:10431,idealG:1377,realG:1377},
+    {date:'2026-04-11',bio:1.1,qty:10431,idealG:1377,realG:433},
+    {date:'2026-04-12',bio:1.1,qty:10431,idealG:1377,realG:1177},
+    {date:'2026-04-13',bio:1.1,qty:10431,idealG:1377,realG:1377},
+    {date:'2026-04-14',bio:1.1,qty:10431,idealG:1377,realG:1377},
+    {date:'2026-04-16',bio:1.1,qty:10431,idealG:1377,realG:1377},
+    {date:'2026-04-17',bio:1.9,qty:10431,idealG:1744,realG:1744},
+    {date:'2026-04-18',bio:1.9,qty:10431,idealG:1744,realG:1204},
+    {date:'2026-04-19',bio:1.9,qty:10431,idealG:1744,realG:1744},
+  ]);
+
+  await inject('tank_geo-elevada_43','Tanque 43','tq43',[
+    {date:'2026-02-18',bio:0.7, qty:10910,idealG:916, realG:432},{date:'2026-02-20',bio:0.7, qty:10910,idealG:916, realG:600},
+    {date:'2026-02-21',bio:1.0, qty:10910,idealG:916, realG:916},{date:'2026-03-04',bio:1.2, qty:10910,idealG:1571,realG:1571},
+    {date:'2026-03-06',bio:1.2, qty:10910,idealG:1571,realG:1571},{date:'2026-03-19',bio:0.81,qty:11016,idealG:1071,realG:745},
+    {date:'2026-03-24',bio:0.81,qty:11016,idealG:1070,realG:1071},{date:'2026-03-25',bio:0.81,qty:11016,idealG:1071,realG:605},
+    {date:'2026-03-26',bio:0.81,qty:11016,idealG:1071,realG:1071},{date:'2026-03-27',bio:0.81,qty:11016,idealG:1071,realG:561},
+    {date:'2026-03-28',bio:0.81,qty:11016,idealG:1071,realG:1071},{date:'2026-04-01',bio:1.7, qty:11016,idealG:1648,realG:1648},
+  ]);
+  await inject('tank_geo-elevada_44','Tanque 44','tq44',[
+    {date:'2026-02-18',bio:3.7, qty:10285,idealG:533, realG:533},{date:'2026-02-20',bio:3.7, qty:10285,idealG:533, realG:213},
+    {date:'2026-02-21',bio:3.8, qty:10285,idealG:533, realG:533},{date:'2026-03-04',bio:4.0, qty:8285, idealG:408, realG:408},
+    {date:'2026-03-06',bio:4.0, qty:8285, idealG:408, realG:408},{date:'2026-03-19',bio:1.96,qty:10657,idealG:1838,realG:968},
+    {date:'2026-03-24',bio:1.96,qty:10657,idealG:1838,realG:1838},{date:'2026-03-25',bio:1.96,qty:10657,idealG:1838,realG:1254},
+    {date:'2026-03-26',bio:1.96,qty:10657,idealG:1838,realG:1838},{date:'2026-03-27',bio:1.96,qty:10657,idealG:1838,realG:1210},
+    {date:'2026-03-28',bio:1.96,qty:10657,idealG:1838,realG:1838},{date:'2026-04-01',bio:null,qty:10657,idealG:2238,realG:2238},
+  ]);
+  await inject('tank_geo-elevada_45','Tanque 45','tq45',[
+    {date:'2026-02-18',bio:2.8,qty:4545,idealG:224,realG:224},{date:'2026-02-20',bio:2.8,qty:4545,idealG:224,realG:108},
+    {date:'2026-02-21',bio:3.5,qty:4545,idealG:224,realG:224},{date:'2026-03-04',bio:3.8,qty:4545,idealG:242,realG:242},
+    {date:'2026-03-06',bio:3.8,qty:4545,idealG:242,realG:242},
+  ]);
+  await inject('tank_geo-elevada_46','Tanque 46','tq46',[
+    {date:'2026-02-18',bio:0.02,qty:110080,idealG:614,realG:196},{date:'2026-03-04',bio:0.02,qty:110080,idealG:20,realG:20},
+  ]);
+  await inject('tank_geo-elevada_47','Tanque 47','tq47',[
+    {date:'2026-02-18',bio:1.2,qty:7967, idealG:1147,realG:531},{date:'2026-02-20',bio:1.2,qty:7967, idealG:1147,realG:731},
+    {date:'2026-02-21',bio:2.0,qty:7967, idealG:1147,realG:1147},{date:'2026-03-04',bio:2.0,qty:7967, idealG:1402,realG:1402},
+    {date:'2026-03-06',bio:2.0,qty:7967, idealG:1402,realG:1402},{date:'2026-03-19',bio:0.81,qty:9835,idealG:956,realG:508},
+    {date:'2026-03-24',bio:0.81,qty:9835,idealG:956,realG:956},{date:'2026-03-25',bio:0.81,qty:9835,idealG:956,realG:536},
+    {date:'2026-03-26',bio:0.81,qty:9835,idealG:956,realG:956},{date:'2026-03-27',bio:0.81,qty:9835,idealG:956,realG:570},
+    {date:'2026-03-28',bio:0.81,qty:9835,idealG:956,realG:956},{date:'2026-04-01',bio:null,qty:9835,idealG:2164,realG:2164},
+  ]);
+  await inject('tank_geo-elevada_48','Tanque 48','tq48',[
+    {date:'2026-02-18',bio:6.6, qty:4304, idealG:398, realG:398},{date:'2026-02-20',bio:6.6, qty:4304, idealG:398, realG:176},
+    {date:'2026-02-21',bio:4.1, qty:4304, idealG:398, realG:398},{date:'2026-03-04',bio:4.0, qty:4304, idealG:241, realG:241},
+    {date:'2026-03-06',bio:4.0, qty:4304, idealG:241, realG:241},{date:'2026-03-28',bio:5.05,qty:3775, idealG:267, realG:241},
+    {date:'2026-04-01',bio:5.05,qty:3775, idealG:333, realG:333},{date:'2026-04-02',bio:5.05,qty:null, idealG:539, realG:539},
+    {date:'2026-04-03',bio:5.05,qty:null, idealG:539, realG:257},{date:'2026-04-07',bio:6.3, qty:7621, idealG:539, realG:539},
+    {date:'2026-04-08',bio:6.3, qty:7621, idealG:539, realG:539},{date:'2026-04-09',bio:6.3, qty:7621, idealG:539, realG:539},
+    {date:'2026-04-10',bio:5.8, qty:10742,idealG:953, realG:953},{date:'2026-04-11',bio:5.8, qty:10742,idealG:872, realG:872},
+    {date:'2026-04-12',bio:5.8, qty:10742,idealG:872, realG:872},{date:'2026-04-13',bio:5.8, qty:10742,idealG:872, realG:872},
+    {date:'2026-04-14',bio:5.8, qty:10742,idealG:872, realG:872},{date:'2026-04-16',bio:5.8, qty:10742,idealG:872, realG:872},
+    {date:'2026-04-17',bio:7.8, qty:10742,idealG:1158,realG:1158},{date:'2026-04-18',bio:7.8, qty:10742,idealG:1158,realG:964},
+    {date:'2026-04-19',bio:7.8, qty:10742,idealG:1158,realG:1158},
+  ]);
+  await inject('tank_geo-elevada_49','Tanque 49','tq49',[
+    {date:'2026-02-18',bio:0.5, qty:7924,idealG:475,realG:269},{date:'2026-02-20',bio:0.5, qty:7924,idealG:475,realG:323},
+    {date:'2026-02-21',bio:0.5, qty:7924,idealG:475,realG:475},{date:'2026-03-04',bio:0.5, qty:4924,idealG:475,realG:475},
+    {date:'2026-03-06',bio:0.5, qty:4924,idealG:475,realG:475},{date:'2026-03-19',bio:1.96,qty:5576,idealG:962,realG:538},
+    {date:'2026-03-24',bio:1.96,qty:5576,idealG:962,realG:962},{date:'2026-03-28',bio:0.7, qty:6026,idealG:506,realG:506},
+    {date:'2026-04-01',bio:0.7, qty:6026,idealG:506,realG:506},
+  ]);
+  await inject('tank_geo-elevada_50','Tanque 50','tq50',[
+    {date:'2026-02-18',bio:2.6, qty:13241,idealG:606, realG:606},{date:'2026-02-20',bio:2.6, qty:13241,idealG:606, realG:232},
+    {date:'2026-02-21',bio:2.2, qty:13241,idealG:606, realG:606},{date:'2026-03-04',bio:2.5, qty:13241,idealG:583, realG:583},
+    {date:'2026-03-06',bio:2.5, qty:13241,idealG:583, realG:583},{date:'2026-04-02',bio:null,qty:null, idealG:742, realG:118},
+    {date:'2026-04-03',bio:null,qty:null, idealG:742, realG:424},{date:'2026-04-07',bio:0.49,qty:12616,idealG:742, realG:742},
+    {date:'2026-04-08',bio:0.49,qty:12616,idealG:742, realG:742},{date:'2026-04-09',bio:0.49,qty:12616,idealG:742, realG:742},
+    {date:'2026-04-10',bio:1.5, qty:12616,idealG:1665,realG:1665},{date:'2026-04-11',bio:1.5, qty:12616,idealG:1665,realG:1373},
+    {date:'2026-04-12',bio:1.5, qty:12616,idealG:1665,realG:1365},{date:'2026-04-13',bio:1.5, qty:12616,idealG:1665,realG:891},
+    {date:'2026-04-14',bio:1.5, qty:12616,idealG:1665,realG:1295},{date:'2026-04-16',bio:1.5, qty:12616,idealG:1665,realG:1343},
+    {date:'2026-04-17',bio:2.5, qty:12616,idealG:555, realG:203},{date:'2026-04-18',bio:2.5, qty:12616,idealG:555, realG:493},
+    {date:'2026-04-19',bio:2.5, qty:12616,idealG:555, realG:555},
+  ]);
+  await inject('tank_geo-elevada_51','Tanque 51','tq51',[
+    {date:'2026-02-18',bio:2.3, qty:10017,idealG:2027,realG:1261},{date:'2026-02-20',bio:2.3, qty:10017,idealG:405, realG:175},
+    {date:'2026-02-21',bio:2.6, qty:10017,idealG:405, realG:405},{date:'2026-03-04',bio:2.8, qty:10017,idealG:494, realG:494},
+    {date:'2026-03-06',bio:2.8, qty:10017,idealG:494, realG:494},{date:'2026-03-28',bio:1.97,qty:4178, idealG:724, realG:724},
+    {date:'2026-04-01',bio:1.97,qty:4178, idealG:699, realG:699},{date:'2026-04-02',bio:1.97,qty:10487,idealG:1818,realG:918},
+    {date:'2026-04-03',bio:1.97,qty:10487,idealG:1818,realG:1008},{date:'2026-04-07',bio:1.9, qty:10487,idealG:1818,realG:1290},
+    {date:'2026-04-08',bio:1.9, qty:10487,idealG:867, realG:867},{date:'2026-04-09',bio:1.9, qty:10487,idealG:867, realG:867},
+    {date:'2026-04-10',bio:2.4, qty:3000, idealG:1056,realG:468},{date:'2026-04-11',bio:2.4, qty:3000, idealG:253, realG:133},
+    {date:'2026-04-12',bio:2.4, qty:3000, idealG:253, realG:253},{date:'2026-04-13',bio:2.4, qty:3000, idealG:253, realG:253},
+    {date:'2026-04-14',bio:2.4, qty:3000, idealG:253, realG:253},{date:'2026-04-16',bio:2.4, qty:3000, idealG:253, realG:253},
+    {date:'2026-04-17',bio:2.7, qty:3000, idealG:285, realG:285},{date:'2026-04-18',bio:2.7, qty:3000, idealG:285, realG:271},
+    {date:'2026-04-19',bio:2.7, qty:3000, idealG:285, realG:285},
+  ]);
+  await inject('tank_escavados_6','Tanque 6','tq06',[
+    {date:'2026-02-18',bio:0.4, qty:153000,idealG:7344,realG:2074},{date:'2026-02-20',bio:0.4, qty:153000,idealG:2400,realG:1518},
+    {date:'2026-02-21',bio:0.8, qty:50000, idealG:2400,realG:1540},{date:'2026-03-04',bio:0.9, qty:50000, idealG:2400,realG:2400},
+    {date:'2026-03-06',bio:0.9, qty:50000, idealG:2400,realG:1188},{date:'2026-03-19',bio:0.8, qty:50000, idealG:4800,realG:3102},
+    {date:'2026-03-24',bio:0.8, qty:50000, idealG:4800,realG:4800},{date:'2026-03-25',bio:0.8, qty:50000, idealG:4800,realG:3362},
+    {date:'2026-04-08',bio:0.02,qty:79499, idealG:191, realG:528},{date:'2026-04-09',bio:0.02,qty:79499, idealG:191, realG:346},
+    {date:'2026-04-10',bio:0.02,qty:79499, idealG:191, realG:648},{date:'2026-04-11',bio:0.02,qty:79499, idealG:636, realG:274},
+    {date:'2026-04-12',bio:0.02,qty:79499, idealG:795, realG:795},{date:'2026-04-13',bio:0.02,qty:79499, idealG:954, realG:954},
+    {date:'2026-04-14',bio:0.12,qty:79499, idealG:1113,realG:667},{date:'2026-04-16',bio:0.15,qty:79499, idealG:1453,realG:1453},
+    {date:'2026-04-17',bio:0.17,qty:79499, idealG:1590,realG:1386},{date:'2026-04-18',bio:0.18,qty:79499, idealG:1749,realG:1125},
+    {date:'2026-04-19',bio:0.2, qty:79499, idealG:1908,realG:1908},
+  ]);
+  await inject('tank_escavados_7','Tanque 7','tq07',[
+    {date:'2026-02-18',bio:0.3,qty:118769,idealG:4276,realG:1644},{date:'2026-02-20',bio:0.4,qty:118769,idealG:4276,realG:2782},
+    {date:'2026-02-21',bio:0.4,qty:118769,idealG:4276,realG:3346},{date:'2026-03-04',bio:0.7,qty:118769,idealG:4276,realG:4276},
+    {date:'2026-03-06',bio:0.7,qty:118769,idealG:4276,realG:2260},{date:'2026-03-19',bio:0.4,qty:118769,idealG:5701,realG:2925},
+    {date:'2026-03-24',bio:0.4,qty:118769,idealG:5701,realG:5701},{date:'2026-03-25',bio:0.4,qty:118769,idealG:5701,realG:4337},
+    {date:'2026-03-26',bio:0.4,qty:118769,idealG:5701,realG:5701},{date:'2026-03-27',bio:0.4,qty:118769,idealG:5701,realG:4269},
+    {date:'2026-03-28',bio:0.4,qty:118769,idealG:5701,realG:5701},
+  ]);
+  await inject('tank_escavados_8','Tanque 8','tq08',[
+    {date:'2026-02-11',bio:0.5, qty:80000,idealG:1200,realG:1200},{date:'2026-02-21',bio:0.02,qty:97200,idealG:null,realG:null},
+    {date:'2026-03-04',bio:0.02,qty:97200,idealG:233, realG:233},{date:'2026-03-25',bio:0.02,qty:97200,idealG:233, realG:155},
+    {date:'2026-03-26',bio:0.02,qty:97200,idealG:233, realG:630},{date:'2026-03-27',bio:0.02,qty:97200,idealG:233, realG:446},
+    {date:'2026-03-28',bio:0.02,qty:97200,idealG:233, realG:1366},{date:'2026-04-01',bio:0.02,qty:97200,idealG:233, realG:264},
+    {date:'2026-04-02',bio:0.02,qty:97200,idealG:233, realG:628},{date:'2026-04-03',bio:0.02,qty:97200,idealG:233, realG:604},
+    {date:'2026-04-07',bio:0.02,qty:97200,idealG:233, realG:718},{date:'2026-04-08',bio:0.5, qty:97200,idealG:233, realG:4960},
+    {date:'2026-04-09',bio:0.5, qty:97200,idealG:1458,realG:1042},{date:'2026-04-10',bio:0.5, qty:97200,idealG:840, realG:2530},
+    {date:'2026-04-12',bio:0.5, qty:80000,idealG:1200,realG:1075},{date:'2026-04-13',bio:0.5, qty:80000,idealG:1200,realG:1200},
+    {date:'2026-04-14',bio:0.5, qty:80000,idealG:1200,realG:1200},{date:'2026-04-16',bio:0.5, qty:80000,idealG:1200,realG:1200},
+    {date:'2026-04-17',bio:1.0, qty:80000,idealG:1200,realG:1200},{date:'2026-04-18',bio:1.0, qty:80000,idealG:1200,realG:774},
+    {date:'2026-04-19',bio:1.0, qty:80000,idealG:1200,realG:1200},
+  ]);
+  await inject('tank_escavados_14','Tanque 14','tq14',[
+    {date:'2026-02-18',bio:0.2,qty:164650,idealG:13180,realG:4356},{date:'2026-02-20',bio:1.4,qty:164650,idealG:13172,realG:6616},
+    {date:'2026-02-21',bio:1.4,qty:164650,idealG:13172,realG:11382},{date:'2026-03-04',bio:1.6,qty:164650,idealG:13172,realG:13172},
+    {date:'2026-03-06',bio:1.6,qty:164650,idealG:13172,realG:10034},
+  ]);
+  await inject('tank_geomembrana_16','Tanque 16','tq16',[
+    {date:'2026-02-18',bio:0.05,qty:124434,idealG:1244,realG:878},{date:'2026-02-20',bio:0.05,qty:124434,idealG:1244,realG:1244},
+    {date:'2026-02-21',bio:0.05,qty:124434,idealG:1244,realG:886},{date:'2026-03-04',bio:0.05,qty:124434,idealG:1244,realG:1244},
+    {date:'2026-03-06',bio:0.3, qty:124434,idealG:1244,realG:768},{date:'2026-03-19',bio:0.05,qty:124434,idealG:1244,realG:666},
+    {date:'2026-03-24',bio:0.05,qty:124434,idealG:1244,realG:1244},{date:'2026-03-25',bio:0.05,qty:124434,idealG:1244,realG:732},
+    {date:'2026-03-26',bio:0.05,qty:124434,idealG:1244,realG:1244},{date:'2026-03-27',bio:0.05,qty:124434,idealG:1244,realG:894},
+  ]);
+  await inject('tank_geomembrana_17','Tanque 17','tq17',[
+    {date:'2026-03-19',bio:0.05,qty:38566,idealG:231,realG:null},{date:'2026-03-25',bio:0.05,qty:38566,idealG:231,realG:153},
+    {date:'2026-03-26',bio:0.05,qty:38566,idealG:233,realG:630},{date:'2026-03-27',bio:0.05,qty:38556,idealG:231,realG:142},
+    {date:'2026-04-01',bio:0.5,qty:38556,idealG:2314,realG:222},{date:'2026-04-02',bio:0.5,qty:38556,idealG:2314,realG:608},
+    {date:'2026-04-03',bio:0.5,qty:38556,idealG:2314,realG:508},{date:'2026-04-07',bio:0.5,qty:38556,idealG:2314,realG:716},
+    {date:'2026-04-08',bio:0.5,qty:38556,idealG:2314,realG:1994},{date:'2026-04-09',bio:0.5,qty:38556,idealG:2314,realG:2314},
+    {date:'2026-04-10',bio:0.6,qty:38556,idealG:1388,realG:964},{date:'2026-04-11',bio:0.6,qty:38556,idealG:2777,realG:2611},
+    {date:'2026-04-12',bio:0.6,qty:38556,idealG:2770,realG:2470},{date:'2026-04-13',bio:0.6,qty:38556,idealG:2770,realG:2770},
+    {date:'2026-04-14',bio:0.6,qty:38556,idealG:2770,realG:2770},{date:'2026-04-16',bio:0.6,qty:38556,idealG:2770,realG:2770},
+    {date:'2026-04-17',bio:1.6,qty:38556,idealG:2777,realG:2777},{date:'2026-04-18',bio:1.6,qty:38556,idealG:2770,realG:2532},
+    {date:'2026-04-19',bio:1.6,qty:38556,idealG:2770,realG:2770},
+  ]);
+  await inject('tank_geomembrana_18','Tanque 18','tq18',[
+    {date:'2026-03-26',bio:0.02,qty:45000,idealG:108, realG:480},{date:'2026-03-27',bio:0.02,qty:45000,idealG:108, realG:162},
+    {date:'2026-04-01',bio:0.02,qty:45000,idealG:108, realG:208},{date:'2026-04-02',bio:0.02,qty:45000,idealG:108, realG:96},
+    {date:'2026-04-03',bio:0.02,qty:45000,idealG:108, realG:384},{date:'2026-04-07',bio:0.02,qty:45000,idealG:108, realG:324},
+    {date:'2026-04-08',bio:0.02,qty:45000,idealG:108, realG:454},{date:'2026-04-09',bio:0.02,qty:45000,idealG:108, realG:1602},
+    {date:'2026-04-10',bio:0.02,qty:45000,idealG:108, realG:430},{date:'2026-04-11',bio:0.02,qty:45000,idealG:1530,realG:368},
+    {date:'2026-04-12',bio:0.32,qty:45000,idealG:1620,realG:1501},{date:'2026-04-13',bio:0.32,qty:45000,idealG:1710,realG:1430},
+    {date:'2026-04-14',bio:0.33,qty:45000,idealG:1800,realG:724},{date:'2026-04-16',bio:0.33,qty:45000,idealG:2700,realG:2410},
+    {date:'2026-04-17',bio:1.0, qty:45000,idealG:2700,realG:2374},{date:'2026-04-18',bio:1.0, qty:45000,idealG:2700,realG:1742},
+    {date:'2026-04-19',bio:1.0, qty:45000,idealG:2700,realG:1599},
+  ]);
+  await inject('tank_geomembrana_19','Tanque 19','tq19',[
+    {date:'2026-03-27',bio:0.02,qty:34300,idealG:82,  realG:264},{date:'2026-04-01',bio:0.02,qty:34300,idealG:82,  realG:266},
+    {date:'2026-04-02',bio:0.02,qty:34300,idealG:82,  realG:400},{date:'2026-04-03',bio:0.02,qty:34300,idealG:82,  realG:336},
+    {date:'2026-04-07',bio:0.02,qty:34300,idealG:82,  realG:412},{date:'2026-04-08',bio:0.02,qty:34300,idealG:82,  realG:348},
+    {date:'2026-04-09',bio:0.02,qty:34300,idealG:82,  realG:1905},{date:'2026-04-10',bio:0.02,qty:34300,idealG:82,  realG:372},
+    {date:'2026-04-11',bio:0.02,qty:34300,idealG:1166,realG:430},{date:'2026-04-12',bio:0.32,qty:34300,idealG:1235,realG:1147},
+    {date:'2026-04-13',bio:0.32,qty:34300,idealG:1303,realG:1083},{date:'2026-04-14',bio:0.33,qty:34300,idealG:1372,realG:670},
+    {date:'2026-04-16',bio:0.33,qty:34300,idealG:1338,realG:1092},{date:'2026-04-17',bio:0.65,qty:34300,idealG:1338,realG:1338},
+    {date:'2026-04-18',bio:0.65,qty:34300,idealG:1338,realG:380},{date:'2026-04-19',bio:0.65,qty:34300,idealG:1338,realG:1338},
+  ]);
+  await inject('tank_escavados_1','Tanque 1','tq01',[
+    {date:'2026-02-18',bio:201,qty:1927,idealG:23398,realG:9506},{date:'2026-02-20',bio:201,qty:1927,idealG:30107,realG:13569},
+    {date:'2026-02-21',bio:201,qty:1927,idealG:30107,realG:26869},{date:'2026-03-04',bio:201,qty:1927,idealG:28026,realG:28026},
+    {date:'2026-03-06',bio:201,qty:1927,idealG:28026,realG:21628},{date:'2026-03-24',bio:201,qty:1965,idealG:28026,realG:23162},
+    {date:'2026-03-25',bio:201,qty:1965,idealG:28579,realG:8305},{date:'2026-03-27',bio:201,qty:1965,idealG:35647,realG:22361},
+    {date:'2026-04-01',bio:201,qty:1965,idealG:35647,realG:13533},{date:'2026-04-02',bio:201,qty:1965,idealG:35647,realG:35647},
+    {date:'2026-04-03',bio:201,qty:1965,idealG:35647,realG:13629},{date:'2026-04-07',bio:201,qty:1965,idealG:35647,realG:13887},
+    {date:'2026-04-08',bio:201,qty:1965,idealG:35647,realG:29637},{date:'2026-04-09',bio:201,qty:1965,idealG:35647,realG:26450},
+    {date:'2026-04-10',bio:201,qty:1965,idealG:35647,realG:0},{date:'2026-04-11',bio:331,qty:465,idealG:11082,realG:4024},
+    {date:'2026-04-13',bio:331,qty:465,idealG:1847,realG:1847},{date:'2026-04-14',bio:331,qty:465,idealG:1847,realG:1847},
+  ]);
+  await inject('tank_escavados_2','Tanque 2','tq02',[
+    {date:'2026-03-06',bio:213,qty:720,idealG:11318,realG:8152},{date:'2026-03-27',bio:213,qty:371,idealG:5690,realG:1096},
+    {date:'2026-04-01',bio:213,qty:371,idealG:5690,realG:5690},{date:'2026-04-02',bio:213,qty:371,idealG:5690,realG:5690},
+    {date:'2026-04-03',bio:213,qty:371,idealG:5690,realG:3884},{date:'2026-04-07',bio:213,qty:371,idealG:5690,realG:2740},
+    {date:'2026-04-08',bio:213,qty:371,idealG:5690,realG:4024},{date:'2026-04-09',bio:213,qty:371,idealG:5690,realG:1656},
+    {date:'2026-04-10',bio:213,qty:371,idealG:5690,realG:312},{date:'2026-04-11',bio:211,qty:526,idealG:7991,realG:3763},
+    {date:'2026-04-13',bio:211,qty:526,idealG:1332,realG:1332},{date:'2026-04-14',bio:211,qty:526,idealG:1332,realG:1332},
+    {date:'2026-04-16',bio:211,qty:568,idealG:2397,realG:2397},{date:'2026-04-17',bio:211,qty:568,idealG:2397,realG:2397},
+    {date:'2026-04-18',bio:211,qty:568,idealG:2397,realG:1339},{date:'2026-04-19',bio:211,qty:568,idealG:2397,realG:2397},
+  ]);
+  await inject('tank_escavados_3','Tanque 3','tq03',[
+    {date:'2026-02-18',bio:213,qty:2124,idealG:23398,realG:9506},{date:'2026-02-20',bio:213,qty:2124,idealG:23398,realG:6868},
+    {date:'2026-02-21',bio:213,qty:2124,idealG:23398,realG:19226},{date:'2026-03-04',bio:213,qty:2124,idealG:29209,realG:29209},
+    {date:'2026-03-06',bio:213,qty:1238,idealG:19060,realG:15024},{date:'2026-03-24',bio:213,qty:1238,idealG:18249,realG:18249},
+    {date:'2026-04-11',bio:331,qty:1831,idealG:43636,realG:16545},{date:'2026-04-13',bio:331,qty:1831,idealG:7273,realG:7273},
+    {date:'2026-04-14',bio:331,qty:1831,idealG:7273,realG:7273},{date:'2026-04-16',bio:331,qty:2192,idealG:5804,realG:5804},
+    {date:'2026-04-17',bio:331,qty:2192,idealG:5804,realG:5804},{date:'2026-04-18',bio:331,qty:2192,idealG:5804,realG:5804},
+    {date:'2026-04-19',bio:331,qty:2192,idealG:5804,realG:5804},
+  ]);
+
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  console.log('Dados históricos injetados.');
+}
+
+function onChartTankChange(){
+  const val=document.getElementById('chart-tank-select').value;
+  const loteRow=document.getElementById('chart-lote-row');
+  const loteSelect=document.getElementById('chart-lote-select');
+  if(!val){loteRow.style.display='none';renderCharts();return;}
+  const tid=val.includes('::hapa::')?val.split('::hapa::')[0]:val;
+  const hapaNum=val.includes('::hapa::')?parseInt(val.split('::hapa::')[1]):null;
+
+  // Busca lotes distintos — inclui vazio/null como "(sem lote)"
+  const lotesMap={};
+  records
+    .filter(r=>r.tankId===tid&&(hapaNum?r.hapa===hapaNum:true))
+    .forEach(r=>{
+      const lote=r.lote||''; // normaliza null/undefined para ''
+      if(!lotesMap[lote]||r.date>lotesMap[lote])lotesMap[lote]=r.date;
+    });
+
+  const lotes=Object.entries(lotesMap)
+    .sort((a,b)=>b[1].localeCompare(a[1])) // mais recente primeiro
+    .map(e=>e[0]);
+
+  // Sempre mostra o seletor se há registros
+  if(lotes.length>0){
+    loteSelect.innerHTML=
+      '<option value="__todos__">Todos os lotes</option>'+
+      lotes.map(l=>`<option value="${l===''}__vazio__${''}">${l===''?'(sem lote)':l}</option>`
+        .replace('value="__vazio__"','value="__semLote__"')
+      ).join('');
+    // Corrige: string vazia vira __semLote__
+    loteSelect.innerHTML=
+      '<option value="__todos__">Todos os lotes</option>'+
+      lotes.map(l=>l===''
+        ?`<option value="__semLote__">(sem lote)</option>`
+        :`<option value="${l}">${l}</option>`
+      ).join('');
+    loteRow.style.display='block';
+  } else {
+    loteRow.style.display='none';
+  }
+  renderCharts();
+}
+
+function renderCharts(){
+  const val=document.getElementById('chart-tank-select').value;
+  const cont=document.getElementById('charts-container');
+  cont.innerHTML='';
+  if(!val){cont.innerHTML='<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Selecione um tanque acima para ver os gráficos.</div>';return;}
+
+  let tid=val,hapaNum=null,chartTitle='';
+  if(val.includes('::hapa::')){
+    const parts=val.split('::hapa::');
+    tid=parts[0];hapaNum=parseInt(parts[1]);
+    const tank=tanks.find(t=>t.id===tid);
+    chartTitle=`${tank?.name||tid} — ${hapaLabel(tank,hapaNum)}`;
+  } else {
+    const tank=tanks.find(t=>t.id===tid);
+    chartTitle=tank?.hapas?`${tank.name} (Consolidado)`:tank?.name||tid;
+  }
+
+  const loteFilter=document.getElementById('chart-lote-select')?.value||'__todos__';
+
+  let off=hapaNum?getOfficialRecords(tid,hapaNum):getOfficialRecords(tid,null);
+
+  if(loteFilter==='__semLote__'){
+    off=off.filter(r=>!r.lote||r.lote==='');
+    chartTitle+=` · Lote: (sem lote)`;
+  } else if(loteFilter!=='__todos__'){
+    off=off.filter(r=>r.lote===loteFilter);
+    chartTitle+=` · Lote: ${loteFilter}`;
+  }
+
+  if(off.length<1){cont.innerHTML=`<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Sem dados para "${chartTitle}".</div>`;return;}
+
+  const labels=off.map(r=>formatDate(r.date));
+  const titulo=document.createElement('div');
+  titulo.style.cssText='padding:8px 13px;font-size:14px;font-weight:700;color:var(--text2);';
+  titulo.textContent='📊 '+chartTitle;
+  cont.appendChild(titulo);
+
+  const chartDefs=[
+    {title:'Oxigênio',    unit:'mg/L',key:'o2',    color:'#2251a0'},
+    {title:'Amônia',      unit:'mg/L',key:'amonia',color:'#d97706'},
+    {title:'Temperatura', unit:'°C',  key:'temp',  color:'#dc2626'},
+    {title:'pH',          unit:'',    key:'ph',    color:'#7c3aed'},
+    {title:'Biometria',   unit:'g',   key:'bio',   color:'#059669'},
+    {title:'Qtd. Peixes', unit:'un',  key:'qty',   color:'#0891b2'},
+    {title:'Mortalidade', unit:'un',  key:'mort',  color:'#b91c1c'},
+  ];
+  chartDefs.forEach(cfg=>{
+    const vals=off.map(r=>r[cfg.key]??null);
+    if(vals.every(v=>v===null))return;
+    cont.appendChild(makeSVGChart(cfg.title,cfg.unit,labels,vals,cfg.color));
+  });
+
+  const ideal=off.map(r=>r.racaoIdealG??null);
+  const real=off.map(r=>r.racaoG??null);
+  if(!ideal.every(v=>v===null)||!real.every(v=>v===null)){
+    cont.appendChild(makeSVGDualChart('Ração','g',labels,ideal,'#1a3a6b',real,'#16a34a','Ideal','Real'));
+    cont.appendChild(makeRacaoTable(labels,off));
+  }
+  const tcaBlock=makeTCATable(off);
+  if(tcaBlock)cont.appendChild(tcaBlock);
+}
+
+function makeSVGChart(title,unit,labels,vals,color){
+  const W=700,H=180;
+  const pad={t:20,r:10,b:36,l:46};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const nonNull=vals.filter(v=>v!==null);
+  if(!nonNull.length)return document.createElement('div');
+  const mn=Math.min(...nonNull),mx=Math.max(...nonNull);
+  const range=mx-mn||1;
+  const toY=v=>pad.t+ch-(((v-mn)/range)*ch);
+  const toX=i=>pad.l+(i/Math.max(vals.length-1,1))*cw;
+
+  let pathD='',dots='',xlabels='',ylabels='',values='';
+  let started=false;
+  vals.forEach((v,i)=>{
+    if(v===null)return;
+    const x=toX(i),y=toY(v);
+    pathD+=(started?`L${x.toFixed(1)},${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`);
+    started=true;
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}"/>`;
+    values+=`<text x="${x.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="8" fill="#0d1f35" font-weight="600">${typeof v==='number'&&v%1!==0?v.toFixed(2):v}</text>`;
+    xlabels+=`<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${labels[i].slice(0,5)}</text>`;
+  });
+  for(let i=0;i<=4;i++){
+    const v=mn+range*(1-i/4);
+    const y=pad.t+(i/4)*ch;
+    ylabels+=`<text x="${pad.l-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#8a9db5">${v%1===0?v:v.toFixed(1)}</text>`;
+    ylabels+=`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
+  }
+
+  const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+    ${ylabels}
+    <path d="${pathD}" stroke="${color}" stroke-width="2.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${values}${xlabels}
+  </svg>`;
+
+  const block=document.createElement('div');
+  block.className='chart-block';
+  block.innerHTML=`<div class="chart-title">${title}</div><div class="chart-sub">${unit}</div><div style="overflow-x:auto;">${svg}</div>`;
+  return block;
+}
+
+function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,label2){
+  const W=700,H=180;
+  const pad={t:20,r:10,b:36,l:50};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const all=[...vals1,...vals2].filter(v=>v!==null);
+  if(!all.length)return document.createElement('div');
+  const mn=Math.min(...all),mx=Math.max(...all);
+  const range=mx-mn||1;
+  const toY=v=>pad.t+ch-(((v-mn)/range)*ch);
+  const toX=i=>pad.l+(i/Math.max(labels.length-1,1))*cw;
+
+  function makePath(vals,color){
+    let d='',started=false,dotsStr='';
+    vals.forEach((v,i)=>{
+      if(v===null)return;
+      const x=toX(i),y=toY(v);
+      d+=(started?`L${x.toFixed(1)},${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`);
+      started=true;
+      dotsStr+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="${color}"/>`;
+    });
+    return `<path d="${d}" stroke="${color}" stroke-width="2" fill="none" stroke-linejoin="round"/>${dotsStr}`;
+  }
+
+  let ylabels='';
+  for(let i=0;i<=4;i++){
+    const v=mn+range*(1-i/4);
+    const y=pad.t+(i/4)*ch;
+    ylabels+=`<text x="${pad.l-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#8a9db5">${v%1===0?v:v.toFixed(0)}</text>`;
+    ylabels+=`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
+  }
+  let xlabels='';
+  labels.forEach((l,i)=>{xlabels+=`<text x="${toX(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${l.slice(0,5)}</text>`;});
+
+  const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+    ${ylabels}${makePath(vals1,color1)}${makePath(vals2,color2)}${xlabels}
+  </svg>`;
+
+  const legenda=`<div style="display:flex;gap:14px;margin-bottom:6px;">
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;"><div style="width:14px;height:3px;background:${color1};border-radius:2px;"></div>${label1}</div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:11px;"><div style="width:14px;height:3px;background:${color2};border-radius:2px;"></div>${label2}</div>
+  </div>`;
+
+  const block=document.createElement('div');
+  block.className='chart-block';
+  block.innerHTML=`<div class="chart-title">${title}</div><div class="chart-sub">${unit}</div>${legenda}<div style="overflow-x:auto;">${svg}</div>`;
+  return block;
+}
+
+function makeRacaoTable(labels,data){
+  const block=document.createElement('div');
+  block.className='chart-block';
+  const rows=data.map((r,i)=>{
+    const pct=(r.racaoIdealG&&r.racaoG)?Math.round(r.racaoG/r.racaoIdealG*100):null;
+    const cor=pct!=null?(pct>=90?'var(--ok)':pct>=70?'var(--warn)':'var(--danger)'):'inherit';
+    return`<tr><td>${labels[i]}</td><td>${r.racaoIdealG??'—'}</td><td>${r.racaoG??'—'}</td><td style="color:${cor};font-weight:700;">${pct!=null?pct+'%':'—'}</td></tr>`;
+  }).join('');
+  block.innerHTML=`<div class="chart-title">% Ração Consumida</div>
+  <table class="tca-table"><thead><tr><th>Data</th><th>Ideal (g)</th><th>Real (g)</th><th>% Consumido</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return block;
+}
+
+function makeTCATable(data){
+  const rows=data.filter(r=>r.racaoG&&r.qty&&r.bio);
+  if(!rows.length)return null;
+  const block=document.createElement('div');
+  block.className='chart-block';
+  block.innerHTML=`<div class="chart-title">Taxa de Conversão Alimentar (TCA)</div><div class="chart-sub">Ração real / Biomassa do dia</div>
+  <table class="tca-table"><thead><tr><th>Data</th><th>Ração (g)</th><th>Biomassa (kg)</th><th>TCA</th></tr></thead>
+  <tbody>${rows.map(r=>{
+    const bio=(r.qty*r.bio/1000);
+    const tca=(r.racaoG/1000/bio).toFixed(3);
+    return`<tr><td>${formatDate(r.date)}</td><td>${r.racaoG}</td><td>${bio.toFixed(1)}</td><td style="font-weight:700;color:var(--accent2);">${tca}</td></tr>`;
+  }).join('')}</tbody></table>`;
+  return block;
+}
+
+// ===== UTILS =====
+function formatDate(d){if(!d)return'—';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;}
+function formatTime(ts){return new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;setTimeout(()=>{t.className='';},3000);}
+
+// Todos os event listeners após DOM pronto
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('modal-overlay')?.addEventListener('click',function(e){if(e.target===this)closeModal();});
+  document.getElementById('edit-user-overlay')?.addEventListener('click',function(e){if(e.target===this)closeEditUser();});
+  let _ty=0;
+  document.getElementById('tank-sheet')?.addEventListener('touchstart',e=>{_ty=e.touches[0].clientY;},{passive:true});
+  document.getElementById('tank-sheet')?.addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-_ty>80)closeSheet();},{passive:true});
+});
+</script>
+</body>
+</html>
