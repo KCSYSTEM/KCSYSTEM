@@ -638,16 +638,43 @@ const DEFAULT_USERS={
   'kiko':   {pass:'347650', name:'Kiko',   role:'usuario'},
   'bili':   {pass:'092347', name:'Bili',   role:'usuario'},
 };
-// USERS é mesclado com usuários extras criados pelos admins
 let USERS={...DEFAULT_USERS};
-function loadUsers(){
+
+async function loadUsers(){
+  // 1. Tenta carregar do Supabase
+  try{
+    const rows=await sbGet('users','select=id,data');
+    if(rows&&rows.length){
+      const extra={};
+      rows.forEach(r=>{if(r.data&&r.id)extra[r.id]=r.data;});
+      USERS={...DEFAULT_USERS,...extra};
+      localStorage.setItem('kc_users',JSON.stringify(extra));
+      return;
+    }
+  }catch(e){}
+  // 2. Fallback: localStorage
   try{const u=JSON.parse(localStorage.getItem('kc_users'));if(u)USERS={...DEFAULT_USERS,...u};}catch(e){}
 }
-function saveUsers(){
-  // salva apenas os criados dinamicamente (exclui os padrões)
+
+async function saveUsers(){
+  // Salva apenas os criados dinamicamente (exclui padrões)
   const extra={};
   Object.entries(USERS).forEach(([k,v])=>{if(!DEFAULT_USERS[k])extra[k]=v;});
   localStorage.setItem('kc_users',JSON.stringify(extra));
+  // Sincroniza com Supabase: upsert de cada usuário extra
+  try{
+    const rows=Object.entries(extra).map(([id,data])=>({id,data}));
+    if(rows.length)await sbUpsert('users',rows);
+    // Remove usuários deletados do Supabase
+    const allSb=await sbGet('users','select=id');
+    if(allSb){
+      for(const row of allSb){
+        if(!extra[row.id]){
+          await sbDelete('users',row.id);
+        }
+      }
+    }
+  }catch(e){console.warn('saveUsers Supabase error',e);}
 }
 const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70}};
 const GROUPS=[
@@ -797,8 +824,19 @@ function startRealtime(){
       ]}},
       ref:'2'
     };
+    const joinUsers={
+      topic:'realtime:public:users',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'users'},
+        {event:'UPDATE',schema:'public',table:'users'},
+        {event:'DELETE',schema:'public',table:'users'},
+      ]}},
+      ref:'3'
+    };
     _realtimeWs.send(JSON.stringify(joinRecords));
     _realtimeWs.send(JSON.stringify(joinTanks));
+    _realtimeWs.send(JSON.stringify(joinUsers));
 
     // Heartbeat a cada 25s para manter conexão viva
     _realtimeHeartbeat=setInterval(()=>{
@@ -823,6 +861,9 @@ function startRealtime(){
         }
         if(table==='tanks'&&row.data){
           onRealtimeTank(row.data);
+        }
+        if(table==='users'&&row.data){
+          onRealtimeUser(row.id||row.data?.id,row.data,payload.type);
         }
       }
     }catch(e){}
@@ -878,8 +919,19 @@ function onRealtimeRecord(rec){
   showSyncBadge(`↻ ${rec.tankName||'Tanque'} atualizado por ${rec.user||'usuário'}`);
 }
 
+function onRealtimeUser(id,data,type){
+  if(!id)return;
+  if(type==='DELETE'||!data){
+    delete USERS[id];
+  } else {
+    if(!DEFAULT_USERS[id])USERS[id]=data;
+  }
+  localStorage.setItem('kc_users',JSON.stringify(
+    Object.fromEntries(Object.entries(USERS).filter(([k])=>!DEFAULT_USERS[k]))
+  ));
+}
+
 function onRealtimeTank(tank){
-  if(!tank||!tank.id)return;
   const idx=tanks.findIndex(t=>t.id===tank.id);
   if(idx>=0)tanks[idx]=tank;
   localStorage.setItem('kc_tanks',JSON.stringify(tanks));
@@ -897,7 +949,7 @@ function showSyncBadge(msg){
 
 
 async function load(){
-  loadUsers();loadLimits();
+  loadLimits();
   showSyncStatus('Sincronizando...');
   try{
     // 1. Tanques do Supabase
@@ -969,7 +1021,7 @@ async function enterApp(u){
   document.getElementById('nav-settings').style.display=isAdmin()?'flex':'none';
 
   // Primeiro renderiza com dados do localStorage para não travar a tela
-  loadLimits();loadUsers();
+  loadLimits();
   _loadFromLocalStorage();
   currentGroupId=null;renderTankView();updateMapSub();scheduleMidnightLogout();
   populateChartTankSelect();
@@ -1005,7 +1057,7 @@ function _loadFromLocalStorage(){
 
 async function doLogin(){
   const u=document.getElementById('login-user').value.trim().toLowerCase(),p=document.getElementById('login-pass').value;
-  loadUsers();
+  await loadUsers();
   if(USERS[u]&&USERS[u].pass===p){saveSession(u);enterApp(u);}
   else{document.getElementById('login-error').style.display='block';setTimeout(()=>document.getElementById('login-error').style.display='none',3000);}
 }
@@ -1013,10 +1065,8 @@ function doLogout(){clearSession();forceLogout();}
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
-  (function tryAutoLogin(){loadUsers();const u=loadSession();if(u)enterApp(u);})();
-  // Inicializa data do painel
+  (async function tryAutoLogin(){await loadUsers();const u=loadSession();if(u)enterApp(u);})();
   const pd=document.getElementById('painel-date');if(pd&&!pd.value)pd.value=new Date().toISOString().split('T')[0];
-  // Inicializa data dos lançamentos
   const ld=document.getElementById('lanc-date');if(ld&&!ld.value)ld.value=new Date().toISOString().split('T')[0];
 });
 
