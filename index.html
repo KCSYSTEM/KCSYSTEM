@@ -325,7 +325,11 @@ canvas.chart-canvas{display:block;}
 .lancamento-date-input{background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;}
 .lancamento-save-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .lancamento-save-btn:active{background:var(--accent2);}
-.lancamento-progress{font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;padding:4px 0;}
+/* Toggle Tambor/Balde */
+.tambor-toggle{display:flex;border:1.5px solid var(--border2);border-radius:20px;overflow:hidden;width:fit-content;font-size:11px;font-weight:700;cursor:pointer;user-select:none;flex-shrink:0;}
+.tambor-toggle .t-opt{padding:5px 10px;background:var(--bg);color:var(--text3);transition:all 0.15s;white-space:nowrap;}
+.tambor-toggle .t-opt.active{background:var(--accent);color:#fff;}
+.tambor-input-disabled{width:100%;background:#f0f4f8;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:#b0bec5;font-size:15px;font-family:'JetBrains Mono',monospace;cursor:not-allowed;}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
@@ -1124,37 +1128,31 @@ function getOfficialRecords(tankId, hapa=undefined){
   const byDay={};
   let recs=records.filter(r=>r.tankId===tankId&&!r.overridden);
   if(hapa!==undefined&&hapa!==null){
-    // Hapa específico
-    recs=recs.filter(r=>r.hapa===hapa);
+    // Hapa específico — usa == para aceitar tanto string "1" quanto número 1
+    recs=recs.filter(r=>r.hapa==hapa);
   }
-  // Se hapa===null (consolidado) e tanque tem hapas: agrega por dia somando hapas
   const tank=tanks.find(t=>t.id===tankId);
   if((hapa===undefined||hapa===null)&&tank?.hapaNames?.length){
-    // Agrupa por dia e soma campos numéricos
     recs.forEach(r=>{
       if(!byDay[r.date]){byDay[r.date]={...r,_hapasCount:1};}
       else{
-        // soma campos numéricos relevantes
         const d=byDay[r.date];
         ['qty','mort','racaoIdealG','sobra','racaoG'].forEach(k=>{
           if(r[k]!=null)d[k]=(d[k]||0)+r[k];
         });
-        // biometria: média ponderada por qty
         if(r.bio!=null&&r.qty!=null){
           const prevBio=d.bio||0;const prevQty=d.qty-r.qty||0;
           d.bio=(prevBio*prevQty+r.bio*r.qty)/(prevQty+r.qty);
         }
-        // parâmetros de água: média
         ['temp','o2','amonia','ph'].forEach(k=>{
           if(r[k]!=null){d[k]=((d[k]||0)*d._hapasCount+r[k])/(d._hapasCount+1);}
         });
         d._hapasCount++;
-        d.hapa=null; // consolidado
+        d.hapa=null;
       }
     });
     return Object.values(byDay).sort((a,b)=>a.date.localeCompare(b.date));
   }
-  // Sem hapas ou hapa específico: último por dia
   recs.forEach(r=>{
     if(!byDay[r.date]||r.timestamp>byDay[r.date].timestamp)byDay[r.date]=r;
   });
@@ -1167,7 +1165,7 @@ function lastRecHapa(id,hapa){
 }
 function recForDate(tankId,date,hapa=null){
   let dayRecs=records.filter(r=>r.tankId===tankId&&r.date===date&&!r.overridden);
-  if(hapa)dayRecs=dayRecs.filter(r=>r.hapa===hapa);
+  if(hapa!=null)dayRecs=dayRecs.filter(r=>r.hapa==hapa); // == aceita string ou número
   else{const tank=tanks.find(t=>t.id===tankId);if(!tank?.hapas)dayRecs=dayRecs.filter(r=>!r.hapa);}
   if(!dayRecs.length)return null;
   return dayRecs.reduce((a,b)=>a.timestamp>b.timestamp?a:b);
@@ -1255,7 +1253,7 @@ function renderHapaSelector(){
   let html=`<div class="hapa-chip${activeHapa===null?' active consolidated':' consolidated'}" onclick="selectHapa(null)">📊 Consolidado</div>`;
   names.forEach((nm,i)=>{
     const hapaNum=i+1;
-    const hasData=records.some(r=>r.tankId===activeTank.id&&r.hapa===hapaNum);
+    const hasData=records.some(r=>r.tankId===activeTank.id&&r.hapa==hapaNum);
     html+=`<div class="hapa-chip${activeHapa===hapaNum?' active':''}" onclick="selectHapa(${hapaNum})">${nm}${hasData?' ●':''}</div>`;
   });
   bar.innerHTML=html;
@@ -1485,7 +1483,7 @@ function buildHistoricoEl(){
 
   // Filtra por hapa se necessário
   if(activeTank?.hapas&&activeHapa!==null){
-    recs=recs.filter(r=>r.hapa===activeHapa);
+    recs=recs.filter(r=>r.hapa==activeHapa);
   }
 
   if(!recs.length){
@@ -1896,63 +1894,166 @@ function renderLancamentos(){
   if(!param){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text3);font-size:13px;">Selecione um parâmetro acima</td></tr>';return;}
   const cfg=LANC_PARAMS[param];
   const admin=isAdmin();
+  const isRacao=param==='racaoReal';
 
-  // Restringe campos ADM para não-admin
   const admOnly=['racaoIdealG','tratosIdeal'];
   if(admOnly.includes(param)&&!admin){
     tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--danger);font-size:13px;">🔒 Parâmetro restrito a administradores</td></tr>';
     return;
   }
 
-  // Filtra tanques: apenas com registros E não vazios
-  const activeTanks=tanks.filter(t=>!t.empty&&records.some(r=>r.tankId===t.id));
+  const activeTanks=tanks.filter(t=>!t.empty&&records.some(r=>r.tankId===t.id))
+    .sort((a,b)=>(a.num||0)-(b.num||0));
 
+  // Para ração: agrupa tanques (linha por tanque, não por hapa)
   let rows=[];
   activeTanks.forEach(t=>{
     const names=t.hapaNames;
-    if(names&&names.length){
-      // Linha por hapa
+    if(isRacao){
+      // Modo ração: sempre uma linha por tanque
+      const last=lastRec(t.id);
+      rows.push({tankId:t.id,tankName:t.name,hapaNum:null,hapaName:null,
+        lastVal:last?.[param]??'',hapas:names?.length||0,tank:t});
+    } else if(names&&names.length){
       names.forEach((nm,i)=>{
         const h=i+1;
         const last=lastRecHapa?.(t.id,h)||lastRec(t.id);
-        rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,lastVal:last?.[param]??''});
+        rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,lastVal:last?.[param]??'',hapas:0,tank:t});
       });
     } else {
       const last=lastRec(t.id);
-      rows.push({tankId:t.id,tankName:t.name,hapaNum:null,hapaName:null,lastVal:last?.[param]??''});
+      rows.push({tankId:t.id,tankName:t.name,hapaNum:null,hapaName:null,lastVal:last?.[param]??'',hapas:0,tank:t});
     }
   });
 
-  // Ordena por nome do tanque
-  rows.sort((a,b)=>a.tankName.localeCompare(b.tankName,undefined,{numeric:true}));
+  const colSpan=isRacao?5:3;
+  const extraHeaders=isRacao?`
+    <th style="min-width:130px;text-align:center;">Método</th>
+    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Início do dia (g)</span></th>
+    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Final do dia (g)</span></th>`:'';
 
   const header=`<thead><tr>
-    <th style="min-width:100px;">Tanque</th>
+    <th style="min-width:110px;">Tanque</th>
     <th style="min-width:90px;">${cfg.label} (${cfg.unit||'—'})</th>
+    ${extraHeaders}
     <th style="min-width:80px;color:var(--text3);">Último valor</th>
   </tr></thead>`;
 
-  const rowsHtml=rows.map((r,i)=>`
-    <tr class="${r.hapaNum?'has-hapas':''}">
-      <td>
-        <div class="lancamento-tank-name">${r.tankName}</div>
-        ${r.hapaName?`<div class="lancamento-hapa-name">🪣 ${r.hapaName}</div>`:''}
-      </td>
+  // Para ração: último valor é racaoG (não racaoReal que é o nome do param)
+  const lastValKey=param==='racaoReal'?'racaoG':param;
+
+  const rowsHtml=rows.map((r,i)=>{
+    const hapaLbl=r.hapaName?`<div class="lancamento-hapa-name">🪣 ${r.hapaName}</div>`:'';
+    const hapaInfo=r.hapas>0?`<div class="lancamento-hapa-name" style="color:#7c3aed;">🪣 ${r.hapas} hapas</div>`:'';
+    const tankCell=`<td><div class="lancamento-tank-name">${r.tankName}</div>${hapaLbl}${hapaInfo}</td>`;
+
+    // Último valor: para hapa específico usa lastRecHapa; para tanque com hapas pega o mais recente POR HAPA e soma
+    let lastVal='';
+    if(r.hapaNum){
+      lastVal=lastRecHapa(r.tankId,r.hapaNum)?.[lastValKey]??'';
+    } else if(r.hapas>0){
+      // Filtra registros com o campo preenchido
+      const hapaRecs=records.filter(rec=>rec.tankId===r.tankId&&!rec.overridden&&rec.hapa!=null&&rec[lastValKey]!=null);
+      if(hapaRecs.length){
+        // Data mais recente com dados
+        const lastDate=hapaRecs.reduce((max,rec)=>rec.date>max?rec.date:max,'');
+        const dayRecs=hapaRecs.filter(rec=>rec.date===lastDate);
+        // Por hapa: pega APENAS o registro mais recente (maior timestamp)
+        const byHapa={};
+        dayRecs.forEach(rec=>{
+          const h=rec.hapa;
+          if(!byHapa[h]||rec.timestamp>byHapa[h].timestamp)byHapa[h]=rec;
+        });
+        const soma=Object.values(byHapa).reduce((s,rec)=>s+(rec[lastValKey]||0),0);
+        lastVal=parseFloat(soma.toFixed(3));
+      }
+    } else {
+      lastVal=lastRec(r.tankId)?.[lastValKey]??'';
+    }
+
+    const mainInput=`<input class="lancamento-input" type="number"
+      id="lanc-input-${i}" data-tank="${r.tankId}" data-hapa="${r.hapaNum||''}" data-hapas="${r.hapas}"
+      step="${cfg.step}" inputmode="${cfg.inputmode}" placeholder="—"
+      oninput="this.classList.toggle('filled',this.value!=='')">`;
+
+    if(!isRacao){
+      return`<tr class="${r.hapaNum?'has-hapas':''}">
+        ${tankCell}<td>${mainInput}</td>
+        <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${lastVal!==''?lastVal:'—'}</td>
+      </tr>`;
+    }
+
+    // Modo ração — com toggle tambor/balde
+    const rowId=r.tankId.replace(/[^a-z0-9]/gi,'_');
+    return`<tr>
+      ${tankCell}
       <td>
         <input class="lancamento-input" type="number"
-          id="lanc-input-${i}"
-          data-tank="${r.tankId}" data-hapa="${r.hapaNum||''}"
-          step="${cfg.step}" inputmode="${cfg.inputmode}"
-          placeholder="—"
+          id="lanc-input-${rowId}" data-tank="${r.tankId}" data-hapa="" data-hapas="${r.hapas}"
+          step="0.001" inputmode="decimal" placeholder="Sobra (g)"
           oninput="this.classList.toggle('filled',this.value!=='')">
       </td>
-      <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${r.lastVal!==''?r.lastVal:'—'}</td>
-    </tr>`).join('');
+      <td style="text-align:center;">
+        <div class="tambor-toggle" onclick="toggleTambor('${rowId}')">
+          <div class="t-opt active" id="lanc-toggle-balde-${rowId}">🪣 Sobra Balde</div>
+          <div class="t-opt" id="lanc-toggle-tambor-${rowId}">🛢 Dif. Tambor</div>
+        </div>
+      </td>
+      <td><input class="tambor-input-disabled" type="number"
+        id="lanc-tambor-ini-${rowId}" data-tank="${r.tankId}"
+        placeholder="Início (g)" disabled step="0.001" inputmode="decimal"></td>
+      <td><input class="tambor-input-disabled" type="number"
+        id="lanc-tambor-fim-${rowId}" data-tank="${r.tankId}"
+        placeholder="Final (g)" disabled step="0.001" inputmode="decimal"></td>
+      <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${lastVal!==''?lastVal:'—'}</td>
+    </tr>`;
+  }).join('');
 
   tbody.parentElement.querySelector('thead')?.remove();
   tbody.insertAdjacentHTML('beforebegin',header);
   tbody.innerHTML=rowsHtml;
   document.getElementById('lanc-progress').style.display='none';
+}
+
+// Estado dos toggles por id de linha
+const _tambModo={};
+
+function toggleTambor(rowId){
+  const cur=_tambModo[rowId]||'balde';
+  const novo=cur==='balde'?'tambor':'balde';
+  _tambModo[rowId]=novo;
+  const isTambor=novo==='tambor';
+
+  document.getElementById(`lanc-toggle-balde-${rowId}`).classList.toggle('active',!isTambor);
+  document.getElementById(`lanc-toggle-tambor-${rowId}`).classList.toggle('active',isTambor);
+
+  const sobraInput=document.getElementById(`lanc-input-${rowId}`);
+  const ini=document.getElementById(`lanc-tambor-ini-${rowId}`);
+  const fim=document.getElementById(`lanc-tambor-fim-${rowId}`);
+
+  if(isTambor){
+    sobraInput.disabled=true;sobraInput.value='';
+    sobraInput.className='tambor-input-disabled';
+    ini.disabled=false;ini.className='lancamento-input';
+    fim.disabled=false;fim.className='lancamento-input';
+  } else {
+    sobraInput.disabled=false;sobraInput.className='lancamento-input';
+    ini.disabled=true;ini.value='';ini.className='tambor-input-disabled';
+    fim.disabled=true;fim.value='';fim.className='tambor-input-disabled';
+  }
+}
+
+function getRacaoRealParaLinha(rowId,hapaCount){
+  const modo=_tambModo[rowId]||'balde';
+  if(modo==='tambor'){
+    const ini=parseFloat(document.getElementById(`lanc-tambor-ini-${rowId}`)?.value)||null;
+    const fim=parseFloat(document.getElementById(`lanc-tambor-fim-${rowId}`)?.value)||null;
+    if(ini==null||fim==null)return{sobra:null,racaoReal:null,modo:'tambor'};
+    const racaoTotal=Math.max(0,ini-fim);
+    const racaoPorHapa=hapaCount>1?racaoTotal/hapaCount:racaoTotal;
+    return{sobra:null,racaoReal:racaoPorHapa,racaoRealTotal:racaoTotal,modo:'tambor'};
+  }
+  return{sobra:null,racaoReal:null,modo:'balde'};
 }
 
 async function saveLancamentos(){
@@ -1961,17 +2062,43 @@ async function saveLancamentos(){
   if(!param){showToast('Selecione um parâmetro','error');return;}
   if(!date){showToast('Selecione uma data','error');return;}
 
-  const inputs=document.querySelectorAll('.lancamento-input');
+  // Coleta inputs diretamente — cada input tem data-tank e data-hapa
+  const allInputs=[...document.querySelectorAll('.lancamento-input[data-tank]')];
   const toSave=[];
-  inputs.forEach(inp=>{
-    if(inp.value.trim()==='')return;
-    toSave.push({
-      tankId:inp.dataset.tank,
-      hapaNum:inp.dataset.hapa?parseInt(inp.dataset.hapa):null,
-      value:parseFloat(inp.value),
-      el:inp
+
+  // Para ração (isRacao), há um input por tanque com rowId
+  // Para outros params, há um input por hapa
+  if(param==='racaoReal'){
+    // Itera por tankIds únicos (um input por tanque no modo ração)
+    const tankIds=[...new Set(allInputs.map(el=>el.dataset.tank))];
+    tankIds.forEach(tankId=>{
+      const rowId=tankId.replace(/[^a-z0-9]/gi,'_');
+      const modo=_tambModo[rowId]||'balde';
+      if(modo==='tambor'){
+        const ini=document.getElementById(`lanc-tambor-ini-${rowId}`);
+        const fim=document.getElementById(`lanc-tambor-fim-${rowId}`);
+        if(!ini?.value||!fim?.value)return;
+        const mainInp=document.getElementById(`lanc-input-${rowId}`);
+        toSave.push({tankId,hapaNum:null,value:null,rowId,
+          hapas:parseInt(mainInp?.dataset.hapas||0),el:mainInp});
+      } else {
+        const inp=document.getElementById(`lanc-input-${rowId}`);
+        if(!inp||inp.disabled||inp.value.trim()==='')return;
+        toSave.push({tankId,hapaNum:null,
+          value:parseFloat(inp.value),rowId,hapas:parseInt(inp.dataset.hapas||0),el:inp});
+      }
     });
-  });
+  } else {
+    // Para todos os outros params: um input por linha (hapa ou tanque)
+    allInputs.forEach(inp=>{
+      if(inp.disabled||inp.value.trim()==='')return;
+      const tankId=inp.dataset.tank;
+      const hapaNum=inp.dataset.hapa?parseInt(inp.dataset.hapa):null;
+      const rowId=tankId.replace(/[^a-z0-9]/gi,'_');
+      toSave.push({tankId,hapaNum,
+        value:parseFloat(inp.value),rowId,hapas:parseInt(inp.dataset.hapas||0),el:inp});
+    });
+  }
   if(!toSave.length){showToast('Nenhum valor preenchido','error');return;}
 
   // Detecta conflitos (já existe registro com esse parâmetro nessa data)
@@ -2001,30 +2128,137 @@ async function _doSaveLancamentos(toSave,param,date){
     if(!tank)continue;
 
     const existing=recForDate(item.tankId,date,item.hapaNum);
-
-    // 1. Registro histórico independente para este lançamento
     const lastR=lastRec(item.tankId);
+
+    let finalValue=item.value;
+    let finalSobra=null;
+    let finalRacaoReal=null;
+
+    // Se for ração real, processa modo tambor ou balde
+    if(param==='racaoReal'){
+      const rowId=item.rowId;
+      const modo=_tambModo[rowId]||'balde';
+      const hapaCount=item.hapas||0;
+
+      if(modo==='tambor'){
+        // Tambor: diferença total dividida por hapas (getRacaoRealParaLinha já divide)
+        const res=getRacaoRealParaLinha(rowId,hapaCount);
+        if(res.racaoReal==null){saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;continue;}
+        // res.racaoReal já é o valor POR HAPA (dividido dentro de getRacaoRealParaLinha)
+        finalRacaoReal=res.racaoReal; // valor por hapa
+        finalSobra=null;
+      } else {
+        // Balde: sobra total informada, divide por hapas para calcular por hapa
+        const sobraTotal=item.value;
+        if(hapaCount>0){
+          // Não calcula finalRacaoReal aqui — calcula por hapa no loop abaixo
+          finalSobra=sobraTotal;
+        } else {
+          // Tanque sem hapas: lógica normal
+          finalSobra=sobraTotal;
+          const ideal=existing?.racaoIdealG||lastR?.racaoIdealG||null;
+          if(ideal!=null&&sobraTotal!=null)finalRacaoReal=Math.max(0,ideal-sobraTotal);
+        }
+      }
+    }
+
+    // Se tanque tem hapas, salva um registro por hapa
+    const hapaCount=item.hapas||0;
+    const tank2=tanks.find(t=>t.id===item.tankId);
+    if(param==='racaoReal'&&hapaCount>0&&tank2?.hapaNames?.length){
+      const rowId=item.rowId;
+      const modo=_tambModo[rowId]||'balde';
+      const sobraTotal=finalSobra;
+      const sobraPorHapa=sobraTotal!=null?parseFloat((sobraTotal/hapaCount).toFixed(3)):null;
+      const baseTs=Date.now();
+
+      for(let h=1;h<=hapaCount;h++){
+        const exH=recForDate(item.tankId,date,h);
+        const lastRH=lastRecHapa(item.tankId,h);
+
+        // Calcula ração real por hapa
+        let racaoPorHapa;
+        if(modo==='tambor'){
+          // finalRacaoReal já é o valor por hapa
+          racaoPorHapa=finalRacaoReal;
+        } else {
+          // Balde: ideal do hapa - sobra do hapa
+          const idealHapa=exH?.racaoIdealG??lastRH?.racaoIdealG??null;
+          racaoPorHapa=idealHapa!=null&&sobraPorHapa!=null
+            ?parseFloat(Math.max(0,idealHapa-sobraPorHapa).toFixed(3))
+            :null;
+        }
+
+        const histH={
+          id:`lanc_${baseTs}_h${h}_${item.tankId.slice(-4)}`,
+          tankId:item.tankId,tankName:tank.name,date,
+          user:currentUser.name,username:currentUser.username,
+          timestamp:new Date(baseTs+h).toISOString(),
+          lote:exH?.lote||lastRH?.lote||tank.lote||'',
+          temp:null,o2:null,amonia:null,ph:null,mort:0,
+          qty:exH?.qty??lastRH?.qty??null,
+          bio:exH?.bio??lastRH?.bio??null,
+          racao:'',racaoIdealG:exH?.racaoIdealG??lastRH?.racaoIdealG??null,
+          sobra:sobraPorHapa,racaoG:racaoPorHapa,
+          tratosIdeal:null,tratos:null,obs:'',
+          overridden:false,hapa:h,
+        };
+        records.push(histH);
+        if(exH){
+          exH.sobra=sobraPorHapa;exH.racaoG=racaoPorHapa;
+          const idx=records.findIndex(r=>r.id===exH.id);
+          if(idx>=0)records[idx]=exH;
+          await saveRecord_sb(exH);
+        }
+        await saveRecord_sb(histH);
+      }
+      saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;
+      continue;
+    }
+
+    // Cria registro histórico copiando dados existentes do dia para não apagar
+    const base=existing||{};
     const histRec={
       id:'lanc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       tankId:item.tankId,tankName:tank.name,date,
       user:currentUser.name,username:currentUser.username,
       timestamp:new Date().toISOString(),
-      lote:existing?.lote||lastR?.lote||tank.lote||'',
-      temp:null,o2:null,amonia:null,ph:null,mort:0,
-      qty:existing?.qty??lastR?.qty??null,
-      bio:existing?.bio??lastR?.bio??null,
-      racao:'',racaoIdealG:null,sobra:null,racaoG:null,
-      tratosIdeal:null,tratos:null,obs:'',
-      overridden:false,hapa:item.hapaNum||null,
+      lote:base.lote||lastR?.lote||tank.lote||'',
+      temp:base.temp??null,
+      o2:base.o2??null,
+      amonia:base.amonia??null,
+      ph:base.ph??null,
+      mort:base.mort??0,
+      qty:base.qty??lastR?.qty??null,
+      bio:base.bio??lastR?.bio??null,
+      racao:base.racao||'',
+      racaoIdealG:base.racaoIdealG??lastR?.racaoIdealG??null,
+      sobra:base.sobra??null,
+      racaoG:base.racaoG??null,
+      tratosIdeal:base.tratosIdeal??null,
+      tratos:base.tratos??null,
+      obs:'',
+      overridden:false,
+      hapa:item.hapaNum||null,
     };
-    histRec[param]=item.value;
-    if(param==='racaoReal'){histRec.sobra=item.value;}
+
+    if(param==='racaoReal'){
+      histRec.sobra=finalSobra;
+      histRec.racaoG=finalRacaoReal;
+    } else {
+      histRec[param]=finalValue;
+    }
+
     records.push(histRec);
 
-    // 2. Mescla também no registro consolidado do dia (para painel/gráficos)
+    // Mescla no registro consolidado
     if(existing){
-      existing[param]=item.value;
-      if(param==='racaoReal'){existing.sobra=item.value;if(existing.racaoIdealG)existing.racaoG=Math.max(0,existing.racaoIdealG-item.value);}
+      if(param==='racaoReal'){
+        existing.sobra=finalSobra;
+        existing.racaoG=finalRacaoReal??finalValue;
+      } else {
+        existing[param]=finalValue;
+      }
       const idx=records.findIndex(r=>r.id===existing.id);
       if(idx>=0)records[idx]=existing;
       await saveRecord_sb(existing);
@@ -2040,6 +2274,8 @@ async function _doSaveLancamentos(toSave,param,date){
   prog.textContent=`✓ ${saved} registros salvos!`;
   setTimeout(()=>{prog.style.display='none';},3000);
   showToast(`${saved} registros salvos ✓`,'ok');
+  // Limpa toggles para próxima vez
+  Object.keys(_tambModo).forEach(k=>delete _tambModo[k]);
   renderLancamentos();
 }
 
@@ -2349,9 +2585,15 @@ function renderPainel(){
 
   // Define, filtra e separa tanques
   const activeTanks=tanks.filter(t=>{
+    // Tanque com hapas: verifica se há registros em qualquer hapa
     const names=t.hapaNames;
-    if(names?.length){for(let h=1;h<=names.length;h++){if(records.some(r=>r.tankId===t.id&&r.hapa===h))return true;}}
-    return records.some(r=>r.tankId===t.id&&!r.hapa);
+    if(names?.length){
+      for(let h=1;h<=names.length;h++){
+        if(records.some(r=>r.tankId===t.id&&r.hapa==h))return true;
+      }
+    }
+    // Tanque sem hapas: verifica registros sem hapa
+    return records.some(r=>r.tankId===t.id);
   });
   // Separa ativos e vazios, ambos em ordem crescente por número
   const sorted=[...activeTanks].sort((a,b)=>(a.num||0)-(b.num||0));
@@ -2716,7 +2958,7 @@ function populateChartTankSelect(){
     if(names?.length){
       names.forEach((nm,i)=>{
         const hapaNum=i+1;
-        const hasData=records.some(r=>r.tankId===t.id&&r.hapa===hapaNum);
+        const hasData=records.some(r=>r.tankId===t.id&&r.hapa==hapaNum);
         if(hasData){
           const oh=document.createElement('option');
           oh.value=`${t.id}::hapa::${hapaNum}`;
@@ -3012,7 +3254,7 @@ function onChartTankChange(){
   // Busca lotes distintos — inclui vazio/null como "(sem lote)"
   const lotesMap={};
   records
-    .filter(r=>r.tankId===tid&&(hapaNum?r.hapa===hapaNum:true))
+    .filter(r=>r.tankId===tid&&(hapaNum?r.hapa==hapaNum:true))
     .forEach(r=>{
       const lote=r.lote||''; // normaliza null/undefined para ''
       if(!lotesMap[lote]||r.date>lotesMap[lote])lotesMap[lote]=r.date;
