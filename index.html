@@ -497,6 +497,13 @@ canvas.chart-canvas{display:block;}
             </div>
             <div class="cfg-menu-arrow">›</div>
           </div>
+          <div class="cfg-menu-item" onclick="exportBackup()">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#f0fdf4;">💾</div>
+              <div><div class="cfg-menu-label">Exportar Backup</div><div class="cfg-menu-sub">Baixar todos os dados como JSON</div></div>
+            </div>
+            <div class="cfg-menu-arrow">⬇</div>
+          </div>
         </div>
       </div>
       <!-- Página: parâmetros -->
@@ -1083,12 +1090,22 @@ function renderColetaGraficos(){
 
     gd.series.forEach(s=>{
       const pts=s.vals.map((v,i)=>v!=null?`${scaleX(i)},${scaleY(v)}`:null);
-      // Linha
       let d2='';let first=true;
       pts.forEach((p,i)=>{if(p){d2+=(first?`M${p}`:`L${p}`);first=false;}else{first=true;}});
       if(d2)paths+=`<path d="${d2}" fill="none" stroke="${s.color}" stroke-width="2" ${s.dashed?'stroke-dasharray="6,3"':''}/>`;
-      // Pontos
-      pts.forEach((p,i)=>{if(p&&s.vals[i]!=null)paths+=`<circle cx="${scaleX(i)}" cy="${scaleY(s.vals[i])}" r="3" fill="${s.color}"/>`;});
+      // Pontos e rótulos — só mostra rótulo se tiver espaço (max 1 a cada 30px)
+      const minSpacingPx=30;
+      let lastLabelX=-999;
+      pts.forEach((p,i)=>{
+        if(!p||s.vals[i]==null)return;
+        const cx=scaleX(i),cy=scaleY(s.vals[i]);
+        paths+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${s.color}"/>`;
+        if(cx-lastLabelX>=minSpacingPx){
+          const lbl=fNum(s.vals[i]);
+          paths+=`<text x="${cx.toFixed(1)}" y="${(cy-7).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="${s.color}">${lbl}</text>`;
+          lastLabelX=cx;
+        }
+      });
     });
 
     // Legenda
@@ -1127,13 +1144,16 @@ function renderColetaPainel(){
 
   // Enriquece com ovosPorMl e ovosGorados — gorados agora vem por hapa da desova
   Object.values(byLote).forEach(l=>{
-    const rOvos=records.find(r=>r.lote===l.lote&&r.ovosPorMl!=null&&!r.overridden);
-    // ovosGorados: média dos hapas que têm o campo
-    const goradosRecs=l.hapas.filter(r=>r.ovosGorados!=null);
-    const goradosMedio=goradosRecs.length
-      ?parseFloat((goradosRecs.reduce((s,r)=>s+(r.ovosGorados||0),0)/goradosRecs.length).toFixed(1))
+    // ovosPorMl e ovosGorados: vêm dos próprios registros de hapa (campo salvo na desova)
+    const hapasComOvos=l.hapas.filter(r=>r.ovosPorMl!=null);
+    const hapasComGorados=l.hapas.filter(r=>r.ovosGorados!=null);
+    const ovosMlMedio=hapasComOvos.length
+      ?parseFloat((hapasComOvos.reduce((s,r)=>s+(r.ovosPorMl||0),0)/hapasComOvos.length).toFixed(1))
       :null;
-    l.ovosPorMl=rOvos?.ovosPorMl??null;
+    const goradosMedio=hapasComGorados.length
+      ?parseFloat((hapasComGorados.reduce((s,r)=>s+(r.ovosGorados||0),0)/hapasComGorados.length).toFixed(1))
+      :null;
+    l.ovosPorMl=ovosMlMedio;
     l.ovosGorados=goradosMedio;
     l.ovosTotal=l.ovosPorMl!=null?parseFloat((l.ml*l.ovosPorMl).toFixed(0)):null;
     l.ovosFinal=l.ovosTotal!=null&&l.ovosGorados!=null
@@ -3560,6 +3580,37 @@ const PARAM_DEFS=[
   {key:'goradosPct',label:'% Ovos Gorados',   unit:'%',   hasMin:false,hasMax:true},
 ];
 
+function exportBackup(){
+  const date=new Date().toISOString().split('T')[0];
+  const backup={
+    version:1,
+    exportedAt:new Date().toISOString(),
+    exportedBy:currentUser?.username||'desconhecido',
+    // Dados completos
+    records,   // todos os registros de operação e coleta
+    tanks,     // configuração de todos os tanques
+    racoes,    // tabela de rações
+    // Metadados
+    meta:{
+      totalRecords:records.length,
+      totalTanks:tanks.length,
+      totalRacoes:racoes.length,
+      dateRange:{
+        from:records.length?records.reduce((min,r)=>r.date<min?r.date:min,records[0].date):null,
+        to:records.length?records.reduce((max,r)=>r.date>max?r.date:max,records[0].date):null,
+      }
+    }
+  };
+  const json=JSON.stringify(backup,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`kcsystem_backup_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Backup exportado: ${backup.meta.totalRecords} registros ✓`,'ok');
+}
 function renderParamsForm(){
   const el=document.getElementById('params-form');
   if(!el)return;
@@ -4188,13 +4239,18 @@ function makeSVGChart(title,unit,labels,vals,color){
 
   let pathD='',dots='',xlabels='',ylabels='',values='';
   let started=false;
+  let lastLabelX=-999;
+  const minSpacingPx=cw/Math.max(vals.filter(v=>v!==null).length,1)<25?35:20;
   vals.forEach((v,i)=>{
     if(v===null)return;
     const x=toX(i),y=toY(v);
     pathD+=(started?`L${x.toFixed(1)},${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`);
     started=true;
     dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}"/>`;
-    values+=`<text x="${x.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="8" fill="#0d1f35" font-weight="600">${fNum(v)}</text>`;
+    if(x-lastLabelX>=minSpacingPx){
+      values+=`<text x="${x.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="8" fill="#0d1f35" font-weight="600">${fNum(v)}</text>`;
+      lastLabelX=x;
+    }
     xlabels+=`<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${labels[i].slice(0,5)}</text>`;
   });
   for(let i=0;i<=4;i++){
