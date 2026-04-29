@@ -1743,6 +1743,8 @@ async function load(){
     const sbRecs=await sbGet('records','select=data&order=timestamp.asc');
     if(sbRecs&&sbRecs.length){
       records=sbRecs.map(r=>r.data).filter(Boolean);
+      // Persiste no localStorage para que o cache local fique atualizado
+      localStorage.setItem('kc_records',JSON.stringify(records));
     }
   }catch(e){console.warn('load records error',e);}
 
