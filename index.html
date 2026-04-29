@@ -384,13 +384,32 @@ canvas.chart-canvas{display:block;}
     <div id="module-label" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);margin-left:4px;letter-spacing:0.5px;">OPERAÇÃO</div>
     <div style="flex:1;"></div>
     <div class="topbar-right">
-      <div class="user-chip">
-        <div class="user-avatar" id="topbar-avatar">--</div>
-        <div class="user-name" id="topbar-name">--</div>
-        <span id="topbar-role" style="display:none;font-size:9px;font-weight:700;background:rgba(255,255,255,0.25);color:#fff;border-radius:8px;padding:1px 6px;margin-left:2px;letter-spacing:0.5px;">Admin</span>
+      <!-- Avatar clicável -->
+      <div style="position:relative;" id="user-menu-wrap">
+        <div id="topbar-avatar" onclick="toggleUserMenu()"
+          style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;cursor:pointer;flex-shrink:0;">--</div>
+        <!-- Dropdown do usuário -->
+        <div id="user-dropdown" style="display:none;position:absolute;top:40px;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:300;min-width:200px;overflow:hidden;">
+          <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+            <div style="font-size:14px;font-weight:700;color:var(--text);" id="dd-name">—</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="dd-login">—</div>
+            <span id="dd-role" style="display:inline-block;margin-top:6px;font-size:10px;font-weight:700;background:var(--accent-dim);color:var(--accent);border-radius:6px;padding:2px 8px;"></span>
+          </div>
+          <div style="padding:6px;">
+            <div onclick="doLogout()" style="padding:10px 12px;font-size:13px;font-weight:600;color:var(--danger);cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:8px;transition:background 0.1s;" onmouseover="this.style.background='rgba(239,68,68,0.08)'" onmouseout="this.style.background='transparent'">
+              <span>⏏</span> Sair
+            </div>
+          </div>
+        </div>
       </div>
-      <button class="icon-btn" onclick="doLogout()">⏏</button>
-      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;margin-left:2px;">v2.4</div>
+      <!-- Versão + sync -->
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.5</div>
+        <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
+          <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
+          <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -963,12 +982,19 @@ function switchModule(mod){
   }
 }
 
-// Fecha menu ao clicar fora
+function toggleUserMenu(){
+  const dd=document.getElementById('user-dropdown');
+  dd.style.display=dd.style.display==='none'?'block':'none';
+}
+
+// Fecha menus ao clicar fora
 document.addEventListener('click',function(e){
-  const wrap=document.getElementById('module-menu-wrap');
-  if(wrap&&!wrap.contains(e.target)){
+  const userWrap=document.getElementById('user-menu-wrap');
+  if(userWrap&&!userWrap.contains(e.target))
+    document.getElementById('user-dropdown').style.display='none';
+  const moduleWrap=document.getElementById('module-menu-wrap');
+  if(moduleWrap&&!moduleWrap.contains(e.target))
     document.getElementById('module-dropdown').style.display='none';
-  }
 });
 
 function showColetaView(v){
@@ -1740,11 +1766,22 @@ async function load(){
   }catch(e){console.warn('load tanks error',e);}
 
   try{
-    // 2. Registros do Supabase
-    const sbRecs=await sbGet('records','select=data&order=timestamp.asc');
-    if(sbRecs&&sbRecs.length){
-      records=sbRecs.map(r=>r.data).filter(Boolean);
-      // Persiste no localStorage para que o cache local fique atualizado
+    // 2. Registros do Supabase — busca em páginas de 1000 para não perder dados
+    let allRecs=[];
+    let offset=0;
+    const pageSize=1000;
+    while(true){
+      const page=await sbGet('records',`select=data&order=timestamp.asc&limit=${pageSize}&offset=${offset}`);
+      if(!page||!page.length)break;
+      allRecs=allRecs.concat(page.map(r=>r.data).filter(Boolean));
+      if(page.length<pageSize)break; // última página
+      offset+=pageSize;
+    }
+    if(allRecs.length){
+      // Merge: preserva registros locais não confirmados no Supabase
+      const sbIds=new Set(allRecs.map(r=>r.id));
+      const localOnly=records.filter(r=>r.id&&!sbIds.has(r.id));
+      records=[...allRecs,...localOnly];
       localStorage.setItem('kc_records',JSON.stringify(records));
     }
   }catch(e){console.warn('load records error',e);}
@@ -1775,16 +1812,88 @@ async function load(){
   localStorage.setItem('kc_racoes',JSON.stringify(racoes));
 
   hideSyncStatus();
+  // Atualiza indicador de sync com o registro mais recente
+  const lastRec=records.length?records.reduce((a,b)=>a.timestamp>b.timestamp?a:b):null;
+  updateSyncIndicator('ok',lastRec);
+}
+
+let _lastSyncTime=null;
+let _lastSyncRec=null;
+
+function updateSyncIndicator(status, lastRec){
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-text');
+  if(!dot||!txt)return;
+  if(status==='syncing'){
+    dot.style.background='#f59e0b';
+    dot.style.animation='pulse 1s infinite';
+    txt.textContent='sincronizando...';
+  } else if(status==='ok'){
+    _lastSyncTime=new Date();
+    if(lastRec)_lastSyncRec=lastRec;
+    dot.style.background='#22c55e';
+    dot.style.animation='';
+    _updateSyncText();
+    // Atualiza o texto a cada minuto para manter "X min atrás" correto
+    clearInterval(window._syncTextInterval);
+    window._syncTextInterval=setInterval(_updateSyncText,60000);
+  } else if(status==='error'){
+    dot.style.background='#ef4444';
+    dot.style.animation='';
+    txt.textContent='erro de sync';
+  } else if(status==='offline'){
+    dot.style.background='#94a3b8';
+    dot.style.animation='';
+    txt.textContent='offline';
+  }
+}
+
+function _updateSyncText(){
+  const txt=document.getElementById('sync-text');
+  if(!txt||!_lastSyncTime)return;
+  const diffMin=Math.floor((Date.now()-_lastSyncTime)/60000);
+  let timeStr=diffMin===0?'agora':diffMin===1?'1 min atrás':`${diffMin} min atrás`;
+  if(_lastSyncRec){
+    const parts=[];
+    if(_lastSyncRec.tankName)parts.push(_lastSyncRec.tankName);
+    // Descobre qual campo foi atualizado
+    const fieldMap={temp:'Temp',o2:'O₂',amonia:'Amônia',ph:'pH',mort:'Mort',
+      qty:'Peixes',bio:'Bio',racaoG:'Ração',desovaFemeas:'Coleta'};
+    const field=Object.keys(fieldMap).find(k=>_lastSyncRec[k]!=null);
+    if(field)parts.push(fieldMap[field]);
+    txt.textContent=`${timeStr} · ${parts.join(' ')}`;
+  } else {
+    txt.textContent=timeStr;
+  }
+}
+
+async function forceSync(){
+  updateSyncIndicator('syncing');
+  try{
+    await load();
+    renderTankView();updateMapSub();
+    const lastRec=records.length?records.reduce((a,b)=>a.timestamp>b.timestamp?a:b):null;
+    updateSyncIndicator('ok',lastRec);
+    showToast('Sincronizado ✓','ok');
+  }catch(e){
+    updateSyncIndicator('error');
+    showToast('Erro ao sincronizar','error');
+  }
 }
 
 function showSyncStatus(msg){
-  let el=document.getElementById('sync-status');
-  if(!el){
-    el=document.createElement('div');el.id='sync-status';
-    el.style.cssText='position:fixed;top:52px;left:0;right:0;background:var(--accent);color:#fff;text-align:center;font-size:11px;font-family:"JetBrains Mono",monospace;padding:5px;z-index:999;';
-    document.body.appendChild(el);
+  updateSyncIndicator('syncing');
+  // Mantém o banner discreto para mensagens de erro
+  if(msg&&msg.toLowerCase().includes('erro')){
+    let el=document.getElementById('sync-status');
+    if(!el){
+      el=document.createElement('div');el.id='sync-status';
+      el.style.cssText='position:fixed;top:52px;left:0;right:0;background:var(--danger);color:#fff;text-align:center;font-size:11px;font-family:"JetBrains Mono",monospace;padding:5px;z-index:999;';
+      document.body.appendChild(el);
+    }
+    el.textContent=msg;el.style.display='block';
+    setTimeout(()=>{if(el)el.style.display='none';},4000);
   }
-  el.textContent=msg;el.style.display='block';
 }
 function hideSyncStatus(){
   const el=document.getElementById('sync-status');if(el)el.style.display='none';
@@ -1796,10 +1905,12 @@ async function enterApp(u){
   currentUser={username:u,...USERS[u]};
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
-  document.getElementById('topbar-name').textContent=currentUser.name.split(' ')[0];
-  document.getElementById('topbar-avatar').textContent=currentUser.name.split(' ').map(w=>w[0]).slice(0,2).join('');
-  document.getElementById('topbar-role').textContent=isAdmin()?'Admin':'';
-  document.getElementById('topbar-role').style.display=isAdmin()?'inline':'none';
+  const initials=currentUser.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('topbar-avatar').textContent=initials;
+  document.getElementById('dd-name').textContent=currentUser.name;
+  document.getElementById('dd-login').textContent='@'+currentUser.username;
+  const roleEl=document.getElementById('dd-role');
+  if(roleEl){roleEl.textContent=isAdmin()?'Administrador':'Usuário';roleEl.style.display='inline-block';}
   // Mostra opções admin no menu hamburguer
   document.querySelectorAll('.mod-coleta-only,.mod-admin-only').forEach(el=>el.style.display=isAdmin()?'flex':'none');
 
