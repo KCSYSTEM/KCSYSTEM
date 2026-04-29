@@ -1160,8 +1160,11 @@ function renderColetaPainel(){
       ?parseFloat((l.ovosTotal*(1-l.ovosGorados/100)).toFixed(0)):null;
   });
 
-  const lotes=Object.values(byLote).sort((a,b)=>
-    Math.max(...[...b.dates])-Math.max(...[...a.dates]));
+  const lotes=Object.values(byLote).sort((a,b)=>{
+    const maxA=[...a.dates].sort().pop()||'';
+    const maxB=[...b.dates].sort().pop()||'';
+    return maxB.localeCompare(maxA);
+  });
 
   cont.innerHTML='';
   const wrapper=document.createElement('div');
