@@ -326,7 +326,10 @@ canvas.chart-canvas{display:block;}
 .lancamento-save-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .lancamento-save-btn:active{background:var(--accent2);}
 /* Toggle Tambor/Balde */
-.tambor-toggle{display:flex;border:1.5px solid var(--border2);border-radius:20px;overflow:hidden;width:fit-content;font-size:11px;font-weight:700;cursor:pointer;user-select:none;flex-shrink:0;}
+.coleta-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 20px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:600;border-radius:10px;transition:all 0.15s;flex:1;}
+.coleta-nav-item.active{color:var(--accent);}
+.coleta-nav-item .nav-icon{font-size:20px;line-height:1;}
+.coleta-nav-item .nav-label{font-size:10px;font-weight:600;}overflow:hidden;width:fit-content;font-size:11px;font-weight:700;cursor:pointer;user-select:none;flex-shrink:0;}
 .tambor-toggle .t-opt{padding:5px 10px;background:var(--bg);color:var(--text3);transition:all 0.15s;white-space:nowrap;}
 .tambor-toggle .t-opt.active{background:var(--accent);color:#fff;}
 .tambor-input-disabled{width:100%;background:#f0f4f8;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:#b0bec5;font-size:15px;font-family:'JetBrains Mono',monospace;cursor:not-allowed;}
@@ -359,6 +362,27 @@ canvas.chart-canvas{display:block;}
       <div class="brand-icon">🐟</div>
       <div class="brand-name">KC<span>System</span></div>
     </div>
+    <!-- Menu de módulos hamburguer -->
+    <div style="position:relative;margin-left:8px;" id="module-menu-wrap">
+      <button onclick="toggleModuleMenu()" style="background:rgba(255,255,255,0.12);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;">
+        <span style="display:block;width:18px;height:2px;background:#fff;border-radius:2px;"></span>
+        <span style="display:block;width:18px;height:2px;background:#fff;border-radius:2px;"></span>
+        <span style="display:block;width:18px;height:2px;background:#fff;border-radius:2px;"></span>
+      </button>
+      <div id="module-dropdown" style="display:none;position:absolute;top:40px;left:0;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;min-width:160px;overflow:hidden;">
+        <div onclick="switchModule('operacao')" id="mod-btn-operacao" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--accent);background:var(--accent-dim);">
+          <span>🐟</span> Operação
+        </div>
+        <div onclick="switchModule('coleta')" id="mod-btn-coleta" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-coleta-only">
+          <span>🧬</span> Coleta
+        </div>
+        <div onclick="switchModule('config')" id="mod-btn-config" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
+          <span>⚙️</span> Configuração
+        </div>
+      </div>
+    </div>
+    <div id="module-label" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);margin-left:4px;letter-spacing:0.5px;">OPERAÇÃO</div>
+    <div style="flex:1;"></div>
     <div class="topbar-right">
       <div class="user-chip">
         <div class="user-avatar" id="topbar-avatar">--</div>
@@ -391,8 +415,7 @@ canvas.chart-canvas{display:block;}
       <div class="lancamento-param-bar">
         <select class="lancamento-param-select" id="lanc-param" onchange="renderLancamentos()">
           <option value="">Selecione o parâmetro...</option>
-          <option value="temp">🌡 Temperatura (°C)</option>
-          <option value="o2">💧 Oxigênio (mg/L)</option>
+          <option value="tempO2">🌡💧 Temperatura + Oxigênio</option>
           <option value="amonia">⚗️ Amônia (mg/L)</option>
           <option value="ph">🔬 pH</option>
           <option value="qty">🐟 Qtd. de Peixes</option>
@@ -422,7 +445,7 @@ canvas.chart-canvas{display:block;}
       <div style="padding:0 13px 12px;">
         <input type="date" id="painel-date" onchange="renderPainel()" style="width:100%;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;color:var(--text);font-size:16px;outline:none;-webkit-appearance:none;appearance:none;">
       </div>
-      <div id="painel-container" style="overflow-x:auto;padding:0 13px;"></div>
+      <div id="painel-container" style="overflow:auto;padding:0 13px;max-height:calc(100vh - 180px);"></div>
     </div>
 
     <!-- GRÁFICOS -->
@@ -533,7 +556,82 @@ canvas.chart-canvas{display:block;}
     </div>
   </div>
 
-  <!-- BOTTOM NAV -->
+
+
+<!-- ===== MÓDULO COLETA ===== -->
+  <div id="modulo-coleta" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+    <div id="coleta-main" style="flex:1;overflow-y:auto;">
+      <!-- VIEW MATRIZES -->
+      <div id="view-col-matrizes" class="view active" style="display:block;">
+        <div class="view-header">
+          <div><div class="view-title">Matrizes</div><div class="view-sub">Tanques com matrizes e hapas</div></div>
+        </div>
+        <div id="matrizes-container" style="padding:13px 13px 80px;display:flex;flex-direction:column;gap:20px;"></div>
+      </div>
+      <!-- VIEW LANÇAR COLETA -->
+      <div id="view-col-coleta" class="view">
+        <div class="view-header">
+          <div><div class="view-title">Lançar Coleta</div><div class="view-sub">Registrar dados por hapa ou lote</div></div>
+        </div>
+        <!-- Barra de parâmetro -->
+        <div class="lancamento-param-bar">
+          <select class="lancamento-param-select" id="coleta-param" onchange="renderColeta()">
+            <option value="">Selecione o parâmetro...</option>
+            <option value="desova">🥚 Desova (fêmeas + volume)</option>
+            <option value="ovosPorMl">🔬 Ovos por mL</option>
+            <option value="ovosGorados">💀 Ovos Gorados</option>
+          </select>
+          <input type="date" id="coleta-date" class="lancamento-date-input">
+          <button class="lancamento-save-btn" onclick="saveColeta()">Salvar</button>
+        </div>
+        <!-- Lote (só para desova) -->
+        <div id="coleta-lote-row" style="display:none;padding:8px 13px;background:var(--surface);border-bottom:1.5px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">🥚 Nome do Lote</div>
+          <input type="text" id="coleta-lote" placeholder="Ex: Lote A - Abr/26"
+            style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none;">
+        </div>
+        <div class="lancamento-progress" id="coleta-progress" style="padding:6px 13px;display:none;"></div>
+        <div style="overflow-x:auto;padding:0 13px 80px;">
+          <table class="lancamento-table" id="coleta-table">
+            <tbody id="coleta-tbody">
+              <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3);font-size:13px;">Selecione um parâmetro acima</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- VIEW PAINEL COLETA -->
+      <div id="view-col-painel" class="view">
+        <div class="view-header">
+          <div><div class="view-title">Painel de Coleta</div><div class="view-sub">Resultados por lote</div></div>
+        </div>
+        <div id="coleta-painel-container" style="padding:13px 13px 80px;overflow-x:auto;"></div>
+      </div>
+      <!-- VIEW GRÁFICOS COLETA -->
+      <div id="view-col-graficos" class="view">
+        <div class="view-header">
+          <div><div class="view-title">Gráficos de Coleta</div><div class="view-sub">Evolução por data</div></div>
+        </div>
+        <div id="coleta-graficos-container" style="padding:13px 13px 80px;display:flex;flex-direction:column;gap:20px;"></div>
+      </div>
+    </div>
+    <!-- Nav do módulo coleta - fixo no rodapé -->
+    <div class="coleta-nav" style="display:flex;background:var(--surface);border-top:1.5px solid var(--border);padding:0 4px;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);">
+      <div class="coleta-nav-item active" id="nav-col-matrizes" onclick="showColetaView('matrizes')">
+        <div class="nav-icon">🧬</div><div class="nav-label">Matrizes</div>
+      </div>
+      <div class="coleta-nav-item" id="nav-col-coleta" onclick="showColetaView('coleta')">
+        <div class="nav-icon">✏️</div><div class="nav-label">Lançar</div>
+      </div>
+      <div class="coleta-nav-item" id="nav-col-painel" onclick="showColetaView('painel')">
+        <div class="nav-icon">📋</div><div class="nav-label">Painel</div>
+      </div>
+      <div class="coleta-nav-item" id="nav-col-graficos" onclick="showColetaView('graficos')">
+        <div class="nav-icon">📈</div><div class="nav-label">Gráficos</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV (módulo operação) -->
   <div class="bottom-nav">
     <div class="nav-item active" id="nav-tanques" onclick="showView('tanques')">
       <div class="nav-icon">⬡</div><div class="nav-label">Tanques</div>
@@ -549,9 +647,6 @@ canvas.chart-canvas{display:block;}
     </div>
     <div class="nav-item" id="nav-history" onclick="showView('history')">
       <div class="nav-icon">↻</div><div class="nav-label">Histórico</div>
-    </div>
-    <div class="nav-item" id="nav-settings" onclick="showView('settings')" style="display:none;">
-      <div class="nav-icon">⚙️</div><div class="nav-label">Config.</div>
     </div>
   </div>
   <button class="fab" id="fab-btn" onclick="openAddTank()" style="display:none;">+</button>
@@ -788,10 +883,635 @@ async function saveOneRecord(rec){
   if(!ok)showToast('⚠ Salvo localmente (sem conexão)','error');
 }
 
-// ===== SUPABASE REALTIME =====
+// ===== MÓDULO =====
+let activeModule='operacao';
+
+function toggleModuleMenu(){
+  const dd=document.getElementById('module-dropdown');
+  dd.style.display=dd.style.display==='none'?'block':'none';
+}
+
+function switchModule(mod){
+  if((mod==='coleta'||mod==='config')&&!isAdmin()){
+    showToast('Módulo restrito a administradores','error');
+    document.getElementById('module-dropdown').style.display='none';
+    return;
+  }
+  activeModule=mod;
+  document.getElementById('module-dropdown').style.display='none';
+  const labels={operacao:'OPERAÇÃO',coleta:'COLETA',config:'CONFIG.'};
+  document.getElementById('module-label').textContent=labels[mod]||mod.toUpperCase();
+
+  // Estilos do dropdown
+  const base='padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;';
+  const active=base+'color:var(--accent);background:var(--accent-dim);';
+  const inactive=base+'color:var(--text2);';
+  ['operacao','coleta','config'].forEach(m=>{
+    const el=document.getElementById('mod-btn-'+m);
+    if(el)el.style.cssText=mod===m?active:inactive;
+  });
+
+  const opEl=document.getElementById('main');
+  const navEl=document.querySelector('.bottom-nav');
+  const fabEl=document.getElementById('fab-btn');
+  const colEl=document.getElementById('modulo-coleta');
+
+  // Esconde tudo primeiro
+  opEl.style.display='none'; navEl.style.display='none';
+  colEl.style.display='none'; if(fabEl)fabEl.style.display='none';
+
+  if(mod==='operacao'){
+    opEl.style.display=''; navEl.style.display='';
+    if(fabEl&&currentUser?.role==='admin')fabEl.style.display='';
+  } else if(mod==='coleta'){
+    colEl.style.display='flex';
+    showColetaView('matrizes');
+  } else if(mod==='config'){
+    opEl.style.display=''; navEl.style.display='';
+    showView('settings');
+  }
+}
+
+// Fecha menu ao clicar fora
+document.addEventListener('click',function(e){
+  const wrap=document.getElementById('module-menu-wrap');
+  if(wrap&&!wrap.contains(e.target)){
+    document.getElementById('module-dropdown').style.display='none';
+  }
+});
+
+function showColetaView(v){
+  document.querySelectorAll('#modulo-coleta .view').forEach(el=>{
+    el.classList.remove('active');
+    el.style.display='none';
+  });
+  document.querySelectorAll('.coleta-nav-item').forEach(el=>el.classList.remove('active'));
+  const viewEl=document.getElementById('view-col-'+v);
+  if(viewEl){viewEl.classList.add('active');viewEl.style.display='block';}
+  document.getElementById('nav-col-'+v)?.classList.add('active');
+  if(v==='matrizes')renderMatrizes();
+  if(v==='coleta')renderColeta();
+  if(v==='painel')renderColetaPainel();
+  if(v==='graficos')renderColetaGraficos();
+}
+
+function renderColetaGraficos(){
+  const cont=document.getElementById('coleta-graficos-container');
+  if(!cont)return;
+
+  // Monta dataset por data
+  const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote);
+  if(!coletaRecs.length){
+    cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
+      <div style="font-size:40px;margin-bottom:12px;">📈</div>
+      <div style="font-size:15px;font-weight:700;">Nenhuma coleta registrada</div>
+    </div>`;
+    return;
+  }
+
+  // Agrupa por data
+  const byDate={};
+  coletaRecs.forEach(r=>{
+    if(!byDate[r.date])byDate[r.date]={date:r.date,femeas:0,ml:0,lotes:new Set()};
+    byDate[r.date].femeas+=(r.desovaFemeas||0);
+    byDate[r.date].ml+=(r.desovaML||0);
+    byDate[r.date].lotes.add(r.lote);
+  });
+
+  // Enriquece com ovosPorMl e gorados por data (via lote)
+  Object.values(byDate).forEach(d=>{
+    let totalOvosTotal=0,totalOvosFinal=0,goradosPct=null,countGorados=0;
+    d.lotes.forEach(lote=>{
+      const rOvos=records.find(r=>r.lote===lote&&r.ovosPorMl!=null&&!r.overridden);
+      const rGorados=records.find(r=>r.lote===lote&&r.ovosGorados!=null&&!r.overridden);
+      // Calcula ml deste lote nesta data
+      const mlLoteData=coletaRecs.filter(r=>r.lote===lote&&r.date===d.date).reduce((s,r)=>s+(r.desovaML||0),0);
+      if(rOvos){
+        const ot=mlLoteData*rOvos.ovosPorMl;
+        totalOvosTotal+=ot;
+        if(rGorados){totalOvosFinal+=ot*(1-rGorados.ovosGorados/100);goradosPct=(goradosPct||0)+rGorados.ovosGorados;countGorados++;}
+      }
+    });
+    d.ovosTotal=totalOvosTotal||null;
+    d.ovosFinal=totalOvosFinal||null;
+    d.goradosPct=countGorados?parseFloat((goradosPct/countGorados).toFixed(1)):null;
+  });
+
+  const dates=Object.keys(byDate).sort();
+  const data=dates.map(d=>byDate[d]);
+
+  // Total fêmeas matrizes (da última biometria)
+  const totalFemeasMatrizes=tanks.filter(t=>t.matrizes&&!t.empty).reduce((s,t)=>{
+    const lr=lastRec(t.id);
+    return s+(lr?.femeas||0);
+  },0);
+
+  cont.innerHTML='';
+  const grafDefs=[
+    {id:'gcol-1',title:'Fêmeas que Desovaram',unit:'un',
+      series:[
+        {label:'Fêmeas desovadas',color:'#7c3aed',vals:data.map(d=>d.femeas)},
+        {label:'Total fêmeas',color:'#d9b4fe',vals:data.map(()=>totalFemeasMatrizes||null),dashed:true},
+      ]},
+    {id:'gcol-2',title:'Ovos Total',unit:'un',
+      series:[{label:'Ovos Total',color:'#2563eb',vals:data.map(d=>d.ovosTotal)}]},
+    {id:'gcol-3',title:'% Ovos Gorados',unit:'%',
+      series:[{label:'Gorados %',color:'#e53e3e',vals:data.map(d=>d.goradosPct)}]},
+    {id:'gcol-4',title:'Ovos Finais (descontando gorados)',unit:'un',
+      series:[{label:'Ovos Finais',color:'#16a34a',vals:data.map(d=>d.ovosFinal)}]},
+  ];
+
+  grafDefs.forEach(gd=>{
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;';
+    card.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">${gd.title}</div>
+      <div id="${gd.id}"></div>`;
+    cont.appendChild(card);
+
+    // SVG simples
+    const W=Math.min(cont.clientWidth-60||340,600),H=160;
+    const pad={t:10,b:30,l:50,r:10};
+    const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
+    const n=dates.length;
+    if(!n){card.querySelector(`#${gd.id}`).innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Sem dados</div>';return;}
+
+    // Calcula max para escala
+    const allVals=gd.series.flatMap(s=>s.vals).filter(v=>v!=null);
+    const maxV=allVals.length?Math.max(...allVals)*1.1:1;
+    const minV=0;
+    const scaleY=v=>pad.t+iH-(v-minV)/(maxV-minV||1)*iH;
+    const scaleX=i=>pad.l+(n===1?iW/2:i/(n-1)*iW);
+
+    let paths='';
+    // Grid lines
+    [0,0.25,0.5,0.75,1].forEach(f=>{
+      const y=pad.t+iH*(1-f);
+      const val=(minV+(maxV-minV)*f);
+      paths+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+      paths+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${val>=1000?Math.round(val/1000)+'k':val.toFixed(val<10?1:0)}</text>`;
+    });
+    // X labels
+    dates.forEach((d,i)=>{
+      if(n<=7||i%(Math.ceil(n/5))===0){
+        paths+=`<text x="${scaleX(i)}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d.slice(5)}</text>`;
+      }
+    });
+
+    gd.series.forEach(s=>{
+      const pts=s.vals.map((v,i)=>v!=null?`${scaleX(i)},${scaleY(v)}`:null);
+      // Linha
+      let d2='';let first=true;
+      pts.forEach((p,i)=>{if(p){d2+=(first?`M${p}`:`L${p}`);first=false;}else{first=true;}});
+      if(d2)paths+=`<path d="${d2}" fill="none" stroke="${s.color}" stroke-width="2" ${s.dashed?'stroke-dasharray="6,3"':''}/>`;
+      // Pontos
+      pts.forEach((p,i)=>{if(p&&s.vals[i]!=null)paths+=`<circle cx="${scaleX(i)}" cy="${scaleY(s.vals[i])}" r="3" fill="${s.color}"/>`;});
+    });
+
+    // Legenda
+    const legenda=gd.series.map(s=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:${s.color};"></span>${s.label}</span>`).join('');
+
+    card.querySelector(`#${gd.id}`).innerHTML=`
+      <div style="margin-bottom:6px;">${legenda}</div>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;">${paths}</svg>`;
+  });
+}
+
+function renderColetaPainel(){
+  const cont=document.getElementById('coleta-painel-container');
+  if(!cont)return;
+
+  const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote);
+  if(!coletaRecs.length){
+    cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
+      <div style="font-size:40px;margin-bottom:12px;">🥚</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text2);">Nenhuma coleta registrada</div>
+      <div style="font-size:13px;margin-top:6px;">Use a aba Lançar para registrar desova.</div>
+    </div>`;
+    return;
+  }
+
+  // Agrupa por lote
+  const byLote={};
+  coletaRecs.forEach(r=>{
+    if(!byLote[r.lote])byLote[r.lote]={lote:r.lote,dates:new Set(),femeas:0,ml:0,hapas:[]};
+    const l=byLote[r.lote];
+    l.dates.add(r.date);
+    l.femeas+=(r.desovaFemeas||0);
+    l.ml+=(r.desovaML||0);
+    l.hapas.push(r);
+  });
+
+  // Enriquece com ovosPorMl e ovosGorados dos registros de lote
+  Object.values(byLote).forEach(l=>{
+    const rOvos=records.find(r=>r.lote===l.lote&&r.ovosPorMl!=null&&!r.overridden);
+    const rGorados=records.find(r=>r.lote===l.lote&&r.ovosGorados!=null&&!r.overridden);
+    l.ovosPorMl=rOvos?.ovosPorMl??null;
+    l.ovosGorados=rGorados?.ovosGorados??null;
+    l.ovosTotal=l.ovosPorMl!=null?parseFloat((l.ml*l.ovosPorMl).toFixed(0)):null;
+    l.ovosFinal=l.ovosTotal!=null&&l.ovosGorados!=null
+      ?parseFloat((l.ovosTotal*(1-l.ovosGorados/100)).toFixed(0)):null;
+  });
+
+  const lotes=Object.values(byLote).sort((a,b)=>
+    Math.max(...[...b.dates])-Math.max(...[...a.dates]));
+
+  cont.innerHTML='';
+  const wrapper=document.createElement('div');
+  wrapper.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;';
+
+  wrapper.innerHTML=`
+    <div style="display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px;gap:0;border-bottom:2px solid var(--border);background:var(--bg);overflow-x:auto;">
+      <div></div>
+      <div style="padding:8px 6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;">Lote</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">♀ Fêmeas</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">💧 Vol (mL)</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">🔬 Ovos/mL</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">🥚 Ovos Total</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">💀 Gorados %</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--accent);text-align:center;">✅ Ovos Final</div>
+    </div>`;
+
+  lotes.forEach((l,li)=>{
+    const detailId=`coleta-detail-${li}`;
+    const rowId=`coleta-row-${li}`;
+    const isLast=li===lotes.length-1;
+
+    const cell=(val,color='')=>
+      `<div style="padding:10px 4px;text-align:center;font-size:13px;font-weight:700;color:${color||'var(--text)'};">${val!=null?val:'—'}</div>`;
+
+    const row=document.createElement('div');
+    row.id=rowId;
+    row.style.cssText=`display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px;gap:0;cursor:pointer;${!isLast?'border-bottom:1px solid var(--border);':''}background:var(--bg);transition:background 0.1s;overflow-x:auto;`;
+    row.onclick=()=>toggleColetaDetail(detailId,rowId);
+    row.innerHTML=`
+      <div style="padding:10px 6px;display:flex;align-items:center;justify-content:center;">
+        <span id="icon-${detailId}" style="font-size:16px;font-weight:700;color:var(--accent);">＋</span>
+      </div>
+      <div style="padding:10px 6px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${l.lote}</div>
+        <div style="font-size:10px;color:var(--text3);">${[...l.dates].sort().map(d=>formatDate(d)).join(', ')}</div>
+      </div>
+      ${cell(l.femeas)}
+      ${cell(parseFloat(l.ml.toFixed(1)))}
+      ${cell(l.ovosPorMl)}
+      ${cell(l.ovosTotal!=null?l.ovosTotal.toLocaleString('pt-BR'):null)}
+      ${cell(l.ovosGorados!=null?l.ovosGorados+'%':null,'#e53e3e')}
+      ${cell(l.ovosFinal!=null?l.ovosFinal.toLocaleString('pt-BR'):null,'var(--accent)')}`;
+    wrapper.appendChild(row);
+
+    // Detalhe por tanque+hapa
+    const detail=document.createElement('div');
+    detail.id=detailId;
+    detail.style.cssText=`display:none;background:rgba(34,81,160,0.04);${!isLast?'border-bottom:1px solid var(--border);':''}`;
+
+    detail.innerHTML=`<div style="display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+      <div></div><div style="padding:6px 8px;font-size:10px;font-weight:700;color:var(--text3);">Tanque / Hapa</div>
+      <div style="padding:6px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">♀ Fêmeas</div>
+      <div style="padding:6px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">💧 mL</div>
+      <div colspan="4"></div>
+    </div>`;
+
+    const byTankHapa={};
+    l.hapas.forEach(r=>{
+      const key=`${r.tankName}|${r.hapa}`;
+      if(!byTankHapa[key])byTankHapa[key]={name:r.tankName,hapa:r.hapa,femeas:0,ml:0};
+      byTankHapa[key].femeas+=(r.desovaFemeas||0);
+      byTankHapa[key].ml+=(r.desovaML||0);
+    });
+
+    Object.values(byTankHapa).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})||(a.hapa-b.hapa)).forEach(th=>{
+      const tank=tanks.find(t=>t.name===th.name);
+      const hapaName=tank?.hapaNames?.[th.hapa-1]||`Hapa ${th.hapa}`;
+      const sub=document.createElement('div');
+      sub.style.cssText='display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px;gap:0;border-bottom:1px solid rgba(0,0,0,0.04);';
+      sub.innerHTML=`<div></div>
+        <div style="padding:7px 8px 7px 18px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);">${th.name}</div>
+          <div style="font-size:11px;color:#7c3aed;">🪣 ${hapaName}</div>
+        </div>
+        <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${th.femeas}</div>
+        <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${parseFloat(th.ml.toFixed(1))}</div>
+        <div></div><div></div><div></div><div></div>`;
+      detail.appendChild(sub);
+    });
+    wrapper.appendChild(detail);
+  });
+
+  cont.appendChild(wrapper);
+}
+
+function toggleColetaDetail(detailId,rowId){
+  const detail=document.getElementById(detailId);
+  const icon=document.getElementById('icon-'+detailId);
+  const row=document.getElementById(rowId);
+  if(!detail)return;
+  const open=detail.style.display==='none'||detail.style.display==='';
+  detail.style.display=open?'block':'none';
+  if(icon){icon.textContent=open?'－':'＋';icon.style.transform=open?'rotate(0deg)':'';}
+  if(row)row.style.background=open?'rgba(34,81,160,0.06)':'var(--bg)';
+}
+
+function renderColeta(){
+  const param=document.getElementById('coleta-param')?.value;
+  const tbody=document.getElementById('coleta-tbody');
+  const loteRow=document.getElementById('coleta-lote-row');
+  const thead=document.querySelector('#coleta-table thead');
+  if(thead)thead.remove();
+
+  // Inicializa data
+  const dateEl=document.getElementById('coleta-date');
+  if(dateEl&&!dateEl.value)dateEl.value=new Date().toISOString().split('T')[0];
+
+  if(!param){
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3);font-size:13px;">Selecione um parâmetro acima</td></tr>';
+    loteRow.style.display='none';
+    return;
+  }
+
+  // Mostra campo lote só para desova
+  loteRow.style.display=param==='desova'?'block':'none';
+
+  const matTanks=tanks.filter(t=>t.matrizes&&!t.empty).sort((a,b)=>(a.num||0)-(b.num||0));
+
+  if(param==='desova'){
+    // Por hapa
+    if(!matTanks.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3);">Nenhum tanque com Matrizes</td></tr>';return;}
+    // Adiciona thead
+    tbody.insertAdjacentHTML('beforebegin',`<thead><tr>
+      <th style="min-width:130px;">Tanque / Hapa</th>
+      <th style="min-width:90px;">♀ Fêmeas</th>
+      <th style="min-width:100px;">💧 Volume (mL)</th>
+      <th style="min-width:80px;color:var(--text3);">Último</th>
+    </tr></thead>`);
+    let rows=[],ri=0;
+    matTanks.forEach(t=>{
+      (t.hapaNames||[]).forEach((nm,i)=>{
+        const h=i+1;
+        const last=lastRecHapa(t.id,h);
+        rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,
+          lastFemeas:last?.desovaFemeas??'',lastMl:last?.desovaML??'',ri:ri++});
+      });
+    });
+    tbody.innerHTML=rows.map(r=>`<tr>
+      <td><div class="lancamento-tank-name">${r.tankName}</div><div class="lancamento-hapa-name">🪣 ${r.hapaName}</div></td>
+      <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${r.lastFemeas!==''?`♀${r.lastFemeas} / ${r.lastMl}mL`:'—'}</td>
+    </tr>`).join('');
+
+  } else {
+    // Por lote (ovosPorMl ou ovosGorados)
+    const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote);
+    const byLote={};
+    coletaRecs.forEach(r=>{
+      if(!byLote[r.lote])byLote[r.lote]={lote:r.lote,femeas:0,ml:0,lastDate:''};
+      byLote[r.lote].femeas+=(r.desovaFemeas||0);
+      byLote[r.lote].ml+=(r.desovaML||0);
+      if(r.date>byLote[r.lote].lastDate)byLote[r.lote].lastDate=r.date;
+    });
+    const lotes=Object.values(byLote).sort((a,b)=>b.lastDate.localeCompare(a.lastDate));
+
+    if(!lotes.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3);">Nenhuma desova registrada ainda</td></tr>';return;}
+
+    if(param==='ovosPorMl'){
+      tbody.insertAdjacentHTML('beforebegin',`<thead><tr>
+        <th style="min-width:150px;">Lote</th>
+        <th style="min-width:80px;text-align:center;">♀ Fêmeas</th>
+        <th style="min-width:90px;text-align:center;">💧 Volume (mL)</th>
+        <th style="min-width:100px;">🔬 Ovos/mL</th>
+      </tr></thead>`);
+      tbody.innerHTML=lotes.map((l,i)=>{
+        const last=records.find(r=>r.lote===l.lote&&r.ovosPorMl!=null&&!r.overridden);
+        return`<tr>
+          <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
+          <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${l.femeas}</td>
+          <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${parseFloat(l.ml.toFixed(1))}</td>
+          <td><input class="lancamento-input" type="number" id="col-ovosml-${i}" data-lote="${l.lote}" data-field="ovosPorMl" placeholder="—" step="0.1" inputmode="decimal" value="${last?.ovosPorMl??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+        </tr>`;
+      }).join('');
+    } else {
+      // ovosGorados
+      tbody.insertAdjacentHTML('beforebegin',`<thead><tr>
+        <th style="min-width:150px;">Lote</th>
+        <th style="min-width:90px;text-align:center;">💧 Volume (mL)</th>
+        <th style="min-width:110px;">💀 Ovos Gorados (%)</th>
+      </tr></thead>`);
+      tbody.innerHTML=lotes.map((l,i)=>{
+        const last=records.find(r=>r.lote===l.lote&&r.ovosGorados!=null&&!r.overridden);
+        return`<tr>
+          <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
+          <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${parseFloat(l.ml.toFixed(1))}</td>
+          <td><input class="lancamento-input" type="number" id="col-gorados-${i}" data-lote="${l.lote}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="${last?.ovosGorados??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+        </tr>`;
+      }).join('');
+    }
+  }
+}
+
+async function saveColeta(){
+  const param=document.getElementById('coleta-param')?.value;
+  const date=document.getElementById('coleta-date')?.value;
+  if(!param){showToast('Selecione um parâmetro','error');return;}
+  if(!date){showToast('Selecione uma data','error');return;}
+
+  const prog=document.getElementById('coleta-progress');
+  prog.style.display='block';prog.textContent='Salvando...';
+
+  let saved=0;
+  const baseTs=Date.now();
+
+  if(param==='desova'){
+    const lote=document.getElementById('coleta-lote')?.value.trim();
+    if(!lote){showToast('Informe o nome do lote','error');prog.style.display='none';return;}
+    const inputs=document.querySelectorAll('#coleta-tbody input[data-tank]');
+    const byRow={};
+    inputs.forEach(inp=>{
+      const key=`${inp.dataset.tank}_${inp.dataset.hapa}`;
+      if(!byRow[key])byRow[key]={tankId:inp.dataset.tank,hapaNum:parseInt(inp.dataset.hapa)};
+      if(inp.dataset.field==='femeas')byRow[key].femeas=parseFloat(inp.value)||null;
+      if(inp.dataset.field==='ml')byRow[key].ml=parseFloat(inp.value)||null;
+    });
+    const toSave=Object.values(byRow).filter(r=>r.femeas!=null||r.ml!=null);
+    if(!toSave.length){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
+    for(const item of toSave){
+      const tank=tanks.find(t=>t.id===item.tankId);
+      const rec={id:`coleta_${baseTs}_h${item.hapaNum}_${item.tankId.slice(-4)}`,
+        tankId:item.tankId,tankName:tank?.name||item.tankId,date,
+        user:currentUser.name,username:currentUser.username,
+        timestamp:new Date(baseTs+saved).toISOString(),
+        lote,desovaFemeas:item.femeas,desovaML:item.ml,
+        temp:null,o2:null,amonia:null,ph:null,mort:0,qty:null,bio:null,
+        racao:'',racaoIdealG:null,sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
+        obs:'',overridden:false,hapa:item.hapaNum};
+      records.push(rec);await saveRecord_sb(rec);saved++;
+    }
+  } else {
+    const inputs=document.querySelectorAll('#coleta-tbody input[data-lote]');
+    for(const inp of inputs){
+      if(!inp.value.trim())continue;
+      const lote=inp.dataset.lote;
+      const field=inp.dataset.field;
+      const rec={id:`coleta_${field}_${baseTs}_${lote.replace(/\s/g,'_')}`,
+        tankId:'coleta_geral',tankName:'Coleta',date,
+        user:currentUser.name,username:currentUser.username,
+        timestamp:new Date(baseTs+saved).toISOString(),
+        lote,[field]:parseFloat(inp.value),
+        temp:null,o2:null,amonia:null,ph:null,mort:0,qty:null,bio:null,
+        racao:'',racaoIdealG:null,sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
+        desovaFemeas:null,desovaML:null,obs:'',overridden:false,hapa:null};
+      records.push(rec);await saveRecord_sb(rec);saved++;
+    }
+    if(!saved){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
+  }
+
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  prog.textContent=`✓ ${saved} registro${saved>1?'s':''} salvo${saved>1?'s':''}!`;
+  setTimeout(()=>{prog.style.display='none';},3000);
+  showToast('Coleta salva ✓','ok');
+  renderColeta();
+}
+
+async function toggleMatrizesTank(on){
+  if(!activeTank)return;
+  activeTank.matrizes=on;
+  save();
+  showToast(on?`${activeTank.name} marcado como Matrizes`:`${activeTank.name} removido de Matrizes`,'ok');
+}
+
+// ===== MÓDULO COLETA — MATRIZES =====
+function renderMatrizes(){
+  const cont=document.getElementById('matrizes-container');
+  if(!cont)return;
+  const matTanks=tanks.filter(t=>t.matrizes&&!t.empty).sort((a,b)=>(a.num||0)-(b.num||0));
+  if(!matTanks.length){
+    cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
+      <div style="font-size:48px;margin-bottom:16px;">🧬</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text2);">Nenhum tanque com Matrizes</div>
+      <div style="font-size:13px;margin-top:8px;">Ative a chave "Contém Matrizes" nas configurações de um tanque.</div>
+    </div>`;
+    return;
+  }
+  cont.innerHTML='';
+  matTanks.forEach(t=>cont.appendChild(buildMatrizCard(t)));
+}
+
+function buildMatrizCard(t){
+  const hapaNames=t.hapaNames||[];
+  const hasHapas=hapaNames.length>0;
+
+  // Wrapper do card do tanque
+  const wrap=document.createElement('div');
+  wrap.style.cssText='background:var(--surface);border:2px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);';
+
+  // Header do tanque
+  const header=document.createElement('div');
+  header.style.cssText='background:linear-gradient(135deg,#0d1f35,#1a3a6b);padding:14px 16px;display:flex;align-items:center;gap:10px;';
+  header.innerHTML=`
+    <div style="font-size:22px;">🧬</div>
+    <div>
+      <div style="font-size:16px;font-weight:800;color:#fff;">${t.name}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.6);">${hasHapas?hapaNames.length+' hapas':'Sem hapas configurados'}</div>
+    </div>`;
+  wrap.appendChild(header);
+
+  if(!hasHapas){
+    const noHapa=document.createElement('div');
+    noHapa.style.cssText='padding:20px;text-align:center;color:var(--text3);font-size:13px;';
+    noHapa.textContent='Configure hapas nas configurações do tanque para visualizá-los aqui.';
+    wrap.appendChild(noHapa);
+    return wrap;
+  }
+
+  // Desenho visual do tanque com hapas
+  const body=document.createElement('div');
+  body.style.cssText='padding:16px;';
+
+  // Desenho SVG do tanque retangular com hapas dentro
+  const svgWrap=document.createElement('div');
+  svgWrap.style.cssText='width:100%;margin-bottom:16px;';
+
+  const cols=Math.min(hapaNames.length,4);
+  const rows=Math.ceil(hapaNames.length/cols);
+  const hapaW=130,hapaH=100,gap=12,pad=20;
+  const svgW=cols*(hapaW+gap)+gap+pad*2;
+  const svgH=rows*(hapaH+gap)+gap+pad*2+40;
+
+  let hapaSvg='';
+  hapaNames.forEach((nm,i)=>{
+    const col=i%cols,row=Math.floor(i/cols);
+    const x=pad+gap+col*(hapaW+gap);
+    const y=pad+40+gap+row*(hapaH+gap);
+    const h=i+1;
+    const lastR=lastRecHapa(t.id,h);
+    const qty=lastR?.qty??null;
+    const machos=lastR?.machos??null;
+    const femeas=lastR?.femeas??null;
+    const hasData=qty!=null||machos!=null||femeas!=null;
+    const total=machos!=null&&femeas!=null?machos+femeas:qty;
+
+    hapaSvg+=`
+      <rect x="${x}" y="${y}" width="${hapaW}" height="${hapaH}" rx="8"
+        fill="${hasData?'rgba(124,58,237,0.15)':'rgba(255,255,255,0.04)'}"
+        stroke="${hasData?'#7c3aed':'rgba(255,255,255,0.15)'}" stroke-width="1.5"/>
+      <text x="${x+hapaW/2}" y="${y+16}" text-anchor="middle" font-size="9" font-weight="700"
+        fill="${hasData?'#a78bfa':'rgba(255,255,255,0.4)'}">🪣 ${nm}</text>
+      ${hasData
+        ? (machos!=null&&femeas!=null
+          ? `<text x="${x+hapaW/2-20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#60a5fa">♂${machos.toLocaleString('pt-BR')}</text>
+             <text x="${x+hapaW/2+20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#f472b6">♀${femeas.toLocaleString('pt-BR')}</text>
+             <line x1="${x+hapaW/2}" y1="${y+48}" x2="${x+hapaW/2}" y2="${y+56}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+             <text x="${x+hapaW/2}" y="${y+68}" text-anchor="middle" font-size="16" font-weight="800" fill="#e2e8f0">${total.toLocaleString('pt-BR')}</text>
+             <text x="${x+hapaW/2}" y="${y+82}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)">total</text>`
+          : `<text x="${x+hapaW/2}" y="${y+58}" text-anchor="middle" font-size="22" font-weight="800" fill="#e2e8f0">${total.toLocaleString('pt-BR')}</text>
+             <text x="${x+hapaW/2}" y="${y+76}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)">peixes</text>`)
+        : `<text x="${x+hapaW/2}" y="${y+60}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.25)">sem dados</text>`}`;
+  });
+
+  // Totais do tanque para exibir no SVG
+  let totalMachos=0,totalFemeas=0,totalQty=0,bioVals=[];
+  hapaNames.forEach((_,i)=>{
+    const h=i+1;
+    const lr=lastRecHapa(t.id,h);
+    if(lr?.machos)totalMachos+=lr.machos;
+    if(lr?.femeas)totalFemeas+=lr.femeas;
+    if(lr?.qty)totalQty+=lr.qty;
+    if(lr?.bio)bioVals.push(lr.bio);
+  });
+  const totalPeixes=totalMachos+totalFemeas||totalQty||null;
+  const mediaBio=bioVals.length?parseFloat((bioVals.reduce((s,v)=>s+v,0)/bioVals.length).toFixed(2)):null;
+
+  svgWrap.innerHTML=`
+    <svg viewBox="0 0 ${svgW} ${svgH+60}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;border-radius:12px;">
+      <rect width="${svgW}" height="${svgH+60}" rx="12" fill="#0d1f35"/>
+      <rect x="4" y="4" width="${svgW-8}" height="${svgH+52}" rx="10" fill="rgba(34,81,160,0.25)"/>
+      <text x="${svgW/2}" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="rgba(255,255,255,0.8)">${t.name}</text>
+      ${hapaSvg}
+      ${totalPeixes!=null?`
+        <rect x="${pad}" y="${svgH+4}" width="${svgW-pad*2}" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <text x="${svgW/2-60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Total Peixes</text>
+        <text x="${svgW/2-60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#e2e8f0">${totalPeixes.toLocaleString('pt-BR')}</text>
+        ${mediaBio!=null?`
+        <text x="${svgW/2+60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Biometria</text>
+        <text x="${svgW/2+60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#a7f3d0">${mediaBio}g</text>`:''}
+      `:''}
+    </svg>`;
+  body.appendChild(svgWrap);
+  // Sem cards menores — apenas SVG
+  wrap.appendChild(body);
+  return wrap;
+}
 let _realtimeWs=null;
 let _realtimeReconnectTimer=null;
 let _realtimeHeartbeat=null;
+
+function togglePainelHapas(expandId){
+  const el=document.getElementById(expandId);
+  const btn=document.getElementById('btn-'+expandId);
+  if(!el)return;
+  const open=el.style.display==='none'||el.style.display==='';
+  el.style.display=open?'block':'none';
+  if(btn)btn.textContent=open?'－':'＋';
+}
 
 function startRealtime(){
   if(_realtimeWs&&_realtimeWs.readyState===WebSocket.OPEN)return;
@@ -1022,7 +1742,8 @@ async function enterApp(u){
   document.getElementById('topbar-avatar').textContent=currentUser.name.split(' ').map(w=>w[0]).slice(0,2).join('');
   document.getElementById('topbar-role').textContent=isAdmin()?'Admin':'';
   document.getElementById('topbar-role').style.display=isAdmin()?'inline':'none';
-  document.getElementById('nav-settings').style.display=isAdmin()?'flex':'none';
+  // Mostra opções admin no menu hamburguer
+  document.querySelectorAll('.mod-coleta-only,.mod-admin-only').forEach(el=>el.style.display=isAdmin()?'flex':'none');
 
   // Primeiro renderiza com dados do localStorage para não travar a tela
   loadLimits();
@@ -1077,9 +1798,10 @@ document.addEventListener('DOMContentLoaded',function(){
 // ===== NAV =====
 function showView(v){
   if(v==='settings'&&!isAdmin()){showToast('Acesso restrito a administradores','error');return;}
-  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
-  document.getElementById('view-'+v).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  // Só mexe nas views do módulo operação (dentro de #main)
+  document.querySelectorAll('#main .view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v)?.classList.add('active');
+  document.querySelectorAll('.bottom-nav .nav-item').forEach(el=>el.classList.remove('active'));
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
   if(v==='history')renderGlobalHistory();
   if(v==='tanques')renderTankView();
@@ -1352,6 +2074,10 @@ function buildRegistroFormForDate(date){
     <div class="form-field"><label>Mortalidade do dia</label><input type="number" id="reg-mort" placeholder="0" inputmode="numeric" value="${lastMort}" oninput="calcQty()"></div>
     <div class="form-field"><label>Qtd. de peixes <span style="font-size:10px;color:var(--text3);">(auto)</span></label><input type="number" id="reg-qty" placeholder="—" inputmode="numeric" value="${lastQty}"></div>
     <div class="form-field full"><label>Biometria (g)</label><input type="number" id="reg-bio" placeholder="250" step="0.1" inputmode="decimal" value="${lastBio}"></div>
+    ${activeTank?.matrizes?`
+    <div class="form-field" style="grid-column:1/-1;"><div style="height:1px;background:var(--border);margin:4px 0 10px;"></div><div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:8px;">🧬 Matrizes</div></div>
+    <div class="form-field"><label>♂ Machos</label><input type="number" id="reg-machos" placeholder="0" inputmode="numeric" value="${src?.machos??last?.machos??''}" oninput="calcQtyMatrizes()"></div>
+    <div class="form-field"><label>♀ Fêmeas</label><input type="number" id="reg-femeas" placeholder="0" inputmode="numeric" value="${src?.femeas??last?.femeas??''}" oninput="calcQtyMatrizes()"></div>`:''}
   </div></div>
   <div class="form-section"><div class="form-section-title">Ração</div><div class="form-grid">
     <div class="form-field full"><label>Tipo de ração</label><select id="reg-racao"${!admin?' disabled style="background:#f0f4f8;color:#8a9db5;"':''}><option value="">Selecione...</option>${racaoOpts}</select></div>
@@ -1389,6 +2115,13 @@ function calcQty(){
   const base=last?.qty??null;
   const qtyEl=document.getElementById('reg-qty');
   if(qtyEl&&base!=null)qtyEl.value=Math.max(0,base-mort);
+}
+
+function calcQtyMatrizes(){
+  const machos=parseInt(document.getElementById('reg-machos')?.value)||0;
+  const femeas=parseInt(document.getElementById('reg-femeas')?.value)||0;
+  const qtyEl=document.getElementById('reg-qty');
+  if(qtyEl&&(machos||femeas))qtyEl.value=machos+femeas;
 }
 
 function checkAlerts(){
@@ -1430,6 +2163,8 @@ function collectRecord(){
     tratos:parseInt(document.getElementById('reg-tratos').value)||null,
     obs:document.getElementById('reg-obs').value,
     hapa:activeHapa||null,
+    machos:parseInt(document.getElementById('reg-machos')?.value)||null,
+    femeas:parseInt(document.getElementById('reg-femeas')?.value)||null,
   };
 }
 
@@ -1597,6 +2332,16 @@ function buildConfigForm(){
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="cfg-empty" ${t.empty?'checked':''} onchange="toggleEmptyTank(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="hapa-toggle-row">
+      <div>
+        <div class="hapa-toggle-label">🧬 Contém Matrizes</div>
+        <div class="hapa-toggle-sub">Aparece no módulo Coleta</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="cfg-matrizes" ${t.matrizes?'checked':''} onchange="toggleMatrizesTank(this.checked)">
         <span class="toggle-slider"></span>
       </label>
     </div>
@@ -1862,17 +2607,18 @@ function renderGlobalHistory(){
 
 // ===== LANÇAMENTOS =====
 const LANC_PARAMS={
-  temp:     {label:'Temperatura',unit:'°C',   step:'0.1', inputmode:'decimal'},
-  o2:       {label:'Oxigênio',   unit:'mg/L', step:'0.1', inputmode:'decimal'},
-  amonia:   {label:'Amônia',     unit:'mg/L', step:'0.01',inputmode:'decimal'},
-  ph:       {label:'pH',         unit:'',     step:'0.1', inputmode:'decimal'},
-  qty:      {label:'Qtd. Peixes',unit:'un',   step:'1',   inputmode:'numeric'},
-  bio:      {label:'Biometria',  unit:'g',    step:'0.01',inputmode:'decimal'},
-  mort:     {label:'Mortalidade',unit:'un',   step:'1',   inputmode:'numeric'},
-  racaoIdealG:{label:'Ração Ideal',unit:'g',  step:'0.001',inputmode:'decimal'},
-  racaoReal:{label:'Ração Real/Sobra',unit:'g',step:'0.001',inputmode:'decimal'},
-  tratosIdeal:{label:'Tratos Ideal',unit:'',  step:'1',   inputmode:'numeric'},
-  tratos:   {label:'Tratos Real', unit:'',    step:'1',   inputmode:'numeric'},
+  temp:     {label:'Temperatura',       unit:'°C',   step:'0.1', inputmode:'decimal'},
+  o2:       {label:'Oxigênio',          unit:'mg/L', step:'0.1', inputmode:'decimal'},
+  tempO2:   {label:'Temp + O₂',         unit:'',     step:'0.1', inputmode:'decimal', dual:true},
+  amonia:   {label:'Amônia',            unit:'mg/L', step:'0.01',inputmode:'decimal'},
+  ph:       {label:'pH',                unit:'',     step:'0.1', inputmode:'decimal'},
+  qty:      {label:'Qtd. Peixes',       unit:'un',   step:'1',   inputmode:'numeric'},
+  bio:      {label:'Biometria',         unit:'g',    step:'0.01',inputmode:'decimal'},
+  mort:     {label:'Mortalidade',       unit:'un',   step:'1',   inputmode:'numeric'},
+  racaoIdealG:{label:'Ração Ideal',     unit:'g',    step:'0.001',inputmode:'decimal'},
+  racaoReal:{label:'Ração Real/Sobra',  unit:'g',    step:'0.001',inputmode:'decimal'},
+  tratosIdeal:{label:'Tratos Ideal',    unit:'',     step:'1',   inputmode:'numeric'},
+  tratos:   {label:'Tratos Real',       unit:'',     step:'1',   inputmode:'numeric'},
 };
 
 function initLancamentos(){
@@ -1894,6 +2640,7 @@ function renderLancamentos(){
   if(!param){tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--text3);font-size:13px;">Selecione um parâmetro acima</td></tr>';return;}
   const cfg=LANC_PARAMS[param];
   const admin=isAdmin();
+  const isDual=param==='tempO2';
   const isRacao=param==='racaoReal';
 
   const admOnly=['racaoIdealG','tratosIdeal'];
@@ -1905,12 +2652,10 @@ function renderLancamentos(){
   const activeTanks=tanks.filter(t=>!t.empty&&records.some(r=>r.tankId===t.id))
     .sort((a,b)=>(a.num||0)-(b.num||0));
 
-  // Para ração: agrupa tanques (linha por tanque, não por hapa)
   let rows=[];
   activeTanks.forEach(t=>{
     const names=t.hapaNames;
     if(isRacao){
-      // Modo ração: sempre uma linha por tanque
       const last=lastRec(t.id);
       rows.push({tankId:t.id,tankName:t.name,hapaNum:null,hapaName:null,
         lastVal:last?.[param]??'',hapas:names?.length||0,tank:t});
@@ -1926,30 +2671,34 @@ function renderLancamentos(){
     }
   });
 
-  const colSpan=isRacao?5:3;
   const extraHeaders=isRacao?`
     <th style="min-width:130px;text-align:center;">Método</th>
     <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Início do dia (g)</span></th>
-    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Final do dia (g)</span></th>`:'';
+    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Final do dia (g)</span></th>`
+    :isDual?`<th style="min-width:90px;">💧 Oxigênio (mg/L)</th>`:'';
 
   const header=`<thead><tr>
     <th style="min-width:110px;">Tanque</th>
-    <th style="min-width:90px;">${cfg.label} (${cfg.unit||'—'})</th>
+    <th style="min-width:90px;">${isDual?'🌡 Temperatura (°C)':cfg.label+' ('+(cfg.unit||'—')+')'}</th>
     ${extraHeaders}
     <th style="min-width:80px;color:var(--text3);">Último valor</th>
   </tr></thead>`;
 
-  // Para ração: último valor é racaoG (não racaoReal que é o nome do param)
-  const lastValKey=param==='racaoReal'?'racaoG':param;
+  const lastValKey=param==='racaoReal'?'racaoG':param==='tempO2'?'temp':param;
 
   const rowsHtml=rows.map((r,i)=>{
     const hapaLbl=r.hapaName?`<div class="lancamento-hapa-name">🪣 ${r.hapaName}</div>`:'';
     const hapaInfo=r.hapas>0?`<div class="lancamento-hapa-name" style="color:#7c3aed;">🪣 ${r.hapas} hapas</div>`:'';
     const tankCell=`<td><div class="lancamento-tank-name">${r.tankName}</div>${hapaLbl}${hapaInfo}</td>`;
 
-    // Último valor: para hapa específico usa lastRecHapa; para tanque com hapas pega o mais recente POR HAPA e soma
+    // Último valor
     let lastVal='';
-    if(r.hapaNum){
+    if(isDual){
+      const getRec=r.hapaNum?lastRecHapa(r.tankId,r.hapaNum):lastRec(r.tankId);
+      const t=getRec?.temp??null;
+      const o=getRec?.o2??null;
+      lastVal=t!=null||o!=null?`${t??'—'}°C / ${o??'—'}mg/L`:'';
+    } else if(r.hapaNum){
       lastVal=lastRecHapa(r.tankId,r.hapaNum)?.[lastValKey]??'';
     } else if(r.hapas>0){
       // Filtra registros com o campo preenchido
@@ -1973,18 +2722,24 @@ function renderLancamentos(){
 
     const mainInput=`<input class="lancamento-input" type="number"
       id="lanc-input-${i}" data-tank="${r.tankId}" data-hapa="${r.hapaNum||''}" data-hapas="${r.hapas}"
-      step="${cfg.step}" inputmode="${cfg.inputmode}" placeholder="—"
+      step="${isDual?'0.1':cfg.step}" inputmode="${isDual?'decimal':cfg.inputmode}" placeholder="${isDual?'—temp':'—'}"
       oninput="this.classList.toggle('filled',this.value!=='')">`;
+
+    const o2Input=isDual?`<td><input class="lancamento-input" type="number"
+      id="lanc-input-o2-${i}" data-tank="${r.tankId}" data-hapa="${r.hapaNum||''}" data-hapas="${r.hapas}" data-dual="o2"
+      step="0.1" inputmode="decimal" placeholder="—o2"
+      oninput="this.classList.toggle('filled',this.value!=='')"></td>`:'';
 
     if(!isRacao){
       return`<tr class="${r.hapaNum?'has-hapas':''}">
-        ${tankCell}<td>${mainInput}</td>
+        ${tankCell}<td>${mainInput}</td>${o2Input}
         <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${lastVal!==''?lastVal:'—'}</td>
       </tr>`;
     }
 
-    // Modo ração — com toggle tambor/balde
+    // Modo ração — com toggle tambor/balde (balde é padrão — tambor inputs escuros desde o início)
     const rowId=r.tankId.replace(/[^a-z0-9]/gi,'_');
+    const disabledStyle='background:#d0d8e4;border-color:#b0bcc8;color:#7a8fa3;cursor:not-allowed;';
     return`<tr>
       ${tankCell}
       <td>
@@ -2001,10 +2756,10 @@ function renderLancamentos(){
       </td>
       <td><input class="tambor-input-disabled" type="number"
         id="lanc-tambor-ini-${rowId}" data-tank="${r.tankId}"
-        placeholder="Início (g)" disabled step="0.001" inputmode="decimal"></td>
+        placeholder="Início (g)" disabled step="0.001" inputmode="decimal" style="${disabledStyle}"></td>
       <td><input class="tambor-input-disabled" type="number"
         id="lanc-tambor-fim-${rowId}" data-tank="${r.tankId}"
-        placeholder="Final (g)" disabled step="0.001" inputmode="decimal"></td>
+        placeholder="Final (g)" disabled step="0.001" inputmode="decimal" style="${disabledStyle}"></td>
       <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${lastVal!==''?lastVal:'—'}</td>
     </tr>`;
   }).join('');
@@ -2031,15 +2786,18 @@ function toggleTambor(rowId){
   const ini=document.getElementById(`lanc-tambor-ini-${rowId}`);
   const fim=document.getElementById(`lanc-tambor-fim-${rowId}`);
 
+  const disabledStyle='background:#d0d8e4;border-color:#b0bcc8;color:#7a8fa3;cursor:not-allowed;';
+  const enabledStyle='';
+
   if(isTambor){
     sobraInput.disabled=true;sobraInput.value='';
-    sobraInput.className='tambor-input-disabled';
-    ini.disabled=false;ini.className='lancamento-input';
-    fim.disabled=false;fim.className='lancamento-input';
+    sobraInput.className='tambor-input-disabled';sobraInput.style.cssText=disabledStyle;
+    ini.disabled=false;ini.className='lancamento-input';ini.style.cssText=enabledStyle;
+    fim.disabled=false;fim.className='lancamento-input';fim.style.cssText=enabledStyle;
   } else {
-    sobraInput.disabled=false;sobraInput.className='lancamento-input';
-    ini.disabled=true;ini.value='';ini.className='tambor-input-disabled';
-    fim.disabled=true;fim.value='';fim.className='tambor-input-disabled';
+    sobraInput.disabled=false;sobraInput.className='lancamento-input';sobraInput.style.cssText=enabledStyle;
+    ini.disabled=true;ini.value='';ini.className='tambor-input-disabled';ini.style.cssText=disabledStyle;
+    fim.disabled=true;fim.value='';fim.className='tambor-input-disabled';fim.style.cssText=disabledStyle;
   }
 }
 
@@ -2066,8 +2824,6 @@ async function saveLancamentos(){
   const allInputs=[...document.querySelectorAll('.lancamento-input[data-tank]')];
   const toSave=[];
 
-  // Para ração (isRacao), há um input por tanque com rowId
-  // Para outros params, há um input por hapa
   if(param==='racaoReal'){
     // Itera por tankIds únicos (um input por tanque no modo ração)
     const tankIds=[...new Set(allInputs.map(el=>el.dataset.tank))];
@@ -2088,9 +2844,24 @@ async function saveLancamentos(){
           value:parseFloat(inp.value),rowId,hapas:parseInt(inp.dataset.hapas||0),el:inp});
       }
     });
+  } else if(param==='tempO2'){
+    // Dual: coleta temp e o2 por linha, ignorando os inputs data-dual
+    const mainInputs=allInputs.filter(inp=>!inp.dataset.dual);
+    mainInputs.forEach((inp,i)=>{
+      const o2Inp=document.getElementById(`lanc-input-o2-${inp.id.replace('lanc-input-','')}`);
+      const tempVal=inp.value.trim();
+      const o2Val=o2Inp?.value.trim();
+      if(!tempVal&&!o2Val)return;
+      toSave.push({tankId:inp.dataset.tank,
+        hapaNum:inp.dataset.hapa?parseInt(inp.dataset.hapa):null,
+        value:tempVal?parseFloat(tempVal):null,
+        o2Value:o2Val?parseFloat(o2Val):null,
+        rowId:inp.dataset.tank.replace(/[^a-z0-9]/gi,'_'),
+        hapas:parseInt(inp.dataset.hapas||0),el:inp});
+    });
   } else {
     // Para todos os outros params: um input por linha (hapa ou tanque)
-    allInputs.forEach(inp=>{
+    allInputs.filter(inp=>!inp.dataset.dual).forEach(inp=>{
       if(inp.disabled||inp.value.trim()==='')return;
       const tankId=inp.dataset.tank;
       const hapaNum=inp.dataset.hapa?parseInt(inp.dataset.hapa):null;
@@ -2242,7 +3013,10 @@ async function _doSaveLancamentos(toSave,param,date){
       hapa:item.hapaNum||null,
     };
 
-    if(param==='racaoReal'){
+    if(param==='tempO2'){
+      histRec.temp=item.value;
+      histRec.o2=item.o2Value;
+    } else if(param==='racaoReal'){
       histRec.sobra=finalSobra;
       histRec.racaoG=finalRacaoReal;
     } else {
@@ -2253,7 +3027,9 @@ async function _doSaveLancamentos(toSave,param,date){
 
     // Mescla no registro consolidado
     if(existing){
-      if(param==='racaoReal'){
+      if(param==='tempO2'){
+        existing.temp=item.value;existing.o2=item.o2Value;
+      } else if(param==='racaoReal'){
         existing.sobra=finalSobra;
         existing.racaoG=finalRacaoReal??finalValue;
       } else {
@@ -2618,8 +3394,8 @@ function renderPainel(){
     const hasHapas=hapaNames.length>0;
 
     if(isEmpty){
-      let row=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:#e8edf2;border-radius:8px;border:1px solid #c8d3de;opacity:0.7;">`;
-      row+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:#7a8fa3;display:flex;align-items:center;gap:4px;">${t.name}<span style="font-size:9px;background:#b0bec5;color:#fff;border-radius:6px;padding:1px 5px;">VAZIO</span></div>`;
+      let row=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:#e8edf2;border-radius:8px;border:1px solid #c8d3de;opacity:0.7;">`;
+      row+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:#7a8fa3;display:flex;align-items:center;gap:4px;">${t.name}<span style="font-size:9px;background:#b0bec5;color:#fff;border-radius:6px;padding:1px 5px;">VAZIO</span></div>`;
       cols.forEach(()=>{row+=`<div style="padding:6px 2px;text-align:center;font-size:13px;color:#b0bec5;">—</div>`;});
       return row+`</div>`;
     }
@@ -2651,14 +3427,18 @@ function renderPainel(){
       const anyHapaData=hapaRecs.some(r=>r!=null);
       const rowBg=anyHapaData?'#fff':'#f8fafc';
       const hapaBadge=`<span style="font-size:9px;color:#7c3aed;background:rgba(124,58,237,0.1);border-radius:6px;padding:1px 5px;margin-left:3px;">🪣${hapaCount}</span>`;
+      const expandId=`painel-expand-${t.id.replace(/[^a-z0-9]/gi,'_')}`;
 
-      // Linha do tanque (consolidado)
-      rows+=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:1px;background:${rowBg};border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;">`;
+      // Linha do tanque (consolidado) com botão +
+      rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:1px;background:${rowBg};border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;">`;
+      rows+=`<div onclick="togglePainelHapas('${expandId}')" style="display:flex;align-items:center;justify-content:center;cursor:pointer;padding-left:4px;">
+        <span id="btn-${expandId}" style="font-size:14px;font-weight:700;color:var(--accent);line-height:1;user-select:none;">＋</span></div>`;
       rows+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${t.name}${hapaBadge}</div>`;
       cols.forEach(c=>{ rows+=renderCell(cVals[c.k],c.lk); });
       rows+=`</div>`;
 
-      // Linhas dos hapas
+      // Linhas dos hapas (inicialmente ocultas)
+      rows+=`<div id="${expandId}" style="display:none;">`;
       hapaNames.forEach((nm,i)=>{
         const h=i+1;
         const hr=hapaRecs[i];
@@ -2667,16 +3447,17 @@ function renderPainel(){
           Object.assign(hv,{o2:hr.o2,temp:hr.temp,amonia:hr.amonia,ph:hr.ph,mort:hr.mort||0,qty:hr.qty,bio:hr.bio,_ideal:hr.racaoIdealG,_real:hr.racaoG});
           hv._pct=(hr.racaoIdealG&&hr.racaoG)?Math.round(hr.racaoG/hr.racaoIdealG*100):null;
         }
-        hv._tca=null; // TCA só no consolidado
+        hv._tca=null;
         const isLast=i===hapaNames.length-1;
-        rows+=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:${isLast?'4px':'1px'};background:#f3f0fb;border:1px solid #e0d9f5;border-top:none;${isLast?'border-radius:0 0 8px 8px;':''}">`;
-        rows+=`<div style="padding:5px 6px 5px 16px;font-size:11px;color:#7c3aed;font-weight:600;">🪣 ${nm}</div>`;
+        rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:${isLast?'4px':'1px'};background:#f3f0fb;border:1px solid #e0d9f5;border-top:none;${isLast?'border-radius:0 0 8px 8px;':''}">`;
+        rows+=`<div></div><div style="padding:5px 6px 5px 12px;font-size:11px;color:#7c3aed;font-weight:600;">🪣 ${nm}</div>`;
         cols.forEach(c=>{ rows+=renderCell(hv[c.k],c.lk); });
         rows+=`</div>`;
       });
+      rows+=`</div>`;
 
     } else {
-      // Tanque sem hapas — comportamento original
+      // Tanque sem hapas — com coluna de 24px vazia à esquerda
       const rec=recDodia(t);
       const tca=tcaAcum(t);
       const vals={};
@@ -2686,8 +3467,8 @@ function renderPainel(){
       }
       vals._tca=tca?parseFloat(tca):null;
       const rowBg=rec?'#fff':'#f8fafc';
-      rows+=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
-      rows+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${t.name}</div>`;
+      rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
+      rows+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${t.name}</div>`;
       cols.forEach(c=>{ rows+=renderCell(vals[c.k],c.lk); });
       rows+=`</div>`;
     }
@@ -2695,8 +3476,9 @@ function renderPainel(){
     return rows;
   };
 
-  // Cabeçalho das colunas
-  const headerRow=`<div style="display:grid;grid-template-columns:110px repeat(${cols.length},1fr);gap:2px;margin-bottom:4px;">
+  // Cabeçalho das colunas — 24px para coluna do botão +
+  const headerRow=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:4px;position:sticky;top:0;z-index:10;background:var(--bg);padding:4px 0 2px;">
+    <div></div>
     <div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 4px;"></div>
     ${cols.map(c=>`<div style="font-size:10px;font-weight:700;color:var(--text3);padding:6px 2px;text-align:center;white-space:nowrap;">${c.label}<br><span style="font-weight:400;">${c.unit}</span></div>`).join('')}
   </div>`;
