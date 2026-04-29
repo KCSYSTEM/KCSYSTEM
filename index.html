@@ -384,6 +384,14 @@ canvas.chart-canvas{display:block;}
     <div id="module-label" style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);margin-left:4px;letter-spacing:0.5px;">OPERAÇÃO</div>
     <div style="flex:1;"></div>
     <div class="topbar-right">
+      <!-- Versão + sync -->
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.5</div>
+        <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
+          <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
+          <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
+        </div>
+      </div>
       <!-- Avatar clicável -->
       <div style="position:relative;" id="user-menu-wrap">
         <div id="topbar-avatar" onclick="toggleUserMenu()"
@@ -400,14 +408,6 @@ canvas.chart-canvas{display:block;}
               <span>⏏</span> Sair
             </div>
           </div>
-        </div>
-      </div>
-      <!-- Versão + sync -->
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.5</div>
-        <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
-          <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
-          <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
         </div>
       </div>
     </div>
