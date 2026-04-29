@@ -421,8 +421,8 @@ canvas.chart-canvas{display:block;}
           <option value="qty">🐟 Qtd. de Peixes</option>
           <option value="bio">⚖️ Biometria (g)</option>
           <option value="mort">💀 Mortalidade</option>
-          <option id="lanc-opt-racaoIdealG" value="racaoIdealG">🌾 Ração Ideal (g)</option>
-          <option value="racaoReal">🌾 Ração Real / Sobra (g)</option>
+          <option id="lanc-opt-racaoIdealG" value="racaoIdealG">🌾 Ração Ideal (kg)</option>
+          <option value="racaoReal">🌾 Ração Real / Sobra (kg)</option>
           <option id="lanc-opt-tratosIdeal" value="tratosIdeal">🕐 Tratos Ideal/dia</option>
           <option value="tratos">🕐 Tratos Real/dia</option>
         </select>
@@ -577,9 +577,8 @@ canvas.chart-canvas{display:block;}
         <div class="lancamento-param-bar">
           <select class="lancamento-param-select" id="coleta-param" onchange="renderColeta()">
             <option value="">Selecione o parâmetro...</option>
-            <option value="desova">🥚 Desova (fêmeas + volume)</option>
+            <option value="desova">🥚 Desova (fêmeas + volume + gorados)</option>
             <option value="ovosPorMl">🔬 Ovos por mL</option>
-            <option value="ovosGorados">💀 Ovos Gorados</option>
           </select>
           <input type="date" id="coleta-date" class="lancamento-date-input">
           <button class="lancamento-save-btn" onclick="saveColeta()">Salvar</button>
@@ -775,7 +774,31 @@ async function saveUsers(){
     }
   }catch(e){console.warn('saveUsers Supabase error',e);}
 }
-const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70}};
+const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70},goradosPct:{max:20}};
+
+// Converte gramas para kg com formatação
+function gToKg(g,dec=3){
+  if(g==null||isNaN(g))return'—';
+  return fNum(g/1000,dec)+' kg';
+}
+
+// Formatação de números: ponto como milhar, vírgula como decimal
+function fNum(val,decimals=null){
+  if(val==null||val===''||isNaN(val))return'—';
+  const n=Number(val);
+  if(isNaN(n))return'—';
+  let dec;
+  if(decimals!=null){
+    dec=decimals;
+  } else if(Number.isInteger(n)){
+    dec=0;
+  } else {
+    // Preserva até 2 casas decimais significativas
+    const frac=n-Math.trunc(n);
+    dec=Math.abs(frac)<0.005?0:Math.abs(frac*10)%1<0.05?1:2;
+  }
+  return n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
 const GROUPS=[
   {id:'escavados',name:'Escavados',icon:'🟫',shape:'rect',paired:true,tanks:Array.from({length:15},(_,i)=>({num:i+1,name:`Tanque ${i+1}`,shape:'rect',volume:600,large:false}))},
   {id:'geomembrana',name:'Geo. Escavada',icon:'🟦',shape:'rect',paired:false,tanks:Array.from({length:4},(_,i)=>({num:i+16,name:`Tanque ${i+16}`,shape:'rect',volume:800,large:false}))},
@@ -983,13 +1006,14 @@ function renderColetaGraficos(){
     let totalOvosTotal=0,totalOvosFinal=0,goradosPct=null,countGorados=0;
     d.lotes.forEach(lote=>{
       const rOvos=records.find(r=>r.lote===lote&&r.ovosPorMl!=null&&!r.overridden);
-      const rGorados=records.find(r=>r.lote===lote&&r.ovosGorados!=null&&!r.overridden);
-      // Calcula ml deste lote nesta data
+      // gorados: média dos hapas da desova deste lote nesta data
+      const goradosRecs=coletaRecs.filter(r=>r.lote===lote&&r.date===d.date&&r.ovosGorados!=null);
+      const goradosMedio=goradosRecs.length?goradosRecs.reduce((s,r)=>s+(r.ovosGorados||0),0)/goradosRecs.length:null;
       const mlLoteData=coletaRecs.filter(r=>r.lote===lote&&r.date===d.date).reduce((s,r)=>s+(r.desovaML||0),0);
       if(rOvos){
         const ot=mlLoteData*rOvos.ovosPorMl;
         totalOvosTotal+=ot;
-        if(rGorados){totalOvosFinal+=ot*(1-rGorados.ovosGorados/100);goradosPct=(goradosPct||0)+rGorados.ovosGorados;countGorados++;}
+        if(goradosMedio!=null){totalOvosFinal+=ot*(1-goradosMedio/100);goradosPct=(goradosPct||0)+goradosMedio;countGorados++;}
       }
     });
     d.ovosTotal=totalOvosTotal||null;
@@ -1048,7 +1072,7 @@ function renderColetaGraficos(){
       const y=pad.t+iH*(1-f);
       const val=(minV+(maxV-minV)*f);
       paths+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
-      paths+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${val>=1000?Math.round(val/1000)+'k':val.toFixed(val<10?1:0)}</text>`;
+      paths+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${val>=1000?fNum(Math.round(val/1000))+'k':fNum(val)}</text>`;
     });
     // X labels
     dates.forEach((d,i)=>{
@@ -1101,12 +1125,16 @@ function renderColetaPainel(){
     l.hapas.push(r);
   });
 
-  // Enriquece com ovosPorMl e ovosGorados dos registros de lote
+  // Enriquece com ovosPorMl e ovosGorados — gorados agora vem por hapa da desova
   Object.values(byLote).forEach(l=>{
     const rOvos=records.find(r=>r.lote===l.lote&&r.ovosPorMl!=null&&!r.overridden);
-    const rGorados=records.find(r=>r.lote===l.lote&&r.ovosGorados!=null&&!r.overridden);
+    // ovosGorados: média dos hapas que têm o campo
+    const goradosRecs=l.hapas.filter(r=>r.ovosGorados!=null);
+    const goradosMedio=goradosRecs.length
+      ?parseFloat((goradosRecs.reduce((s,r)=>s+(r.ovosGorados||0),0)/goradosRecs.length).toFixed(1))
+      :null;
     l.ovosPorMl=rOvos?.ovosPorMl??null;
-    l.ovosGorados=rGorados?.ovosGorados??null;
+    l.ovosGorados=goradosMedio;
     l.ovosTotal=l.ovosPorMl!=null?parseFloat((l.ml*l.ovosPorMl).toFixed(0)):null;
     l.ovosFinal=l.ovosTotal!=null&&l.ovosGorados!=null
       ?parseFloat((l.ovosTotal*(1-l.ovosGorados/100)).toFixed(0)):null;
@@ -1154,9 +1182,9 @@ function renderColetaPainel(){
       ${cell(l.femeas)}
       ${cell(parseFloat(l.ml.toFixed(1)))}
       ${cell(l.ovosPorMl)}
-      ${cell(l.ovosTotal!=null?l.ovosTotal.toLocaleString('pt-BR'):null)}
+      ${cell(l.ovosTotal!=null?l.fNum(ovosTotal):null)}
       ${cell(l.ovosGorados!=null?l.ovosGorados+'%':null,'#e53e3e')}
-      ${cell(l.ovosFinal!=null?l.ovosFinal.toLocaleString('pt-BR'):null,'var(--accent)')}`;
+      ${cell(l.ovosFinal!=null?l.fNum(ovosFinal):null,'var(--accent)')}`;
     wrapper.appendChild(row);
 
     // Detalhe por tanque+hapa
@@ -1241,6 +1269,7 @@ function renderColeta(){
       <th style="min-width:130px;">Tanque / Hapa</th>
       <th style="min-width:90px;">♀ Fêmeas</th>
       <th style="min-width:100px;">💧 Volume (mL)</th>
+      <th style="min-width:100px;">💀 Gorados (%)</th>
       <th style="min-width:80px;color:var(--text3);">Último</th>
     </tr></thead>`);
     let rows=[],ri=0;
@@ -1249,14 +1278,16 @@ function renderColeta(){
         const h=i+1;
         const last=lastRecHapa(t.id,h);
         rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,
-          lastFemeas:last?.desovaFemeas??'',lastMl:last?.desovaML??'',ri:ri++});
+          lastFemeas:last?.desovaFemeas??'',lastMl:last?.desovaML??'',
+          lastGorados:last?.ovosGorados??'',ri:ri++});
       });
     });
     tbody.innerHTML=rows.map(r=>`<tr>
       <td><div class="lancamento-tank-name">${r.tankName}</div><div class="lancamento-hapa-name">🪣 ${r.hapaName}</div></td>
       <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${r.lastFemeas!==''?`♀${r.lastFemeas} / ${r.lastMl}mL`:'—'}</td>
+      <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="0" step="0.1" inputmode="decimal" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${r.lastFemeas!==''?`♀${r.lastFemeas}`:r.lastMl!==''?`${r.lastMl}mL`:r.lastGorados!==''?`${r.lastGorados}%`:'—'}</td>
     </tr>`).join('');
 
   } else {
@@ -1330,8 +1361,9 @@ async function saveColeta(){
       if(!byRow[key])byRow[key]={tankId:inp.dataset.tank,hapaNum:parseInt(inp.dataset.hapa)};
       if(inp.dataset.field==='femeas')byRow[key].femeas=parseFloat(inp.value)||null;
       if(inp.dataset.field==='ml')byRow[key].ml=parseFloat(inp.value)||null;
+      if(inp.dataset.field==='ovosGorados')byRow[key].ovosGorados=parseFloat(inp.value)||null;
     });
-    const toSave=Object.values(byRow).filter(r=>r.femeas!=null||r.ml!=null);
+    const toSave=Object.values(byRow).filter(r=>r.femeas!=null||r.ml!=null||r.ovosGorados!=null);
     if(!toSave.length){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
     for(const item of toSave){
       const tank=tanks.find(t=>t.id===item.tankId);
@@ -1339,7 +1371,7 @@ async function saveColeta(){
         tankId:item.tankId,tankName:tank?.name||item.tankId,date,
         user:currentUser.name,username:currentUser.username,
         timestamp:new Date(baseTs+saved).toISOString(),
-        lote,desovaFemeas:item.femeas,desovaML:item.ml,
+        lote,desovaFemeas:item.femeas,desovaML:item.ml,ovosGorados:item.ovosGorados??null,
         temp:null,o2:null,amonia:null,ph:null,mort:0,qty:null,bio:null,
         racao:'',racaoIdealG:null,sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
         obs:'',overridden:false,hapa:item.hapaNum};
@@ -1457,12 +1489,12 @@ function buildMatrizCard(t){
         fill="${hasData?'#a78bfa':'rgba(255,255,255,0.4)'}">🪣 ${nm}</text>
       ${hasData
         ? (machos!=null&&femeas!=null
-          ? `<text x="${x+hapaW/2-20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#60a5fa">♂${machos.toLocaleString('pt-BR')}</text>
-             <text x="${x+hapaW/2+20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#f472b6">♀${femeas.toLocaleString('pt-BR')}</text>
+          ? `<text x="${x+hapaW/2-20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#60a5fa">♂${fNum(machos)}</text>
+             <text x="${x+hapaW/2+20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#f472b6">♀${fNum(femeas)}</text>
              <line x1="${x+hapaW/2}" y1="${y+48}" x2="${x+hapaW/2}" y2="${y+56}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-             <text x="${x+hapaW/2}" y="${y+68}" text-anchor="middle" font-size="16" font-weight="800" fill="#e2e8f0">${total.toLocaleString('pt-BR')}</text>
+             <text x="${x+hapaW/2}" y="${y+68}" text-anchor="middle" font-size="16" font-weight="800" fill="#e2e8f0">${fNum(total)}</text>
              <text x="${x+hapaW/2}" y="${y+82}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)">total</text>`
-          : `<text x="${x+hapaW/2}" y="${y+58}" text-anchor="middle" font-size="22" font-weight="800" fill="#e2e8f0">${total.toLocaleString('pt-BR')}</text>
+          : `<text x="${x+hapaW/2}" y="${y+58}" text-anchor="middle" font-size="22" font-weight="800" fill="#e2e8f0">${fNum(total)}</text>
              <text x="${x+hapaW/2}" y="${y+76}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)">peixes</text>`)
         : `<text x="${x+hapaW/2}" y="${y+60}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.25)">sem dados</text>`}`;
   });
@@ -1489,7 +1521,7 @@ function buildMatrizCard(t){
       ${totalPeixes!=null?`
         <rect x="${pad}" y="${svgH+4}" width="${svgW-pad*2}" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
         <text x="${svgW/2-60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Total Peixes</text>
-        <text x="${svgW/2-60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#e2e8f0">${totalPeixes.toLocaleString('pt-BR')}</text>
+        <text x="${svgW/2-60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#e2e8f0">${fNum(totalPeixes)}</text>
         ${mediaBio!=null?`
         <text x="${svgW/2+60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Biometria</text>
         <text x="${svgW/2+60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#a7f3d0">${mediaBio}g</text>`:''}
@@ -2081,9 +2113,9 @@ function buildRegistroFormForDate(date){
   </div></div>
   <div class="form-section"><div class="form-section-title">Ração</div><div class="form-grid">
     <div class="form-field full"><label>Tipo de ração</label><select id="reg-racao"${!admin?' disabled style="background:#f0f4f8;color:#8a9db5;"':''}><option value="">Selecione...</option>${racaoOpts}</select></div>
-    <div class="form-field"><label>Ração Ideal (g) ${admBadge}</label><input type="number" id="reg-racao-ideal" placeholder="500" step="0.001" inputmode="decimal" value="${lastRacaoIdeal}"${lock('reg-racao-ideal')} oninput="calcRacaoReal()"></div>
-    <div class="form-field"><label>Sobra (g) ${opBadge}</label><input type="number" id="reg-sobra" placeholder="0" step="0.001" inputmode="decimal" value="${lastSobra}" oninput="calcRacaoReal()"></div>
-    <div class="form-field"><label>Ração Real (g) <span style="font-size:9px;color:var(--text3);">(auto)</span></label><input type="number" id="reg-racao-real" placeholder="—" step="0.001" inputmode="decimal" value="${lastRacaoReal}" readonly style="background:#f0f4f8;color:#0d1f35;font-weight:600;"></div>
+    <div class="form-field"><label>Ração Ideal (kg) ${admBadge}</label><input type="number" id="reg-racao-ideal" placeholder="0.500" step="0.0001" inputmode="decimal" value="${lastRacaoIdeal!=null&&lastRacaoIdeal!==''?+(lastRacaoIdeal/1000).toFixed(4):''}"${lock('reg-racao-ideal')} oninput="calcRacaoReal()"></div>
+    <div class="form-field"><label>Sobra (kg) ${opBadge}</label><input type="number" id="reg-sobra" placeholder="0" step="0.0001" inputmode="decimal" value="${lastSobra!=null&&lastSobra!==''?+(lastSobra/1000).toFixed(4):''}" oninput="calcRacaoReal()"></div>
+    <div class="form-field"><label>Ração Real (kg) <span style="font-size:9px;color:var(--text3);">(auto)</span></label><input type="number" id="reg-racao-real" placeholder="—" step="0.001" inputmode="decimal" value="${lastRacaoReal}" readonly style="background:#f0f4f8;color:#0d1f35;font-weight:600;"></div>
     <div class="form-field"><label>Tratos Ideal/dia ${admBadge}</label><input type="number" id="reg-tratos-ideal" placeholder="3" inputmode="numeric" value="${lastTratosIdeal}"${lock('reg-tratos-ideal')}></div>
     <div class="form-field"><label>Tratos Real/dia ${opBadge}</label><input type="number" id="reg-tratos" placeholder="—" inputmode="numeric" value="${lastTratosReal}"></div>
   </div></div>
@@ -2092,11 +2124,11 @@ function buildRegistroFormForDate(date){
 }
 
 function calcRacaoReal(){
-  const ideal=parseFloat(document.getElementById('reg-racao-ideal')?.value)||0;
-  const sobra=parseFloat(document.getElementById('reg-sobra')?.value)||0;
-  const real=Math.max(0,ideal-sobra);
+  const idealKg=parseFloat(document.getElementById('reg-racao-ideal')?.value)||0;
+  const sobraKg=parseFloat(document.getElementById('reg-sobra')?.value)||0;
+  const realKg=Math.max(0,idealKg-sobraKg);
   const el=document.getElementById('reg-racao-real');
-  if(el&&(ideal||sobra))el.value=parseFloat(real.toFixed(3));
+  if(el&&(idealKg||sobraKg))el.value=parseFloat(realKg.toFixed(4));
 }
 
 function updateTankLote(val){
@@ -2136,9 +2168,12 @@ function checkAlerts(){
 
 function collectRecord(){
   const tempVal=parseFloat(document.getElementById('reg-temp').value);
-  const ideal=parseFloat(document.getElementById('reg-racao-ideal').value)||null;
-  const sobra=parseFloat(document.getElementById('reg-sobra').value)||null;
+  const idealKg=parseFloat(document.getElementById('reg-racao-ideal').value)||null;
+  const sobraKg=parseFloat(document.getElementById('reg-sobra').value)||null;
+  const ideal=idealKg!=null?parseFloat((idealKg*1000).toFixed(3)):null;
+  const sobra=sobraKg!=null?parseFloat((sobraKg*1000).toFixed(3)):null;
   let racaoG=parseFloat(document.getElementById('reg-racao-real').value)||null;
+  if(racaoG!=null)racaoG=parseFloat((racaoG*1000).toFixed(3));
   if(ideal!=null&&sobra!=null)racaoG=parseFloat(Math.max(0,ideal-sobra).toFixed(3));
   return{
     id:'rec_'+Date.now(),
@@ -2254,9 +2289,9 @@ function buildHistoricoEl(){
       <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
       <div class="history-params">
         ${hPText('Tipo',r.racao||null)}
-        ${hP('Ideal',r.racaoIdealG,'g')}
-        ${hP('Sobra',r.sobra,'g')}
-        ${hP('Real',r.racaoG?r.racaoG+pct:null,'g',false)}
+        ${hP('Ideal',r.racaoIdealG!=null?gToKg(r.racaoIdealG):'—','',false)}
+        ${hP('Sobra',r.sobra!=null?gToKg(r.sobra):'—','',false)}
+        ${hP('Real',r.racaoG?gToKg(r.racaoG)+pct:null,'',false)}
         ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
         ${hP('Tratos Real',r.tratos,'/dia')}
       </div>
@@ -2267,7 +2302,7 @@ function buildHistoricoEl(){
   const s=document.createElement('div');s.style.height='14px';div.appendChild(s);return div;
 }
 function hP(label,val,unit,alert=false){
-  const d=val!=null?val+unit:'—';
+  const d=val!=null?fNum(val)+unit:'—';
   const c=alert?'danger':'';
   return`<div><div class="h-param-label">${label}</div><div class="h-param-val ${c}">${d}</div></div>`;
 }
@@ -2593,9 +2628,9 @@ function renderGlobalHistory(){
         <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
         <div class="history-params">
           ${hPText('Tipo',r.racao||null)}
-          ${hP('Ideal',r.racaoIdealG,'g')}
-          ${hP('Sobra',r.sobra,'g')}
-          ${hP('Real',r.racaoG?r.racaoG+pct:null,'g',false)}
+          ${hP('Ideal',r.racaoIdealG!=null?gToKg(r.racaoIdealG):'—','',false)}
+          ${hP('Sobra',r.sobra!=null?gToKg(r.sobra):'—','',false)}
+          ${hP('Real',r.racaoG?gToKg(r.racaoG)+pct:null,'',false)}
           ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
           ${hP('Tratos Real',r.tratos,'/dia')}
         </div>
@@ -2615,8 +2650,8 @@ const LANC_PARAMS={
   qty:      {label:'Qtd. Peixes',       unit:'un',   step:'1',   inputmode:'numeric'},
   bio:      {label:'Biometria',         unit:'g',    step:'0.01',inputmode:'decimal'},
   mort:     {label:'Mortalidade',       unit:'un',   step:'1',   inputmode:'numeric'},
-  racaoIdealG:{label:'Ração Ideal',     unit:'g',    step:'0.001',inputmode:'decimal'},
-  racaoReal:{label:'Ração Real/Sobra',  unit:'g',    step:'0.001',inputmode:'decimal'},
+  racaoIdealG:{label:'Ração Ideal',     unit:'kg',   step:'0.0001',inputmode:'decimal'},
+  racaoReal:{label:'Ração Real/Sobra',  unit:'kg',   step:'0.0001',inputmode:'decimal'},
   tratosIdeal:{label:'Tratos Ideal',    unit:'',     step:'1',   inputmode:'numeric'},
   tratos:   {label:'Tratos Real',       unit:'',     step:'1',   inputmode:'numeric'},
 };
@@ -2685,6 +2720,7 @@ function renderLancamentos(){
   </tr></thead>`;
 
   const lastValKey=param==='racaoReal'?'racaoG':param==='tempO2'?'temp':param;
+  const isRacaoKg=(param==='racaoReal'||param==='racaoIdealG');
 
   const rowsHtml=rows.map((r,i)=>{
     const hapaLbl=r.hapaName?`<div class="lancamento-hapa-name">🪣 ${r.hapaName}</div>`:'';
@@ -2745,7 +2781,7 @@ function renderLancamentos(){
       <td>
         <input class="lancamento-input" type="number"
           id="lanc-input-${rowId}" data-tank="${r.tankId}" data-hapa="" data-hapas="${r.hapas}"
-          step="0.001" inputmode="decimal" placeholder="Sobra (g)"
+          step="0.001" inputmode="decimal" placeholder="Sobra (kg)"
           oninput="this.classList.toggle('filled',this.value!=='')">
       </td>
       <td style="text-align:center;">
@@ -3013,6 +3049,9 @@ async function _doSaveLancamentos(toSave,param,date){
       hapa:item.hapaNum||null,
     };
 
+    // Converte kg → g para parâmetros de ração
+    let finalValueForSave=finalValue;
+    if(param==='racaoIdealG'&&finalValue!=null)finalValueForSave=parseFloat((finalValue*1000).toFixed(3));
     if(param==='tempO2'){
       histRec.temp=item.value;
       histRec.o2=item.o2Value;
@@ -3020,7 +3059,7 @@ async function _doSaveLancamentos(toSave,param,date){
       histRec.sobra=finalSobra;
       histRec.racaoG=finalRacaoReal;
     } else {
-      histRec[param]=finalValue;
+      histRec[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
     }
 
     records.push(histRec);
@@ -3353,8 +3392,8 @@ function renderPainel(){
     {k:'mort',  label:'Mort.',  unit:'un',  lk:'mort'},
     {k:'qty',   label:'Peixes', unit:'un',  lk:null},
     {k:'bio',   label:'Biom.',  unit:'g',   lk:'bio'},
-    {k:'_ideal',label:'R.Ideal',unit:'g',   lk:null},
-    {k:'_real', label:'R.Real', unit:'g',   lk:null},
+    {k:'_ideal',label:'R.Ideal',unit:'kg',  lk:null},
+    {k:'_real', label:'R.Real', unit:'kg',  lk:null},
     {k:'_pct',  label:'%Ração', unit:'%',   lk:'racaoPct'},
     {k:'_tca',  label:'TCA',    unit:'',    lk:null},
   ];
@@ -3384,7 +3423,7 @@ function renderPainel(){
       if(lk==='racaoPct'){light=v>=(LIMITS.racaoPct?.min||70)?'🟢':v>=50?'🟡':'🔴';}
       else{light=trafficLight(v,lk);}
     }
-    const display=v!=null?(Number.isInteger(v)?v:parseFloat(v.toFixed(2))):'—';
+    const display=v!=null?fNum(v):'—';
     return`<div style="padding:6px 2px;text-align:center;font-size:11px;font-family:'JetBrains Mono',monospace;">${light}<br><span style="font-size:12px;font-weight:600;color:var(--text);">${display}</span></div>`;
   };
 
@@ -3420,7 +3459,9 @@ function renderPainel(){
       cVals.qty   =sum(hapaRecs.map(r=>r?.qty));
       cVals.bio   =avg(hapaRecs.map(r=>r?.bio));
       cVals._ideal=sum(hapaRecs.map(r=>r?.racaoIdealG));
+      if(cVals._ideal!=null)cVals._ideal=cVals._ideal/1000;
       cVals._real =sum(hapaRecs.map(r=>r?.racaoG));
+      if(cVals._real!=null)cVals._real=cVals._real/1000;
       cVals._pct  =(cVals._ideal&&cVals._real)?Math.round(cVals._real/cVals._ideal*100):null;
       cVals._tca  =tcaAcum(t)?parseFloat(tcaAcum(t)):null;
 
@@ -3448,6 +3489,8 @@ function renderPainel(){
           hv._pct=(hr.racaoIdealG&&hr.racaoG)?Math.round(hr.racaoG/hr.racaoIdealG*100):null;
         }
         hv._tca=null;
+        if(hv._ideal!=null)hv._ideal=hv._ideal/1000;
+        if(hv._real!=null)hv._real=hv._real/1000;
         const isLast=i===hapaNames.length-1;
         rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:${isLast?'4px':'1px'};background:#f3f0fb;border:1px solid #e0d9f5;border-top:none;${isLast?'border-radius:0 0 8px 8px;':''}">`;
         rows+=`<div></div><div style="padding:5px 6px 5px 12px;font-size:11px;color:#7c3aed;font-weight:600;">🪣 ${nm}</div>`;
@@ -3466,6 +3509,8 @@ function renderPainel(){
         vals._pct=(rec.racaoIdealG&&rec.racaoG)?Math.round(rec.racaoG/rec.racaoIdealG*100):null;
       }
       vals._tca=tca?parseFloat(tca):null;
+      if(vals._ideal!=null)vals._ideal=vals._ideal/1000;
+      if(vals._real!=null)vals._real=vals._real/1000;
       const rowBg=rec?'#fff':'#f8fafc';
       rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
       rows+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${t.name}</div>`;
@@ -3505,25 +3550,26 @@ function renderPainel(){
 
 // ===== PARÂMETROS DE ALERTA =====
 const PARAM_DEFS=[
-  {key:'temp',  label:'Temperatura',  unit:'°C',   hasMin:true, hasMax:true},
-  {key:'o2',    label:'Oxigênio',     unit:'mg/L', hasMin:true, hasMax:true},
-  {key:'amonia',label:'Amônia',       unit:'mg/L', hasMin:false,hasMax:true},
-  {key:'ph',    label:'pH',           unit:'',     hasMin:true, hasMax:true},
-  {key:'mort',  label:'Mortalidade',  unit:'un',   hasMin:false,hasMax:true},
-  {key:'bio',   label:'Biometria',    unit:'g',    hasMin:true, hasMax:false},
-  {key:'racaoPct',label:'% Ração consumida',unit:'%',hasMin:true,hasMax:false},
+  {key:'temp',     label:'Temperatura',       unit:'°C',  hasMin:true, hasMax:true},
+  {key:'o2',       label:'Oxigênio',          unit:'mg/L',hasMin:true, hasMax:true},
+  {key:'amonia',   label:'Amônia',            unit:'mg/L',hasMin:false,hasMax:true},
+  {key:'ph',       label:'pH',                unit:'',    hasMin:true, hasMax:true},
+  {key:'mort',     label:'Mortalidade',       unit:'un',  hasMin:false,hasMax:true},
+  {key:'bio',      label:'Biometria',         unit:'g',   hasMin:true, hasMax:false},
+  {key:'racaoPct', label:'% Ração consumida', unit:'%',   hasMin:true, hasMax:false},
+  {key:'goradosPct',label:'% Ovos Gorados',   unit:'%',   hasMin:false,hasMax:true},
 ];
 
 function renderParamsForm(){
+  const el=document.getElementById('params-form');
+  if(!el)return;
   el.innerHTML=PARAM_DEFS.map(p=>`
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:8px;">
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">${p.label} ${p.unit?`<span style="color:var(--text3);font-weight:400;">(${p.unit})</span>`:''}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        ${p.hasMin?`<div class="config-field"><label>Mínimo</label><input type="number" id="param-${p.key}-min" value="${LIMITS[p.key]?.min??''}" step="0.01" inputmode="decimal"></div>`:
-          `<div></div>`}
-        ${p.hasMax?`<div class="config-field"><label>Máximo</label><input type="number" id="param-${p.key}-max" value="${LIMITS[p.key]?.max??''}" step="0.01" inputmode="decimal"></div>`:
-          `<div></div>`}
+        ${p.hasMin?`<div class="config-field"><label>Mínimo</label><input type="number" id="param-${p.key}-min" value="${LIMITS[p.key]?.min??''}" step="0.01" inputmode="decimal"></div>`:`<div></div>`}
+        ${p.hasMax?`<div class="config-field"><label>Máximo</label><input type="number" id="param-${p.key}-max" value="${LIMITS[p.key]?.max??''}" step="0.01" inputmode="decimal"></div>`:`<div></div>`}
       </div>
     </div>`).join('');
 }
@@ -3717,7 +3763,7 @@ function drawMultiLineCanvas(canvas,labels,series,limit){
   ctx.fillStyle='#8a9db5';ctx.textAlign='right';
   for(let i=0;i<=4;i++){
     const v=(mn+range*(1-i/4));
-    ctx.fillText(v%1===0?v:v.toFixed(1),pad.l-4,pad.t+(i/4)*ch+4);
+    ctx.fillText(fNum(v),pad.l-4,pad.t+(i/4)*ch+4);
   }
 }
 
@@ -4148,13 +4194,13 @@ function makeSVGChart(title,unit,labels,vals,color){
     pathD+=(started?`L${x.toFixed(1)},${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`);
     started=true;
     dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}"/>`;
-    values+=`<text x="${x.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="8" fill="#0d1f35" font-weight="600">${typeof v==='number'&&v%1!==0?v.toFixed(2):v}</text>`;
+    values+=`<text x="${x.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="8" fill="#0d1f35" font-weight="600">${fNum(v)}</text>`;
     xlabels+=`<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${labels[i].slice(0,5)}</text>`;
   });
   for(let i=0;i<=4;i++){
     const v=mn+range*(1-i/4);
     const y=pad.t+(i/4)*ch;
-    ylabels+=`<text x="${pad.l-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#8a9db5">${v%1===0?v:v.toFixed(1)}</text>`;
+    ylabels+=`<text x="${pad.l-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#8a9db5">${fNum(v)}</text>`;
     ylabels+=`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
   }
 
@@ -4197,7 +4243,7 @@ function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,lab
   for(let i=0;i<=4;i++){
     const v=mn+range*(1-i/4);
     const y=pad.t+(i/4)*ch;
-    ylabels+=`<text x="${pad.l-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#8a9db5">${v%1===0?v:v.toFixed(0)}</text>`;
+    ylabels+=`<text x="${pad.l-4}" y="${(y+3).toFixed(1)}" text-anchor="end" font-size="8" fill="#8a9db5">${fNum(v)}</text>`;
     ylabels+=`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
   }
   let xlabels='';
