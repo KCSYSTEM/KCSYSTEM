@@ -1556,15 +1556,17 @@ function buildMatrizCard(t){
 
   // Totais do tanque para exibir no SVG
   let totalMachos=0,totalFemeas=0,totalQty=0,bioVals=[];
+  let hasMachosData=false,hasFemeasData=false;
   hapaNames.forEach((_,i)=>{
     const h=i+1;
     const lr=lastRecHapa(t.id,h);
-    if(lr?.machos)totalMachos+=lr.machos;
-    if(lr?.femeas)totalFemeas+=lr.femeas;
+    if(lr?.machos!=null){totalMachos+=lr.machos;hasMachosData=true;}
+    if(lr?.femeas!=null){totalFemeas+=lr.femeas;hasFemeasData=true;}
     if(lr?.qty)totalQty+=lr.qty;
     if(lr?.bio)bioVals.push(lr.bio);
   });
-  const totalPeixes=totalMachos+totalFemeas||totalQty||null;
+  const hasMF=hasMachosData||hasFemeasData;
+  const totalPeixes=hasMF?(totalMachos+totalFemeas):totalQty||null;
   const mediaBio=bioVals.length?parseFloat((bioVals.reduce((s,v)=>s+v,0)/bioVals.length).toFixed(2)):null;
 
   svgWrap.innerHTML=`
@@ -1575,11 +1577,17 @@ function buildMatrizCard(t){
       ${hapaSvg}
       ${totalPeixes!=null?`
         <rect x="${pad}" y="${svgH+4}" width="${svgW-pad*2}" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-        <text x="${svgW/2-60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Total Peixes</text>
-        <text x="${svgW/2-60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#e2e8f0">${fNum(totalPeixes)}</text>
-        ${mediaBio!=null?`
-        <text x="${svgW/2+60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Biometria</text>
-        <text x="${svgW/2+60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#a7f3d0">${mediaBio}g</text>`:''}
+        ${hasMF?`
+          ${hasMachosData?`<text x="${svgW/2-(hasFemeasData?80:0)}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="#93c5fd">♂ Machos</text>
+          <text x="${svgW/2-(hasFemeasData?80:0)}" y="${svgH+44}" text-anchor="middle" font-size="16" font-weight="800" fill="#60a5fa">${fNum(totalMachos)}</text>`:''}
+          ${hasFemeasData?`<text x="${svgW/2+(hasMachosData?80:0)}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="#f9a8d4">♀ Fêmeas</text>
+          <text x="${svgW/2+(hasMachosData?80:0)}" y="${svgH+44}" text-anchor="middle" font-size="16" font-weight="800" fill="#f472b6">${fNum(totalFemeas)}</text>`:''}
+          <text x="${svgW/2}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Total</text>
+          <text x="${svgW/2}" y="${svgH+44}" text-anchor="middle" font-size="16" font-weight="800" fill="#e2e8f0">${fNum(totalPeixes)}</text>`
+        :`<text x="${svgW/2-60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Total Peixes</text>
+          <text x="${svgW/2-60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#e2e8f0">${fNum(totalPeixes)}</text>
+          ${mediaBio!=null?`<text x="${svgW/2+60}" y="${svgH+24}" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.5)">Biometria</text>
+          <text x="${svgW/2+60}" y="${svgH+44}" text-anchor="middle" font-size="18" font-weight="800" fill="#a7f3d0">${mediaBio}g</text>`:''}`}
       `:''}
     </svg>`;
   body.appendChild(svgWrap);
@@ -1863,8 +1871,9 @@ function _updateSyncText(){
       qty:'Peixes',bio:'Bio',racaoG:'Ração',desovaFemeas:'Coleta'};
     const field=Object.keys(fieldMap).find(k=>_lastSyncRec[k]!=null);
     const tankShort=(_lastSyncRec.tankName||'').replace('Tanque ','TQ');
+    const userShort=(_lastSyncRec.user||_lastSyncRec.username||'').split(' ')[0];
     const fieldShort=field?fieldMap[field]:'';
-    txt.innerHTML=`${timeStr}<br>${tankShort}${fieldShort?' '+fieldShort:''}`;
+    txt.innerHTML=`${timeStr} · ${userShort}<br>${tankShort}${fieldShort?' '+fieldShort:''}`;
   } else {
     txt.textContent=timeStr;
   }
@@ -2772,42 +2781,59 @@ function deleteUser(login){
 // ===== GLOBAL HISTORY =====
 function renderGlobalHistory(){
   const el=document.getElementById('global-history-list');
-  const sorted=records.filter(r=>!r.overridden).slice().sort((a,b)=>b.timestamp.localeCompare(a.timestamp));
+  const FIELD_LABELS={
+    temp:{l:'Temperatura',fmt:v=>fNum(v)+'°C'},
+    o2:{l:'Oxigênio',fmt:v=>fNum(v)+' mg/L'},
+    amonia:{l:'Amônia',fmt:v=>fNum(v)+' mg/L'},
+    ph:{l:'pH',fmt:v=>fNum(v)},
+    mort:{l:'Mortalidade',fmt:v=>fNum(v)+' un'},
+    qty:{l:'Qtd. Peixes',fmt:v=>fNum(v)+' un'},
+    bio:{l:'Biometria',fmt:v=>fNum(v)+' g'},
+    racaoIdealG:{l:'Ração Ideal',fmt:v=>gToKg(v)},
+    sobra:{l:'Sobra',fmt:v=>gToKg(v)},
+    racaoG:{l:'Ração Real',fmt:v=>gToKg(v)},
+    tratosIdeal:{l:'Tratos Ideal',fmt:v=>fNum(v)+'/dia'},
+    tratos:{l:'Tratos Real',fmt:v=>fNum(v)+'/dia'},
+    desovaFemeas:{l:'Fêmeas Desovadas',fmt:v=>fNum(v)+' un'},
+    desovaML:{l:'Volume Desova',fmt:v=>fNum(v)+' mL'},
+    ovosGorados:{l:'Ovos Gorados',fmt:v=>fNum(v)+'%'},
+    ovosPorMl:{l:'Ovos/mL',fmt:v=>fNum(v)},
+    machos:{l:'Machos',fmt:v=>fNum(v)+' un'},
+    femeas:{l:'Fêmeas',fmt:v=>fNum(v)+' un'},
+  };
+
+  const sorted=records.filter(r=>!r.overridden).slice().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
   if(!sorted.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
-  el.innerHTML=sorted.map(r=>{
-    const temAlimentacao=r.racao||r.racaoIdealG||r.sobra||r.racaoG||r.tratosIdeal||r.tratos;
-    const mortLine=r.mort>0?`<div style="margin-top:5px;font-size:12px;font-weight:700;color:var(--danger);">💀 Mortalidade: ${r.mort} peixes</div>`:'';
-    const pct=r.racaoIdealG&&r.racaoG?`<span style="font-weight:700;color:${Math.round(r.racaoG/r.racaoIdealG*100)>=90?'var(--ok)':Math.round(r.racaoG/r.racaoIdealG*100)>=70?'var(--warn)':'var(--danger)'}"> (${Math.round(r.racaoG/r.racaoIdealG*100)}%)</span>`:'';
-    return`<div class="history-item">
-      <div class="history-header"><div>
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px;">${r.tankName}${r.hapa?' — Hapa '+r.hapa:''}</div>
-        ${r.lote?`<div style="font-size:11px;font-weight:600;color:var(--accent);">📦 ${r.lote}</div>`:''}
-        <div class="history-date">${formatDate(r.date)} · ${formatTime(r.timestamp)}</div>
-        <div class="history-user">por ${r.user}</div>
-      </div></div>
-      <div class="history-params">
-        ${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}
-        ${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}
-        ${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}
-        ${hP('pH',r.ph,'')}
-        ${hP('Peixes',r.qty,'un')}
-        ${hP('Biometria',r.bio,'g')}
-        ${hP('Mort.',r.mort||null,'un',r.mort>0)}
+
+  const lines=[];
+  sorted.forEach((r,ri)=>{
+    const prev=records.filter(p=>
+      p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&(p.timestamp||'')<(r.timestamp||'')
+    ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+
+    Object.entries(FIELD_LABELS).forEach(([field,cfg])=>{
+      const newVal=r[field];
+      if(newVal==null)return;
+      const oldVal=prev?.[field];
+      lines.push({ts:r.timestamp,date:r.date,user:r.user||r.username||'—',
+        tankName:r.tankName,hapa:r.hapa,field,label:cfg.l,fmt:cfg.fmt,newVal,oldVal,lote:r.lote});
+    });
+  });
+
+  lines.sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
+
+  if(!lines.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
+
+  el.innerHTML=lines.map(l=>{
+    const hapaStr=l.hapa?` · Hapa ${l.hapa}`:'';
+    const loteStr=l.lote?` · 📦 ${l.lote}`:'';
+    const oldStr=l.oldVal!=null?`<span style="color:var(--text3);text-decoration:line-through;margin-right:4px;">${l.fmt(l.oldVal)}</span>`:'';
+    return`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);">
+      <div style="flex-shrink:0;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:5px;"></div>
+      <div style="flex:1;min-width:0;font-size:13px;color:var(--text);">
+        <span style="color:var(--text3);font-size:11px;">${formatDate(l.date)}${l.ts?' · '+formatTime(l.ts):''} · ${l.tankName}${hapaStr}${loteStr}</span><br>
+        <strong>${l.user}</strong> alterou <strong>${l.label}</strong>: ${oldStr}<span style="color:var(--accent);font-weight:700;">${l.fmt(l.newVal)}</span>
       </div>
-      ${mortLine}
-      ${temAlimentacao?`
-      <div style="margin-top:8px;padding-top:8px;border-top:1.5px dashed var(--border);">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
-        <div class="history-params">
-          ${hPText('Tipo',r.racao||null)}
-          ${hP('Ideal',r.racaoIdealG!=null?gToKg(r.racaoIdealG):'—','',false)}
-          ${hP('Sobra',r.sobra!=null?gToKg(r.sobra):'—','',false)}
-          ${hP('Real',r.racaoG?gToKg(r.racaoG)+pct:null,'',false)}
-          ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
-          ${hP('Tratos Real',r.tratos,'/dia')}
-        </div>
-      </div>`:''}
-      ${r.obs?`<div style="margin-top:4px;font-size:11px;color:var(--text2);">💬 ${r.obs}</div>`:''}
     </div>`;
   }).join('');
 }
@@ -3630,7 +3656,9 @@ function renderPainel(){
       cVals.amonia=avg(hapaRecs.map(r=>r?.amonia));
       cVals.ph    =avg(hapaRecs.map(r=>r?.ph));
       cVals.mort  =sum(hapaRecs.map(r=>r?.mort||0));
-      cVals.qty   =sum(hapaRecs.map(r=>r?.qty));
+      // qty: pega o maior valor entre hapas (é a qtd total do tanque, repetida em cada hapa)
+      const qtys=hapaRecs.map(r=>r?.qty).filter(v=>v!=null);
+      cVals.qty   =qtys.length?Math.max(...qtys):null;
       cVals.bio   =avg(hapaRecs.map(r=>r?.bio));
       cVals._ideal=sum(hapaRecs.map(r=>r?.racaoIdealG));
       if(cVals._ideal!=null)cVals._ideal=cVals._ideal/1000;
