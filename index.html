@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.6</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.8</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2474,7 +2474,10 @@ function buildHistoricoEl(){
     item.innerHTML=`
       <div style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;"></div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:2px;">${formatDate(l.date)}${l.ts?' · '+formatTime(l.ts):''}${hapaStr}${loteStr}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:2px;">
+          Alterado em: ${l.ts?formatDate(l.ts.slice(0,10))+' · '+formatTime(l.ts):'—'}
+          &nbsp;·&nbsp; Dado de: <strong style="color:var(--text2);">${formatDate(l.date)}</strong>${hapaStr}${loteStr}
+        </div>
         <div style="font-size:13px;color:var(--text);"><strong>${l.user}</strong> alterou <strong>${l.label}</strong></div>
         <div style="font-size:13px;margin-top:2px;">${oldStr}<span style="color:var(--accent);font-weight:700;">${l.fmt(l.newVal)}</span></div>
       </div>`;
@@ -2831,7 +2834,11 @@ function renderGlobalHistory(){
     return`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);">
       <div style="flex-shrink:0;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:5px;"></div>
       <div style="flex:1;min-width:0;font-size:13px;color:var(--text);">
-        <span style="color:var(--text3);font-size:11px;">${formatDate(l.date)}${l.ts?' · '+formatTime(l.ts):''} · ${l.tankName}${hapaStr}${loteStr}</span><br>
+        <span style="color:var(--text3);font-size:11px;">
+          Alterado em: ${l.ts?formatDate(l.ts.slice(0,10))+' · '+formatTime(l.ts):'—'}
+          &nbsp;·&nbsp; Dado de: <strong style="color:var(--text2);">${formatDate(l.date)}</strong>
+          &nbsp;·&nbsp; ${l.tankName}${hapaStr}${loteStr}
+        </span><br>
         <strong>${l.user}</strong> alterou <strong>${l.label}</strong>: ${oldStr}<span style="color:var(--accent);font-weight:700;">${l.fmt(l.newVal)}</span>
       </div>
     </div>`;
@@ -3656,9 +3663,14 @@ function renderPainel(){
       cVals.amonia=avg(hapaRecs.map(r=>r?.amonia));
       cVals.ph    =avg(hapaRecs.map(r=>r?.ph));
       cVals.mort  =sum(hapaRecs.map(r=>r?.mort||0));
-      // qty: pega o maior valor entre hapas (é a qtd total do tanque, repetida em cada hapa)
-      const qtys=hapaRecs.map(r=>r?.qty).filter(v=>v!=null);
-      cVals.qty   =qtys.length?Math.max(...qtys):null;
+      // qty: usa registro sem hapa (consolidado) se existir, senão max dos hapas
+      const recSemHapa=recForDate(t.id,date,null);
+      if(recSemHapa?.qty!=null){
+        cVals.qty=recSemHapa.qty;
+      } else {
+        const qtys=hapaRecs.map(r=>r?.qty).filter(v=>v!=null);
+        cVals.qty=qtys.length?Math.min(...qtys):null; // min = hapa 1, menos acumulado
+      }
       cVals.bio   =avg(hapaRecs.map(r=>r?.bio));
       cVals._ideal=sum(hapaRecs.map(r=>r?.racaoIdealG));
       if(cVals._ideal!=null)cVals._ideal=cVals._ideal/1000;
