@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.5</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.6</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -446,7 +446,11 @@ canvas.chart-canvas{display:block;}
           <option id="lanc-opt-tratosIdeal" value="tratosIdeal">🕐 Tratos Ideal/dia</option>
           <option value="tratos">🕐 Tratos Real/dia</option>
         </select>
-        <input type="date" class="lancamento-date-input" id="lanc-date">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button onclick="shiftLancDate(-1)" style="background:rgba(255,255,255,0.1);border:1.5px solid var(--border2);border-radius:8px;width:30px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);">‹</button>
+          <input type="date" class="lancamento-date-input" id="lanc-date" onchange="renderLancamentos()">
+          <button onclick="shiftLancDate(1)" style="background:rgba(255,255,255,0.1);border:1.5px solid var(--border2);border-radius:8px;width:30px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);">›</button>
+        </div>
         <button class="lancamento-save-btn" onclick="saveLancamentos()">Salvar Todos</button>
       </div>
       <div class="lancamento-progress" id="lanc-progress" style="padding:6px 13px;display:none;"></div>
@@ -1529,7 +1533,8 @@ function buildMatrizCard(t){
     const machos=lastR?.machos??null;
     const femeas=lastR?.femeas??null;
     const hasData=qty!=null||machos!=null||femeas!=null;
-    const total=machos!=null&&femeas!=null?machos+femeas:qty;
+    const total=(machos!=null||femeas!=null)?(machos||0)+(femeas||0):qty;
+    const hasMF=machos!=null||femeas!=null;
 
     hapaSvg+=`
       <rect x="${x}" y="${y}" width="${hapaW}" height="${hapaH}" rx="8"
@@ -1538,9 +1543,9 @@ function buildMatrizCard(t){
       <text x="${x+hapaW/2}" y="${y+16}" text-anchor="middle" font-size="9" font-weight="700"
         fill="${hasData?'#a78bfa':'rgba(255,255,255,0.4)'}">🪣 ${nm}</text>
       ${hasData
-        ? (machos!=null&&femeas!=null
-          ? `<text x="${x+hapaW/2-20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#60a5fa">♂${fNum(machos)}</text>
-             <text x="${x+hapaW/2+20}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#f472b6">♀${fNum(femeas)}</text>
+        ? (hasMF
+          ? `${machos!=null?`<text x="${x+hapaW/2-(femeas!=null?22:0)}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#60a5fa">♂${fNum(machos)}</text>`:''}
+             ${femeas!=null?`<text x="${x+hapaW/2+(machos!=null?22:0)}" y="${y+42}" text-anchor="middle" font-size="11" font-weight="800" fill="#f472b6">♀${fNum(femeas)}</text>`:''}
              <line x1="${x+hapaW/2}" y1="${y+48}" x2="${x+hapaW/2}" y2="${y+56}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
              <text x="${x+hapaW/2}" y="${y+68}" text-anchor="middle" font-size="16" font-weight="800" fill="#e2e8f0">${fNum(total)}</text>
              <text x="${x+hapaW/2}" y="${y+82}" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.5)">total</text>`
@@ -1852,16 +1857,14 @@ function _updateSyncText(){
   const txt=document.getElementById('sync-text');
   if(!txt||!_lastSyncTime)return;
   const diffMin=Math.floor((Date.now()-_lastSyncTime)/60000);
-  let timeStr=diffMin===0?'agora':diffMin===1?'1 min atrás':`${diffMin} min atrás`;
+  let timeStr=diffMin===0?'agora':diffMin===1?'1min':`${diffMin}min`;
   if(_lastSyncRec){
-    const parts=[];
-    if(_lastSyncRec.tankName)parts.push(_lastSyncRec.tankName);
-    // Descobre qual campo foi atualizado
     const fieldMap={temp:'Temp',o2:'O₂',amonia:'Amônia',ph:'pH',mort:'Mort',
       qty:'Peixes',bio:'Bio',racaoG:'Ração',desovaFemeas:'Coleta'};
     const field=Object.keys(fieldMap).find(k=>_lastSyncRec[k]!=null);
-    if(field)parts.push(fieldMap[field]);
-    txt.textContent=`${timeStr} · ${parts.join(' ')}`;
+    const tankShort=(_lastSyncRec.tankName||'').replace('Tanque ','TQ');
+    const fieldShort=field?fieldMap[field]:'';
+    txt.innerHTML=`${timeStr}<br>${tankShort}${fieldShort?' '+fieldShort:''}`;
   } else {
     txt.textContent=timeStr;
   }
@@ -2386,54 +2389,86 @@ document.getElementById('confirm-ok-btn').addEventListener('click',()=>{if(confi
 // ===== HISTÓRICO =====
 function buildHistoricoEl(){
   const div=document.createElement('div');
-  let recs=records.filter(r=>r.tankId===activeTank.id).slice().reverse();
-
-  // Filtra por hapa se necessário
-  if(activeTank?.hapas&&activeHapa!==null){
-    recs=recs.filter(r=>r.hapa==activeHapa);
-  }
+  let recs=records.filter(r=>r.tankId===activeTank.id).slice().sort((a,b)=>b.timestamp?.localeCompare(a.timestamp||'')||0);
+  if(activeTank?.hapas&&activeHapa!==null) recs=recs.filter(r=>r.hapa==activeHapa);
 
   if(!recs.length){
     const msg=activeTank?.hapaNames?.length&&activeHapa!==null?`Nenhum registro para ${hapaLabel(activeTank,activeHapa)} ainda.`:'Nenhum registro ainda.<br>Use a aba Registro para adicionar.';
     div.innerHTML=`<div class="history-empty">${msg}</div>`;return div;
   }
+
+  // Mapa de campos com labels e formatadores
+  const FIELD_LABELS={
+    temp:{l:'Temperatura',fmt:v=>fNum(v)+'°C'},
+    o2:{l:'Oxigênio',fmt:v=>fNum(v)+' mg/L'},
+    amonia:{l:'Amônia',fmt:v=>fNum(v)+' mg/L'},
+    ph:{l:'pH',fmt:v=>fNum(v)},
+    mort:{l:'Mortalidade',fmt:v=>fNum(v)+' un'},
+    qty:{l:'Qtd. Peixes',fmt:v=>fNum(v)+' un'},
+    bio:{l:'Biometria',fmt:v=>fNum(v)+' g'},
+    racaoIdealG:{l:'Ração Ideal',fmt:v=>gToKg(v)},
+    sobra:{l:'Sobra',fmt:v=>gToKg(v)},
+    racaoG:{l:'Ração Real',fmt:v=>gToKg(v)},
+    tratosIdeal:{l:'Tratos Ideal',fmt:v=>fNum(v)+'/dia'},
+    tratos:{l:'Tratos Real',fmt:v=>fNum(v)+'/dia'},
+    desovaFemeas:{l:'Fêmeas Desovadas',fmt:v=>fNum(v)+' un'},
+    desovaML:{l:'Volume Desova',fmt:v=>fNum(v)+' mL'},
+    ovosGorados:{l:'Ovos Gorados',fmt:v=>fNum(v)+'%'},
+    ovosPorMl:{l:'Ovos/mL',fmt:v=>fNum(v)},
+    machos:{l:'Machos',fmt:v=>fNum(v)+' un'},
+    femeas:{l:'Fêmeas',fmt:v=>fNum(v)+' un'},
+  };
+
+  // Gera uma linha por campo alterado por registro
+  const lines=[];
   recs.forEach(r=>{
+    // Acha o registro anterior (mais antigo do mesmo dia+hapa ou anterior)
+    const prev=records.filter(p=>
+      p.tankId===r.tankId&&
+      p.hapa==r.hapa&&
+      p.id!==r.id&&
+      p.timestamp<r.timestamp
+    ).sort((a,b)=>b.timestamp?.localeCompare(a.timestamp)||0)[0];
+
+    Object.entries(FIELD_LABELS).forEach(([field,cfg])=>{
+      const newVal=r[field];
+      if(newVal==null&&newVal!==0)return;
+      const oldVal=prev?.[field];
+      lines.push({
+        ts:r.timestamp,
+        date:r.date,
+        user:r.user||r.username||'—',
+        hapa:r.hapa,
+        field,
+        label:cfg.l,
+        fmt:cfg.fmt,
+        newVal,
+        oldVal,
+        lote:r.lote,
+      });
+    });
+  });
+
+  // Ordena por timestamp desc
+  lines.sort((a,b)=>b.ts?.localeCompare(a.ts)||0);
+
+  if(!lines.length){
+    div.innerHTML=`<div class="history-empty">Nenhuma alteração registrada ainda.</div>`;return div;
+  }
+
+  lines.forEach(l=>{
+    const hapaStr=l.hapa?` · 🪣 ${hapaLabel(activeTank,l.hapa)}`:'';
+    const loteStr=l.lote?` · 📦 ${l.lote}`:'';
+    const oldStr=l.oldVal!=null?`<span style="color:var(--text3);text-decoration:line-through;">${l.fmt(l.oldVal)}</span> → `:'';
     const item=document.createElement('div');
-    item.className='history-item'+(r.overridden?' overridden':'');
-    const pctLabel=r.racaoIdealG&&r.racaoG?` · ${Math.round(r.racaoG/r.racaoIdealG*100)}% consumido`:'';
-    const hapaBadge=r.hapa?`<span class="hapa-badge">🪣 ${hapaLabel(activeTank,r.hapa)}</span>`:'';
-    const temAlimentacao=r.racao||r.racaoIdealG||r.sobra||r.racaoG||r.tratosIdeal||r.tratos;
-    const mortLine=r.mort>0?`<div style="margin-top:5px;font-size:12px;font-weight:700;color:var(--danger);">💀 Mortalidade: ${r.mort} peixes</div>`:'';
-    const pct=r.racaoIdealG&&r.racaoG?`<span style="font-weight:700;color:${Math.round(r.racaoG/r.racaoIdealG*100)>=90?'var(--ok)':Math.round(r.racaoG/r.racaoIdealG*100)>=70?'var(--warn)':'var(--danger)'}"> (${Math.round(r.racaoG/r.racaoIdealG*100)}%)</span>`:'';
-    item.innerHTML=`<div class="history-header"><div>
-      ${r.overridden?`<div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:2px;">⬜ SUBSTITUÍDO</div>`:''}
-      ${r.lote?`<div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:2px;">📦 ${r.lote}${hapaBadge}</div>`:`<div>${hapaBadge}</div>`}
-      <div class="history-date">${formatDate(r.date)}${r.timestamp?' · '+formatTime(r.timestamp):''}</div>
-      <div class="history-user">por ${r.user}</div>
-    </div></div>
-    <div class="history-params">
-      ${hP('Temp',r.temp,'°C',r.temp&&(r.temp<LIMITS.temp.min||r.temp>LIMITS.temp.max))}
-      ${hP('O₂',r.o2,'mg/L',r.o2&&r.o2<LIMITS.o2.min)}
-      ${hP('Amônia',r.amonia,'mg/L',r.amonia&&r.amonia>LIMITS.amonia.max)}
-      ${hP('pH',r.ph,'')}
-      ${hP('Peixes',r.qty,'un')}
-      ${hP('Biometria',r.bio,'g')}
-      ${hP('Mort.',r.mort||null,'un',r.mort>0)}
-    </div>
-    ${mortLine}
-    ${temAlimentacao?`
-    <div style="margin-top:8px;padding-top:8px;border-top:1.5px dashed var(--border);">
-      <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">🌾 Alimentação</div>
-      <div class="history-params">
-        ${hPText('Tipo',r.racao||null)}
-        ${hP('Ideal',r.racaoIdealG!=null?gToKg(r.racaoIdealG):'—','',false)}
-        ${hP('Sobra',r.sobra!=null?gToKg(r.sobra):'—','',false)}
-        ${hP('Real',r.racaoG?gToKg(r.racaoG)+pct:null,'',false)}
-        ${hP('Tratos Ideal',r.tratosIdeal,'/dia')}
-        ${hP('Tratos Real',r.tratos,'/dia')}
-      </div>
-    </div>`:''}
-    ${r.obs?`<div style="margin-top:4px;font-size:11px;color:var(--text2);">💬 ${r.obs}</div>`:''}`;
+    item.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border);';
+    item.innerHTML=`
+      <div style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:2px;">${formatDate(l.date)}${l.ts?' · '+formatTime(l.ts):''}${hapaStr}${loteStr}</div>
+        <div style="font-size:13px;color:var(--text);"><strong>${l.user}</strong> alterou <strong>${l.label}</strong></div>
+        <div style="font-size:13px;margin-top:2px;">${oldStr}<span style="color:var(--accent);font-weight:700;">${l.fmt(l.newVal)}</span></div>
+      </div>`;
     div.appendChild(item);
   });
   const s=document.createElement('div');s.style.height='14px';div.appendChild(s);return div;
@@ -2793,6 +2828,16 @@ const LANC_PARAMS={
   tratos:   {label:'Tratos Real',       unit:'',     step:'1',   inputmode:'numeric'},
 };
 
+function shiftLancDate(days){
+  const el=document.getElementById('lanc-date');
+  if(!el)return;
+  const cur=el.value||new Date().toISOString().split('T')[0];
+  const d=new Date(cur+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  el.value=d.toISOString().split('T')[0];
+  renderLancamentos();
+}
+
 function initLancamentos(){
   const d=new Date().toISOString().split('T')[0];
   const el=document.getElementById('lanc-date');
@@ -2845,8 +2890,8 @@ function renderLancamentos(){
 
   const extraHeaders=isRacao?`
     <th style="min-width:130px;text-align:center;">Método</th>
-    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Início do dia (g)</span></th>
-    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Final do dia (g)</span></th>`
+    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Início do dia (kg)</span></th>
+    <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Final do dia (kg)</span></th>`
     :isDual?`<th style="min-width:90px;">💧 Oxigênio (mg/L)</th>`:'';
 
   const header=`<thead><tr>
@@ -2858,39 +2903,31 @@ function renderLancamentos(){
 
   const lastValKey=param==='racaoReal'?'racaoG':param==='tempO2'?'temp':param;
   const isRacaoKg=(param==='racaoReal'||param==='racaoIdealG');
+  const selectedDate=document.getElementById('lanc-date')?.value||'';
 
   const rowsHtml=rows.map((r,i)=>{
     const hapaLbl=r.hapaName?`<div class="lancamento-hapa-name">🪣 ${r.hapaName}</div>`:'';
     const hapaInfo=r.hapas>0?`<div class="lancamento-hapa-name" style="color:#7c3aed;">🪣 ${r.hapas} hapas</div>`:'';
     const tankCell=`<td><div class="lancamento-tank-name">${r.tankName}</div>${hapaLbl}${hapaInfo}</td>`;
 
-    // Último valor
+    // Último valor — apenas da data selecionada
     let lastVal='';
+    const dayRec=selectedDate?recForDate(r.tankId,selectedDate,r.hapaNum||null):null;
     if(isDual){
-      const getRec=r.hapaNum?lastRecHapa(r.tankId,r.hapaNum):lastRec(r.tankId);
-      const t=getRec?.temp??null;
-      const o=getRec?.o2??null;
-      lastVal=t!=null||o!=null?`${t??'—'}°C / ${o??'—'}mg/L`:'';
-    } else if(r.hapaNum){
-      lastVal=lastRecHapa(r.tankId,r.hapaNum)?.[lastValKey]??'';
-    } else if(r.hapas>0){
-      // Filtra registros com o campo preenchido
-      const hapaRecs=records.filter(rec=>rec.tankId===r.tankId&&!rec.overridden&&rec.hapa!=null&&rec[lastValKey]!=null);
-      if(hapaRecs.length){
-        // Data mais recente com dados
-        const lastDate=hapaRecs.reduce((max,rec)=>rec.date>max?rec.date:max,'');
-        const dayRecs=hapaRecs.filter(rec=>rec.date===lastDate);
-        // Por hapa: pega APENAS o registro mais recente (maior timestamp)
+      const t=dayRec?.temp??null;
+      const o=dayRec?.o2??null;
+      lastVal=t!=null||o!=null?`${t!=null?fNum(t):'—'}°C / ${o!=null?fNum(o):'—'}mg/L`:'';
+    } else if(r.hapas>0&&selectedDate){
+      // Tanque com hapas: soma do dia selecionado
+      const dayHapaRecs=records.filter(rec=>rec.tankId===r.tankId&&rec.date===selectedDate&&!rec.overridden&&rec.hapa!=null&&rec[lastValKey]!=null);
+      if(dayHapaRecs.length){
         const byHapa={};
-        dayRecs.forEach(rec=>{
-          const h=rec.hapa;
-          if(!byHapa[h]||rec.timestamp>byHapa[h].timestamp)byHapa[h]=rec;
-        });
+        dayHapaRecs.forEach(rec=>{const h=rec.hapa;if(!byHapa[h]||rec.timestamp>byHapa[h].timestamp)byHapa[h]=rec;});
         const soma=Object.values(byHapa).reduce((s,rec)=>s+(rec[lastValKey]||0),0);
         lastVal=parseFloat(soma.toFixed(3));
       }
     } else {
-      lastVal=lastRec(r.tankId)?.[lastValKey]??'';
+      lastVal=dayRec?.[lastValKey]??'';
     }
 
     const mainInput=`<input class="lancamento-input" type="number"
@@ -2929,10 +2966,10 @@ function renderLancamentos(){
       </td>
       <td><input class="tambor-input-disabled" type="number"
         id="lanc-tambor-ini-${rowId}" data-tank="${r.tankId}"
-        placeholder="Início (g)" disabled step="0.001" inputmode="decimal" style="${disabledStyle}"></td>
+        placeholder="Início (kg)" disabled step="0.0001" inputmode="decimal" style="${disabledStyle}"></td>
       <td><input class="tambor-input-disabled" type="number"
         id="lanc-tambor-fim-${rowId}" data-tank="${r.tankId}"
-        placeholder="Final (g)" disabled step="0.001" inputmode="decimal" style="${disabledStyle}"></td>
+        placeholder="Final (kg)" disabled step="0.0001" inputmode="decimal" style="${disabledStyle}"></td>
       <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${lastVal!==''?lastVal:'—'}</td>
     </tr>`;
   }).join('');
@@ -3940,7 +3977,13 @@ function populateChartTankSelect(){
   const sel=document.getElementById('chart-tank-select');
   const prev=sel.value;
   sel.innerHTML='<option value="">Selecione um tanque...</option>';
-  // Ordena por número crescente
+  // Opção Total
+  const totalOpt=document.createElement('option');
+  totalOpt.value='__total__';
+  totalOpt.textContent='📊 Total (todos os tanques)';
+  if('__total__'===prev)totalOpt.selected=true;
+  sel.appendChild(totalOpt);
+  // Tanques individuais
   const sorted=[...tanks]
     .filter(t=>records.some(r=>r.tankId===t.id))
     .sort((a,b)=>(a.num||0)-(b.num||0));
@@ -4287,6 +4330,40 @@ function renderCharts(){
   cont.innerHTML='';
   if(!val){cont.innerHTML='<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Selecione um tanque acima para ver os gráficos.</div>';return;}
 
+  // Modo Total: soma todos os tanques por data
+  if(val==='__total__'){
+    const titulo=document.createElement('div');
+    titulo.style.cssText='padding:8px 13px;font-size:14px;font-weight:700;color:var(--text2);';
+    titulo.textContent='📊 Total — Todos os Tanques';
+    cont.appendChild(titulo);
+
+    // Agrega por data
+    const byDate={};
+    tanks.filter(t=>!t.empty).forEach(t=>{
+      const off=getOfficialRecords(t.id,null);
+      off.forEach(r=>{
+        if(!byDate[r.date])byDate[r.date]={date:r.date,racaoIdealG:0,racaoG:0,qty:0,mort:0};
+        const d=byDate[r.date];
+        if(r.racaoIdealG!=null)d.racaoIdealG+=r.racaoIdealG;
+        if(r.racaoG!=null)d.racaoG+=r.racaoG;
+        if(r.qty!=null)d.qty+=r.qty;
+        if(r.mort!=null)d.mort+=r.mort;
+      });
+    });
+    const sorted=Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!sorted.length){cont.innerHTML+='<div style="padding:30px;text-align:center;color:var(--text3);">Sem dados.</div>';return;}
+    const labels=sorted.map(r=>formatDate(r.date));
+    const ideal=sorted.map(r=>r.racaoIdealG||null);
+    const real=sorted.map(r=>r.racaoG||null);
+    const qty=sorted.map(r=>r.qty||null);
+    const mort=sorted.map(r=>r.mort||null);
+    if(!ideal.every(v=>v===null)||!real.every(v=>v===null))
+      cont.appendChild(makeSVGDualChart('Ração Total','kg',labels,ideal.map(v=>v?v/1000:null),'#1a3a6b',real.map(v=>v?v/1000:null),'#16a34a','Ideal','Real'));
+    if(!qty.every(v=>v===null))cont.appendChild(makeSVGChart('Qtd. Peixes Total','un',labels,qty,'#0891b2'));
+    if(!mort.every(v=>v===null))cont.appendChild(makeSVGChart('Mortalidade Total','un',labels,mort,'#b91c1c'));
+    return;
+  }
+
   let tid=val,hapaNum=null,chartTitle='';
   if(val.includes('::hapa::')){
     const parts=val.split('::hapa::');
@@ -4385,7 +4462,43 @@ function makeSVGChart(title,unit,labels,vals,color){
 
   const block=document.createElement('div');
   block.className='chart-block';
-  block.innerHTML=`<div class="chart-title">${title}</div><div class="chart-sub">${unit}</div><div style="overflow-x:auto;">${svg}</div>`;
+  block.style.position='relative';
+  block.innerHTML=`<div class="chart-title">${title}</div><div class="chart-sub">${unit}</div><div style="overflow-x:auto;position:relative;">${svg}</div>`;
+
+  // Tooltip overlay
+  const tooltip=document.createElement('div');
+  tooltip.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;pointer-events:none;display:none;white-space:nowrap;z-index:50;';
+  block.appendChild(tooltip);
+
+  // Pontos interativos via JS
+  block.addEventListener('mousemove',function(e){
+    const svgEl=block.querySelector('svg');
+    if(!svgEl)return;
+    const rect=svgEl.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    const svgW=rect.width;
+    const n=vals.filter(v=>v!==null).length;
+    if(!n)return;
+    // Encontra o ponto mais próximo
+    let bestI=-1,bestDist=30;
+    vals.forEach((v,i)=>{
+      if(v===null)return;
+      const px=toX(i)*(svgW/W);
+      const dist=Math.abs(mx-px);
+      if(dist<bestDist){bestDist=dist;bestI=i;}
+    });
+    if(bestI>=0&&vals[bestI]!=null){
+      tooltip.style.display='block';
+      tooltip.textContent=`${labels[bestI]}: ${fNum(vals[bestI])} ${unit}`;
+      const px=toX(bestI)*(svgW/W);
+      tooltip.style.left=(px+8)+'px';
+      tooltip.style.top='24px';
+    } else {
+      tooltip.style.display='none';
+    }
+  });
+  block.addEventListener('mouseleave',()=>tooltip.style.display='none');
+
   return block;
 }
 
