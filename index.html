@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.11.1</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.11.2</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1028,17 +1028,7 @@ function showColetaView(v){
   document.getElementById('nav-col-'+v)?.classList.add('active');
   if(v==='matrizes')renderMatrizes();
   if(v==='coleta')renderColeta();
-  if(v==='painel'){
-    // Renderiza agora com o que há no records
-    renderColetaPainel();
-    // Se ainda não carregou do Supabase, aguarda e re-renderiza
-    if(records.filter(r=>r.desovaFemeas!=null&&r.lote).length===0){
-      setTimeout(()=>{
-        const el=document.getElementById('view-col-painel');
-        if(el&&el.style.display!=='none')renderColetaPainel();
-      },2000);
-    }
-  }
+  if(v==='painel')renderColetaPainel();
   if(v==='historico')renderColetaHistorico();
   if(v==='graficos')renderColetaGraficos();
 }
@@ -1929,9 +1919,13 @@ async function load(){
   // Atualiza indicador de sync com o registro mais recente
   const lastRec=records.length?records.reduce((a,b)=>a.timestamp>b.timestamp?a:b):null;
   updateSyncIndicator('ok',lastRec);
-  // Re-renderiza painel coleta se estiver visível
+  // Re-renderiza abas de coleta se estiverem visíveis
   const colPainel=document.getElementById('view-col-painel');
-  if(colPainel&&colPainel.style.display!=='none')renderColetaPainel();
+  if(colPainel&&colPainel.classList.contains('active'))renderColetaPainel();
+  const colGraficos=document.getElementById('view-col-graficos');
+  if(colGraficos&&colGraficos.classList.contains('active'))renderColetaGraficos();
+  const colHistorico=document.getElementById('view-col-historico');
+  if(colHistorico&&colHistorico.classList.contains('active'))renderColetaHistorico();
 }
 
 let _lastSyncTime=null;
@@ -2569,7 +2563,7 @@ function buildHistoricoEl(){
     div.innerHTML=`<div class="history-empty">Nenhuma alteração registrada ainda.</div>`;return div;
   }
 
-  lines.forEach(l=>{
+  lines.slice(0,100).forEach(l=>{
     const hapaStr=l.hapa?` · 🪣 ${hapaLabel(activeTank,l.hapa)}`:'';
     const loteStr=l.lote?` · 📦 ${l.lote}`:'';
     const oldStr=l.oldVal!=null?`<span style="color:var(--text3);text-decoration:line-through;">${l.fmt(l.oldVal)}</span> → `:'';
@@ -2931,7 +2925,7 @@ function renderGlobalHistory(){
 
   if(!lines.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
 
-  el.innerHTML=lines.map(l=>{
+  el.innerHTML=lines.slice(0,100).map(l=>{
     const hapaStr=l.hapa?` · Hapa ${l.hapa}`:'';
     const loteStr=l.lote?` · 📦 ${l.lote}`:'';
     const oldStr=l.oldVal!=null?`<span style="color:var(--text3);text-decoration:line-through;margin-right:4px;">${l.fmt(l.oldVal)}</span>`:'';
