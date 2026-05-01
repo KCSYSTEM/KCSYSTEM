@@ -3685,24 +3685,18 @@ function renderPainel(){
       cVals.ph    =avg(hapaRecs.map(r=>r?.ph));
       cVals.mort  =sum(hapaRecs.map(r=>r?.mort||0));
 
-      // Item 4: qty = SOMA dos hapas (não média), bio = MÉDIA
-      const recSemHapa=recForDate(t.id,date,null);
-      if(recSemHapa?.qty!=null){
-        cVals.qty=recSemHapa.qty;
-      } else {
-        const qtys=hapaRecs.map(r=>r?.qty).filter(v=>v!=null);
-        cVals.qty=qtys.length?qtys.reduce((s,v)=>s+v,0):null; // SOMA
-      }
-      // Item 3: se qty null, tenta dia anterior
+      // Item 4: qty = SOMA dos hapas (nunca recSemHapa para tanques com hapas)
+      // bio = MÉDIA dos hapas
+      const qtys=hapaRecs.map(r=>r?.qty).filter(v=>v!=null);
+      cVals.qty=qtys.length?qtys.reduce((s,v)=>s+v,0):null;
+
+      // Item 3: se qty null no dia, busca soma dos hapas do dia anterior
       if(cVals.qty==null){
-        const pd=prevDate(date);
-        const prevSemHapa=recForDate(t.id,pd,null);
-        if(prevSemHapa?.qty!=null){cVals.qty=prevSemHapa.qty;cVals._qtyPrev=true;}
-        else{
-          const prevHapaRecs=hapaNames.map((_,i)=>recForDate(t.id,pd,i+1));
-          const prevQtys=prevHapaRecs.map(r=>r?.qty).filter(v=>v!=null);
-          if(prevQtys.length){cVals.qty=prevQtys.reduce((s,v)=>s+v,0);cVals._qtyPrev=true;}
-        }
+        const pd=new Date(date+'T12:00:00');pd.setDate(pd.getDate()-1);
+        const prevDate=pd.toISOString().split('T')[0];
+        const prevHapaRecs=hapaNames.map((_,i)=>recForDate(t.id,prevDate,i+1));
+        const prevQtys=prevHapaRecs.map(r=>r?.qty).filter(v=>v!=null);
+        if(prevQtys.length){cVals.qty=prevQtys.reduce((s,v)=>s+v,0);cVals._qtyPrev=true;}
       }
 
       cVals.bio=avg(hapaRecs.map(r=>r?.bio));
