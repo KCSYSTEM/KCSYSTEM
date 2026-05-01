@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.11.3</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.12</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -613,7 +613,11 @@ canvas.chart-canvas{display:block;}
             <option value="desova">🥚 Desova (fêmeas + volume + gorados)</option>
             <option value="ovosPorMl">🔬 Ovos por mL</option>
           </select>
-          <input type="date" id="coleta-date" class="lancamento-date-input">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button onclick="shiftColetaDate(-1)" style="background:rgba(255,255,255,0.1);border:1.5px solid var(--border2);border-radius:8px;width:30px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);">‹</button>
+            <input type="date" id="coleta-date" class="lancamento-date-input">
+            <button onclick="shiftColetaDate(1)" style="background:rgba(255,255,255,0.1);border:1.5px solid var(--border2);border-radius:8px;width:30px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);">›</button>
+          </div>
           <button class="lancamento-save-btn" onclick="saveColeta()">Salvar</button>
         </div>
         <!-- Lote (só para desova) -->
@@ -1608,10 +1612,10 @@ function buildMatrizCard(t){
   const svgWrap=document.createElement('div');
   svgWrap.style.cssText='width:100%;margin-bottom:16px;';
 
-  const cols=Math.min(hapaNames.length,4);
+  const cols=Math.max(1,Math.min(hapaNames.length,4));
   const rows=Math.ceil(hapaNames.length/cols);
   const hapaW=130,hapaH=100,gap=12,pad=20;
-  const svgW=cols*(hapaW+gap)+gap+pad*2;
+  const svgW=Math.max(100,cols*(hapaW+gap)+gap+pad*2);
   const svgH=rows*(hapaH+gap)+gap+pad*2+40;
 
   let hapaSvg='';
@@ -2178,7 +2182,13 @@ function getOfficialRecords(tankId, hapa=undefined){
 function lastRec(id){const off=getOfficialRecords(id,null);return off.length?off[off.length-1]:null;}
 function lastRecHapa(id,hapa){
   if(!hapa)return lastRec(id);
-  const off=getOfficialRecords(id,hapa);return off.length?off[off.length-1]:null;
+  const off=getOfficialRecords(id,hapa);
+  if(!off.length)return null;
+  // Prefere o registro mais recente que tenha pelo menos um campo com dado
+  const FIELDS=['qty','bio','machos','femeas','temp','o2','amonia','ph','racaoG','racaoIdealG'];
+  const withData=off.filter(r=>FIELDS.some(k=>r[k]!=null));
+  if(withData.length)return withData[withData.length-1];
+  return off[off.length-1];
 }
 function recForDate(tankId,date,hapa=null){
   let dayRecs=records.filter(r=>r.tankId===tankId&&r.date===date&&!r.overridden);
@@ -2974,6 +2984,16 @@ const LANC_PARAMS={
   tratosIdeal:{label:'Tratos Ideal',    unit:'',     step:'1',   inputmode:'numeric'},
   tratos:   {label:'Tratos Real',       unit:'',     step:'1',   inputmode:'numeric'},
 };
+
+function shiftColetaDate(days){
+  const el=document.getElementById('coleta-date');
+  if(!el)return;
+  const cur=el.value||new Date().toISOString().split('T')[0];
+  const d=new Date(cur+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  el.value=d.toISOString().split('T')[0];
+  renderColeta();
+}
 
 function shiftPainelDate(days){
   const el=document.getElementById('painel-date');
@@ -3853,13 +3873,23 @@ function renderPainel(){
           Object.assign(hv,{o2:hr.o2,temp:hr.temp,amonia:hr.amonia,ph:hr.ph,mort:hr.mort||0,qty:hr.qty,bio:hr.bio,_ideal:hr.racaoIdealG,_real:hr.racaoG});
           hv._pct=(hr.racaoIdealG&&hr.racaoG)?Math.round(hr.racaoG/hr.racaoIdealG*100):null;
         }
+        // Fallback: qty e bio do dia anterior se não há no dia atual
+        if(hv.qty==null||hv.bio==null){
+          const pd=new Date(date+'T12:00:00');pd.setDate(pd.getDate()-1);
+          const prevHr=recForDate(t.id,pd.toISOString().split('T')[0],h);
+          if(hv.qty==null&&prevHr?.qty!=null){hv.qty=prevHr.qty;hv._qtyPrev=true;}
+          if(hv.bio==null&&prevHr?.bio!=null){hv.bio=prevHr.bio;hv._bioPrev=true;}
+        }
         hv._tca=null;
         if(hv._ideal!=null)hv._ideal=hv._ideal/1000;
         if(hv._real!=null)hv._real=hv._real/1000;
         const isLast=i===hapaNames.length-1;
         rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:${isLast?'4px':'1px'};background:#f3f0fb;border:1px solid #e0d9f5;border-top:none;${isLast?'border-radius:0 0 8px 8px;':''}">`;
         rows+=`<div></div><div style="padding:5px 6px 5px 12px;font-size:11px;color:#7c3aed;font-weight:600;">🪣 ${nm}</div>`;
-        cols.forEach(c=>{ rows+=renderCell(hv[c.k],c.lk); });
+        cols.forEach(c=>{
+          const isPrev=(c.k==='qty'&&hv._qtyPrev)||(c.k==='bio'&&hv._bioPrev);
+          rows+=renderCell(hv[c.k],c.lk,isPrev);
+        });
         rows+=`</div>`;
       });
       rows+=`</div>`;
