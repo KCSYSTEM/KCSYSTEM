@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.9</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.10</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -466,8 +466,10 @@ canvas.chart-canvas{display:block;}
     <!-- PAINEL -->
     <div id="view-painel" class="view">
       <div class="view-header"><div><div class="view-title">Painel</div><div class="view-sub">Visão geral do dia</div></div></div>
-      <div style="padding:0 13px 12px;">
-        <input type="date" id="painel-date" onchange="renderPainel()" style="width:100%;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;color:var(--text);font-size:16px;outline:none;-webkit-appearance:none;appearance:none;">
+      <div style="padding:0 13px 12px;display:flex;align-items:center;gap:6px;">
+        <button onclick="shiftPainelDate(-1)" style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;width:36px;height:42px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;">‹</button>
+        <input type="date" id="painel-date" onchange="renderPainel()" style="flex:1;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;color:var(--text);font-size:16px;outline:none;-webkit-appearance:none;appearance:none;">
+        <button onclick="shiftPainelDate(1)" style="background:var(--surface);border:1.5px solid var(--border2);border-radius:8px;width:36px;height:42px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0;">›</button>
       </div>
       <div id="painel-container" style="overflow:auto;padding:0 13px;max-height:calc(100vh - 180px);"></div>
     </div>
@@ -2861,6 +2863,16 @@ const LANC_PARAMS={
   tratos:   {label:'Tratos Real',       unit:'',     step:'1',   inputmode:'numeric'},
 };
 
+function shiftPainelDate(days){
+  const el=document.getElementById('painel-date');
+  if(!el)return;
+  const cur=el.value||new Date().toISOString().split('T')[0];
+  const d=new Date(cur+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  el.value=d.toISOString().split('T')[0];
+  renderPainel();
+}
+
 function shiftLancDate(days){
   const el=document.getElementById('lanc-date');
   if(!el)return;
@@ -3624,14 +3636,16 @@ function renderPainel(){
 
   if(!ativos.length&&!vazios.length){cont.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px 0;font-size:13px;">Nenhum dado registrado ainda.</div>';return;}
 
-  const renderCell=(v,lk)=>{
+  const renderCell=(v,lk,isPrev=false)=>{
     let light='⚪';
     if(lk&&v!=null){
       if(lk==='racaoPct'){light=v>=(LIMITS.racaoPct?.min||70)?'🟢':v>=50?'🟡':'🔴';}
       else{light=trafficLight(v,lk);}
     }
+    if(isPrev)light='⬜';
     const display=v!=null?fNum(v):'—';
-    return`<div style="padding:6px 2px;text-align:center;font-size:11px;font-family:'JetBrains Mono',monospace;">${light}<br><span style="font-size:12px;font-weight:600;color:var(--text);">${display}</span></div>`;
+    const style=isPrev?'font-size:12px;font-weight:500;color:var(--text3);font-style:italic;':'font-size:12px;font-weight:600;color:var(--text);';
+    return`<div style="padding:6px 2px;text-align:center;font-size:11px;font-family:'JetBrains Mono',monospace;">${light}<br><span style="${style}">${display}</span></div>`;
   };
 
   const renderRow=(t)=>{
@@ -3657,21 +3671,49 @@ function renderPainel(){
       const avg=(arr)=>{const v=arr.filter(x=>x!=null);return v.length?parseFloat((v.reduce((s,x)=>s+x,0)/v.length).toFixed(2)):null;};
       const sum=(arr)=>{const v=arr.filter(x=>x!=null);return v.length?v.reduce((s,x)=>s+x,0):null;};
 
+      // Função para buscar valor do dia anterior se não há dado no dia
+      const prevDate=(date)=>{
+        const d=new Date(date+'T12:00:00');
+        d.setDate(d.getDate()-1);
+        return d.toISOString().split('T')[0];
+      };
+
       const cVals={};
       cVals.o2    =avg(hapaRecs.map(r=>r?.o2));
       cVals.temp  =avg(hapaRecs.map(r=>r?.temp));
       cVals.amonia=avg(hapaRecs.map(r=>r?.amonia));
       cVals.ph    =avg(hapaRecs.map(r=>r?.ph));
       cVals.mort  =sum(hapaRecs.map(r=>r?.mort||0));
-      // qty: usa registro sem hapa (consolidado) se existir, senão max dos hapas
+
+      // Item 4: qty = SOMA dos hapas (não média), bio = MÉDIA
       const recSemHapa=recForDate(t.id,date,null);
       if(recSemHapa?.qty!=null){
         cVals.qty=recSemHapa.qty;
       } else {
         const qtys=hapaRecs.map(r=>r?.qty).filter(v=>v!=null);
-        cVals.qty=qtys.length?Math.min(...qtys):null; // min = hapa 1, menos acumulado
+        cVals.qty=qtys.length?qtys.reduce((s,v)=>s+v,0):null; // SOMA
       }
-      cVals.bio   =avg(hapaRecs.map(r=>r?.bio));
+      // Item 3: se qty null, tenta dia anterior
+      if(cVals.qty==null){
+        const pd=prevDate(date);
+        const prevSemHapa=recForDate(t.id,pd,null);
+        if(prevSemHapa?.qty!=null){cVals.qty=prevSemHapa.qty;cVals._qtyPrev=true;}
+        else{
+          const prevHapaRecs=hapaNames.map((_,i)=>recForDate(t.id,pd,i+1));
+          const prevQtys=prevHapaRecs.map(r=>r?.qty).filter(v=>v!=null);
+          if(prevQtys.length){cVals.qty=prevQtys.reduce((s,v)=>s+v,0);cVals._qtyPrev=true;}
+        }
+      }
+
+      cVals.bio=avg(hapaRecs.map(r=>r?.bio));
+      // Item 3: se bio null, tenta dia anterior
+      if(cVals.bio==null){
+        const pd=prevDate(date);
+        const prevHapaRecs=hapaNames.map((_,i)=>recForDate(t.id,pd,i+1));
+        const prevBios=prevHapaRecs.map(r=>r?.bio).filter(v=>v!=null);
+        if(prevBios.length){cVals.bio=avg(prevBios);cVals._bioPrev=true;}
+      }
+
       cVals._ideal=sum(hapaRecs.map(r=>r?.racaoIdealG));
       if(cVals._ideal!=null)cVals._ideal=cVals._ideal/1000;
       cVals._real =sum(hapaRecs.map(r=>r?.racaoG));
@@ -3689,7 +3731,10 @@ function renderPainel(){
       rows+=`<div onclick="togglePainelHapas('${expandId}')" style="display:flex;align-items:center;justify-content:center;cursor:pointer;padding-left:4px;">
         <span id="btn-${expandId}" style="font-size:14px;font-weight:700;color:var(--accent);line-height:1;user-select:none;">＋</span></div>`;
       rows+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${t.name}${hapaBadge}</div>`;
-      cols.forEach(c=>{ rows+=renderCell(cVals[c.k],c.lk); });
+      cols.forEach(c=>{
+        const isPrev=(c.k==='qty'&&cVals._qtyPrev)||(c.k==='bio'&&cVals._bioPrev);
+        rows+=renderCell(cVals[c.k],c.lk,isPrev);
+      });
       rows+=`</div>`;
 
       // Linhas dos hapas (inicialmente ocultas)
@@ -3714,7 +3759,7 @@ function renderPainel(){
       rows+=`</div>`;
 
     } else {
-      // Tanque sem hapas — com coluna de 24px vazia à esquerda
+      // Tanque sem hapas
       const rec=recDodia(t);
       const tca=tcaAcum(t);
       const vals={};
@@ -3722,13 +3767,23 @@ function renderPainel(){
         Object.assign(vals,{o2:rec.o2,temp:rec.temp,amonia:rec.amonia,ph:rec.ph,mort:rec.mort||0,qty:rec.qty,bio:rec.bio,_ideal:rec.racaoIdealG,_real:rec.racaoG});
         vals._pct=(rec.racaoIdealG&&rec.racaoG)?Math.round(rec.racaoG/rec.racaoIdealG*100):null;
       }
+      // Item 3: qty e bio do dia anterior se não preenchidos hoje
+      if(vals.qty==null||vals.bio==null){
+        const pd=new Date(date+'T12:00:00');pd.setDate(pd.getDate()-1);
+        const prevRec=recForDate(t.id,pd.toISOString().split('T')[0]);
+        if(vals.qty==null&&prevRec?.qty!=null){vals.qty=prevRec.qty;vals._qtyPrev=true;}
+        if(vals.bio==null&&prevRec?.bio!=null){vals.bio=prevRec.bio;vals._bioPrev=true;}
+      }
       vals._tca=tca?parseFloat(tca):null;
       if(vals._ideal!=null)vals._ideal=vals._ideal/1000;
       if(vals._real!=null)vals._real=vals._real/1000;
       const rowBg=rec?'#fff':'#f8fafc';
       rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
       rows+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${t.name}</div>`;
-      cols.forEach(c=>{ rows+=renderCell(vals[c.k],c.lk); });
+      cols.forEach(c=>{
+        const isPrev=(c.k==='qty'&&vals._qtyPrev)||(c.k==='bio'&&vals._bioPrev);
+        rows+=renderCell(vals[c.k],c.lk,isPrev);
+      });
       rows+=`</div>`;
     }
 
