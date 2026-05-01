@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.11.2</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.11.3</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -995,7 +995,10 @@ function switchModule(mod){
     if(fabEl&&currentUser?.role==='admin')fabEl.style.display='';
   } else if(mod==='coleta'){
     colEl.style.display='flex';
+    // Se o load ainda não terminou, mostra matrizes e vai atualizar o painel quando terminar
     showColetaView('matrizes');
+    // Força re-render do painel assim que o load terminar (caso já tenha terminado, roda imediato)
+    _pendingColetaView='painel';
   } else if(mod==='config'){
     opEl.style.display=''; navEl.style.display='';
     showView('settings');
@@ -1919,17 +1922,26 @@ async function load(){
   // Atualiza indicador de sync com o registro mais recente
   const lastRec=records.length?records.reduce((a,b)=>a.timestamp>b.timestamp?a:b):null;
   updateSyncIndicator('ok',lastRec);
-  // Re-renderiza abas de coleta se estiverem visíveis
-  const colPainel=document.getElementById('view-col-painel');
-  if(colPainel&&colPainel.classList.contains('active'))renderColetaPainel();
-  const colGraficos=document.getElementById('view-col-graficos');
-  if(colGraficos&&colGraficos.classList.contains('active'))renderColetaGraficos();
-  const colHistorico=document.getElementById('view-col-historico');
-  if(colHistorico&&colHistorico.classList.contains('active'))renderColetaHistorico();
+
+  // Re-renderiza a view ativa do módulo coleta (sempre, pois o load pode ter trazido novos dados)
+  if(activeModule==='coleta'){
+    const activeColetaNav=document.querySelector('.coleta-nav-item.active');
+    const activeView=activeColetaNav?.id?.replace('nav-col-','');
+    if(activeView==='painel')renderColetaPainel();
+    else if(activeView==='graficos')renderColetaGraficos();
+    else if(activeView==='historico')renderColetaHistorico();
+    else if(activeView==='matrizes')renderMatrizes();
+  }
+  // Processa view pendente (quando usuário entrou no módulo antes do load terminar)
+  if(_pendingColetaView){
+    showColetaView(_pendingColetaView);
+    _pendingColetaView=null;
+  }
 }
 
 let _lastSyncTime=null;
 let _lastSyncRec=null;
+let _pendingColetaView=null;
 
 function updateSyncIndicator(status, lastRec){
   const dot=document.getElementById('sync-dot');
@@ -2033,12 +2045,16 @@ async function enterApp(u){
   // Depois sincroniza com Supabase em background
   try{await load();}catch(e){console.warn('load error',e);}
   renderTankView();updateMapSub();populateChartTankSelect();
+  // SEMPRE re-renderiza coleta após load, independente do módulo ativo
+  renderColetaPainel();renderColetaGraficos();
+  if(_pendingColetaView){showColetaView(_pendingColetaView);_pendingColetaView=null;}
 
   // Injeta dados históricos em background sem bloquear
   try{await injectHistoricalData();}catch(e){console.warn('injectHistoricalData error',e);}
   try{await injectBioQty2604();}catch(e){console.warn('injectBioQty2604 error',e);}
   try{await injectQualidadeAgua();}catch(e){console.warn('injectQualidadeAgua error',e);}
   renderTankView();updateMapSub();populateChartTankSelect();
+  renderColetaPainel();
   startRealtime(); // inicia sync em tempo real
 }
 
