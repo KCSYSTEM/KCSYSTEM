@@ -1304,10 +1304,10 @@ function renderColetaPainel(){
       </div>
       ${cell(l.femeas)}
       ${cell(parseFloat(l.ml.toFixed(1)))}
-      ${cell(l.ovosPorMl)}
-      ${cell(l.ovosTotal!=null?l.fNum(ovosTotal):null)}
+      ${cell(l.ovosPorMl!=null?fNum(l.ovosPorMl):null)}
+      ${cell(l.ovosTotal!=null?fNum(l.ovosTotal):null)}
       ${cell(l.ovosGorados!=null?l.ovosGorados+'%':null,'#e53e3e')}
-      ${cell(l.ovosFinal!=null?l.fNum(ovosFinal):null,'var(--accent)')}`;
+      ${cell(l.ovosFinal!=null?fNum(l.ovosFinal):null,'var(--accent)')}`;
     wrapper.appendChild(row);
 
     // Detalhe por tanque+hapa
