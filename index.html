@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.13</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.14</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -488,6 +488,19 @@ canvas.chart-canvas{display:block;}
         </select>
       </div>
       <div id="charts-container"></div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <!-- MANEJOS -->
+    <div id="view-manejos" class="view">
+      <div class="view-header">
+        <div><div class="view-title">Manejos</div><div class="view-sub">Transferências e movimentações de lotes</div></div>
+      </div>
+      <div style="padding:40px 20px;text-align:center;color:var(--text3);">
+        <div style="font-size:40px;margin-bottom:12px;">🔄</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text2);">Em construção</div>
+        <div style="font-size:13px;margin-top:6px;">Em breve: transferências de lotes entre tanques.</div>
+      </div>
     </div>
 
     <!-- HISTÓRICO -->
@@ -690,6 +703,9 @@ canvas.chart-canvas{display:block;}
     </div>
     <div class="nav-item" id="nav-graficos" onclick="showView('graficos')">
       <div class="nav-icon">📈</div><div class="nav-label">Gráficos</div>
+    </div>
+    <div class="nav-item" id="nav-manejos" onclick="showView('manejos')">
+      <div class="nav-icon">🔄</div><div class="nav-label">Manejos</div>
     </div>
     <div class="nav-item" id="nav-history" onclick="showView('history')">
       <div class="nav-icon">↻</div><div class="nav-label">Histórico</div>
@@ -1093,18 +1109,31 @@ function renderColetaGraficos(){
   },0);
 
   cont.innerHTML='';
+  // Média móvel de N pontos
+  const movingAvg=(vals,n=4)=>vals.map((_,i)=>{
+    const window=vals.slice(Math.max(0,i-n+1),i+1).filter(v=>v!=null);
+    return window.length>=2?parseFloat((window.reduce((s,v)=>s+v,0)/window.length).toFixed(1)):null;
+  });
+
   const grafDefs=[
     {id:'gcol-1',title:'Fêmeas que Desovaram',unit:'un',
       series:[
         {label:'Fêmeas desovadas',color:'#7c3aed',vals:data.map(d=>d.femeas)},
         {label:'Total fêmeas',color:'#d9b4fe',vals:data.map(()=>totalFemeasMatrizes||null),dashed:true},
+        {label:'Média móvel (4)',color:'#c4b5fd',vals:movingAvg(data.map(d=>d.femeas)),dashed:true,thin:true},
       ]},
     {id:'gcol-2',title:'Ovos Total',unit:'un',
-      series:[{label:'Ovos Total',color:'#2563eb',vals:data.map(d=>d.ovosTotal)}]},
+      series:[
+        {label:'Ovos Total',color:'#2563eb',vals:data.map(d=>d.ovosTotal)},
+        {label:'Média móvel (4)',color:'#93c5fd',vals:movingAvg(data.map(d=>d.ovosTotal)),dashed:true,thin:true},
+      ]},
     {id:'gcol-3',title:'% Ovos Gorados',unit:'%',
       series:[{label:'Gorados %',color:'#e53e3e',vals:data.map(d=>d.goradosPct)}]},
     {id:'gcol-4',title:'Ovos Finais (descontando gorados)',unit:'un',
-      series:[{label:'Ovos Finais',color:'#16a34a',vals:data.map(d=>d.ovosFinal)}]},
+      series:[
+        {label:'Ovos Finais',color:'#16a34a',vals:data.map(d=>d.ovosFinal)},
+        {label:'Média móvel (4)',color:'#86efac',vals:movingAvg(data.map(d=>d.ovosFinal)),dashed:true,thin:true},
+      ]},
   ];
 
   grafDefs.forEach(gd=>{
@@ -1147,28 +1176,59 @@ function renderColetaGraficos(){
       const pts=s.vals.map((v,i)=>v!=null?`${scaleX(i)},${scaleY(v)}`:null);
       let d2='';let first=true;
       pts.forEach((p,i)=>{if(p){d2+=(first?`M${p}`:`L${p}`);first=false;}else{first=true;}});
-      if(d2)paths+=`<path d="${d2}" fill="none" stroke="${s.color}" stroke-width="2" ${s.dashed?'stroke-dasharray="6,3"':''}/>`;
-      // Pontos e rótulos — só mostra rótulo se tiver espaço (max 1 a cada 30px)
-      const minSpacingPx=30;
-      let lastLabelX=-999;
-      pts.forEach((p,i)=>{
-        if(!p||s.vals[i]==null)return;
-        const cx=scaleX(i),cy=scaleY(s.vals[i]);
-        paths+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${s.color}"/>`;
-        if(cx-lastLabelX>=minSpacingPx){
-          const lbl=fNum(s.vals[i]);
-          paths+=`<text x="${cx.toFixed(1)}" y="${(cy-7).toFixed(1)}" text-anchor="middle" font-size="8" font-weight="700" fill="${s.color}">${lbl}</text>`;
-          lastLabelX=cx;
-        }
-      });
+      if(!d2)return;
+      if(s.thin){
+        // Média móvel: linha fina, discreta, sem pontos
+        paths+=`<path d="${d2}" fill="none" stroke="${s.color}" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.7" pointer-events="none"/>`;
+      } else {
+        paths+=`<path d="${d2}" fill="none" stroke="${s.color}" stroke-width="2" ${s.dashed?'stroke-dasharray="6,3"':''}/>`;
+        // Pontos com área hover invisível
+        pts.forEach((p,i)=>{
+          if(!p||s.vals[i]==null)return;
+          const cx=scaleX(i),cy=scaleY(s.vals[i]);
+          paths+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="transparent" data-i="${i}" data-v="${s.vals[i]}" data-color="${s.color}" class="gcol-dot"/>`;
+          paths+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${s.color}" pointer-events="none"/>`;
+        });
+      }
     });
 
-    // Legenda
     const legenda=gd.series.map(s=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:${s.color};"></span>${s.label}</span>`).join('');
 
-    card.querySelector(`#${gd.id}`).innerHTML=`
+    const wrapper=document.createElement('div');
+    wrapper.style.cssText='position:relative;';
+    wrapper.innerHTML=`
       <div style="margin-bottom:6px;">${legenda}</div>
       <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;">${paths}</svg>`;
+
+    // Tooltip
+    const tip=document.createElement('div');
+    tip.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+    wrapper.appendChild(tip);
+
+    // Eventos nos pontos
+    wrapper.addEventListener('mouseover',function(e){
+      const dot=e.target.closest('.gcol-dot');
+      if(!dot)return;
+      const i=parseInt(dot.getAttribute('data-i'));
+      const v=parseFloat(dot.getAttribute('data-v'));
+      const color=dot.getAttribute('data-color');
+      tip.style.display='block';
+      tip.style.borderLeft=`3px solid ${color}`;
+      tip.textContent=`${dates[i].slice(5)} · ${fNum(v)} ${gd.unit}`;
+      const rect=wrapper.querySelector('svg').getBoundingClientRect();
+      const dotRect=dot.getBoundingClientRect();
+      const x=(dotRect.left-rect.left+dotRect.width/2);
+      const y=(dotRect.top-rect.top);
+      tip.style.left=`${Math.min(x,rect.width-120)}px`;
+      tip.style.top=`${y-36}px`;
+    });
+    wrapper.addEventListener('mouseout',function(e){
+      if(!e.target.closest('.gcol-dot'))return;
+      tip.style.display='none';
+    });
+    wrapper.addEventListener('mouseleave',()=>tip.style.display='none');
+
+    card.querySelector(`#${gd.id}`).appendChild(wrapper);
   });
 }
 
@@ -2125,6 +2185,7 @@ function showView(v){
   document.getElementById('view-'+v)?.classList.add('active');
   document.querySelectorAll('.bottom-nav .nav-item').forEach(el=>el.classList.remove('active'));
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
+  if(v==='manejos'){/* em construção */}
   if(v==='history')renderGlobalHistory();
   if(v==='tanques')renderTankView();
   if(v==='settings')renderSettings();
@@ -4698,20 +4759,15 @@ function makeSVGChart(title,unit,labels,vals,color){
   const toY=v=>pad.t+ch-(((v-mn)/range)*ch);
   const toX=i=>pad.l+(i/Math.max(vals.length-1,1))*cw;
 
-  let pathD='',dots='',xlabels='',ylabels='',values='';
+  let pathD='',dots='',xlabels='',ylabels='';
   let started=false;
-  let lastLabelX=-999;
-  const minSpacingPx=cw/Math.max(vals.filter(v=>v!==null).length,1)<25?35:20;
   vals.forEach((v,i)=>{
     if(v===null)return;
     const x=toX(i),y=toY(v);
     pathD+=(started?`L${x.toFixed(1)},${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`);
     started=true;
-    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}"/>`;
-    if(x-lastLabelX>=minSpacingPx){
-      values+=`<text x="${x.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="8" fill="#0d1f35" font-weight="600">${fNum(v)}</text>`;
-      lastLabelX=x;
-    }
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="8" fill="transparent" data-i="${i}" class="gcol-dot"/>`;
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}" pointer-events="none"/>`;
     xlabels+=`<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${labels[i].slice(0,5)}</text>`;
   });
   for(let i=0;i<=4;i++){
@@ -4724,7 +4780,7 @@ function makeSVGChart(title,unit,labels,vals,color){
   const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
     ${ylabels}
     <path d="${pathD}" stroke="${color}" stroke-width="2.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
-    ${dots}${values}${xlabels}
+    ${dots}${xlabels}
   </svg>`;
 
   const block=document.createElement('div');
@@ -4732,40 +4788,25 @@ function makeSVGChart(title,unit,labels,vals,color){
   block.style.position='relative';
   block.innerHTML=`<div class="chart-title">${title}</div><div class="chart-sub">${unit}</div><div style="overflow-x:auto;position:relative;">${svg}</div>`;
 
-  // Tooltip overlay
   const tooltip=document.createElement('div');
-  tooltip.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;pointer-events:none;display:none;white-space:nowrap;z-index:50;';
+  tooltip.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.2);border-left:3px solid '+color+';';
   block.appendChild(tooltip);
 
-  // Pontos interativos via JS
-  block.addEventListener('mousemove',function(e){
+  block.addEventListener('mouseover',function(e){
+    const dot=e.target.closest('.gcol-dot');
+    if(!dot)return;
+    const i=parseInt(dot.getAttribute('data-i'));
+    if(vals[i]==null)return;
+    tooltip.style.display='block';
+    tooltip.textContent=`${labels[i]} · ${fNum(vals[i])} ${unit}`;
     const svgEl=block.querySelector('svg');
-    if(!svgEl)return;
     const rect=svgEl.getBoundingClientRect();
-    const mx=e.clientX-rect.left;
-    const svgW=rect.width;
-    const n=vals.filter(v=>v!==null).length;
-    if(!n)return;
-    // Encontra o ponto mais próximo
-    let bestI=-1,bestDist=30;
-    vals.forEach((v,i)=>{
-      if(v===null)return;
-      const px=toX(i)*(svgW/W);
-      const dist=Math.abs(mx-px);
-      if(dist<bestDist){bestDist=dist;bestI=i;}
-    });
-    if(bestI>=0&&vals[bestI]!=null){
-      tooltip.style.display='block';
-      tooltip.textContent=`${labels[bestI]}: ${fNum(vals[bestI])} ${unit}`;
-      const px=toX(bestI)*(svgW/W);
-      tooltip.style.left=(px+8)+'px';
-      tooltip.style.top='24px';
-    } else {
-      tooltip.style.display='none';
-    }
+    const dr=dot.getBoundingClientRect();
+    tooltip.style.left=`${Math.min(dr.left-rect.left+dr.width/2,rect.width-140)}px`;
+    tooltip.style.top=`${dr.top-rect.top-36}px`;
   });
+  block.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot'))return;tooltip.style.display='none';});
   block.addEventListener('mouseleave',()=>tooltip.style.display='none');
-
   return block;
 }
 
@@ -4787,7 +4828,8 @@ function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,lab
       const x=toX(i),y=toY(v);
       d+=(started?`L${x.toFixed(1)},${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`);
       started=true;
-      dotsStr+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="${color}"/>`;
+      dotsStr+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="8" fill="transparent" data-i="${i}" data-color="${color}" class="gcol-dot"/>`;
+      dotsStr+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="${color}" pointer-events="none"/>`;
     });
     return `<path d="${d}" stroke="${color}" stroke-width="2" fill="none" stroke-linejoin="round"/>${dotsStr}`;
   }
@@ -4813,7 +4855,29 @@ function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,lab
 
   const block=document.createElement('div');
   block.className='chart-block';
-  block.innerHTML=`<div class="chart-title">${title}</div><div class="chart-sub">${unit}</div>${legenda}<div style="overflow-x:auto;">${svg}</div>`;
+  block.style.position='relative';
+  block.innerHTML=`<div class="chart-title">${title}</div><div class="chart-sub">${unit}</div>${legenda}<div style="overflow-x:auto;position:relative;">${svg}</div>`;
+
+  const tooltip=document.createElement('div');
+  tooltip.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+  block.appendChild(tooltip);
+
+  block.addEventListener('mouseover',function(e){
+    const dot=e.target.closest('.gcol-dot');if(!dot)return;
+    const i=parseInt(dot.getAttribute('data-i'));
+    const color=dot.getAttribute('data-color');
+    const v1=vals1[i],v2=vals2[i];
+    tooltip.style.display='block';
+    tooltip.style.borderLeft=`3px solid ${color}`;
+    tooltip.innerHTML=`${labels[i]}<br><span style="color:${color1};">● ${label1}: ${v1!=null?fNum(v1)+' '+unit:'—'}</span><br><span style="color:${color2};">● ${label2}: ${v2!=null?fNum(v2)+' '+unit:'—'}</span>`;
+    const svgEl=block.querySelector('svg');
+    const rect=svgEl.getBoundingClientRect();
+    const dr=dot.getBoundingClientRect();
+    tooltip.style.left=`${Math.min(dr.left-rect.left+dr.width/2,rect.width-160)}px`;
+    tooltip.style.top=`${dr.top-rect.top-56}px`;
+  });
+  block.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot'))return;tooltip.style.display='none';});
+  block.addEventListener('mouseleave',()=>tooltip.style.display='none');
   return block;
 }
 
