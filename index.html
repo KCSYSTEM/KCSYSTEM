@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.12</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.13</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1115,7 +1115,7 @@ function renderColetaGraficos(){
     cont.appendChild(card);
 
     // SVG simples
-    const W=Math.min(cont.clientWidth-60||340,600),H=160;
+    const W=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),H=160;
     const pad={t:10,b:30,l:50,r:10};
     const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
     const n=dates.length;
@@ -1170,6 +1170,24 @@ function renderColetaGraficos(){
       <div style="margin-bottom:6px;">${legenda}</div>
       <svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;">${paths}</svg>`;
   });
+}
+
+async function deleteColetaLote(lote){
+  if(!confirm(`Deletar todos os registros do lote "${lote}"?\n\nEsta ação não pode ser desfeita.`))return;
+  const toDelete=records.filter(r=>r.lote===lote);
+  if(!toDelete.length){showToast('Nenhum registro encontrado','error');return;}
+  showToast('Deletando...','ok');
+  let erros=0;
+  for(const r of toDelete){
+    try{
+      await sbDelete('records',r.id);
+      records=records.filter(x=>x.id!==r.id);
+    }catch(e){erros++;}
+  }
+  localStorage.setItem('kc_records',JSON.stringify(records));
+  if(erros)showToast(`${toDelete.length-erros} deletados, ${erros} erros`,'error');
+  else showToast(`Lote "${lote}" deletado ✓`,'ok');
+  renderColetaPainel();
 }
 
 function renderColetaHistorico(){
@@ -1296,7 +1314,7 @@ function renderColetaPainel(){
 
     const row=document.createElement('div');
     row.id=rowId;
-    row.style.cssText=`display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px;gap:0;cursor:pointer;${!isLast?'border-bottom:1px solid var(--border);':''}background:var(--bg);transition:background 0.1s;overflow-x:auto;`;
+    row.style.cssText=`display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px 36px;gap:0;cursor:pointer;${!isLast?'border-bottom:1px solid var(--border);':''}background:var(--bg);transition:background 0.1s;overflow-x:auto;`;
     row.onclick=()=>toggleColetaDetail(detailId,rowId);
     row.innerHTML=`
       <div style="padding:10px 6px;display:flex;align-items:center;justify-content:center;">
@@ -1311,7 +1329,12 @@ function renderColetaPainel(){
       ${cell(l.ovosPorMl!=null?fNum(l.ovosPorMl):null)}
       ${cell(l.ovosTotal!=null?fNum(l.ovosTotal):null)}
       ${cell(l.ovosGorados!=null?l.ovosGorados+'%':null,'#e53e3e')}
-      ${cell(l.ovosFinal!=null?fNum(l.ovosFinal):null,'var(--accent)')}`;
+      ${cell(l.ovosFinal!=null?fNum(l.ovosFinal):null,'var(--accent)')}
+      <div style="display:flex;align-items:center;justify-content:center;padding:4px;">
+        <button onclick="event.stopPropagation();deleteColetaLote('${l.lote}')"
+          style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--danger);padding:4px;border-radius:6px;"
+          title="Deletar lote ${l.lote}">🗑</button>
+      </div>`;
     wrapper.appendChild(row);
 
     // Detalhe por tanque+hapa
@@ -1624,7 +1647,7 @@ function buildMatrizCard(t){
     const x=pad+gap+col*(hapaW+gap);
     const y=pad+40+gap+row*(hapaH+gap);
     const h=i+1;
-    const lastR=lastRecHapa(t.id,h);
+    const lastR=lastRecHapaMatrizes(t.id,h);
     const qty=lastR?.qty??null;
     const machos=lastR?.machos??null;
     const femeas=lastR?.femeas??null;
@@ -1655,7 +1678,7 @@ function buildMatrizCard(t){
   let hasMachosData=false,hasFemeasData=false;
   hapaNames.forEach((_,i)=>{
     const h=i+1;
-    const lr=lastRecHapa(t.id,h);
+    const lr=lastRecHapaMatrizes(t.id,h);
     if(lr?.machos!=null){totalMachos+=lr.machos;hasMachosData=true;}
     if(lr?.femeas!=null){totalFemeas+=lr.femeas;hasFemeasData=true;}
     if(lr?.qty)totalQty+=lr.qty;
@@ -2187,6 +2210,19 @@ function lastRecHapa(id,hapa){
   // Prefere o registro mais recente que tenha pelo menos um campo com dado
   const FIELDS=['qty','bio','machos','femeas','temp','o2','amonia','ph','racaoG','racaoIdealG'];
   const withData=off.filter(r=>FIELDS.some(k=>r[k]!=null));
+  if(withData.length)return withData[withData.length-1];
+  return off[off.length-1];
+}
+
+// Versão específica para matrizes: prioriza machos/femeas/qty
+function lastRecHapaMatrizes(id,hapa){
+  if(!hapa)return lastRec(id);
+  const off=getOfficialRecords(id,hapa);
+  if(!off.length)return null;
+  const MF_FIELDS=['machos','femeas','qty'];
+  const withMF=off.filter(r=>MF_FIELDS.some(k=>r[k]!=null));
+  if(withMF.length)return withMF[withMF.length-1];
+  const withData=off.filter(r=>['bio','temp','o2'].some(k=>r[k]!=null));
   if(withData.length)return withData[withData.length-1];
   return off[off.length-1];
 }
