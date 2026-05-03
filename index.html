@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.15</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.16</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -4828,6 +4828,7 @@ function makeSVGChart(title,unit,labels,vals,color){
 
 function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,label2){
   const W=700,H=180;
+  const nL=labels.length,lStep=Math.max(1,Math.ceil(nL/8)),rotL=nL>20;
   const pad={t:20,r:10,b:rotL?62:36,l:50};
   const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
   const all=[...vals1,...vals2].filter(v=>v!==null);
@@ -4858,7 +4859,6 @@ function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,lab
     ylabels+=`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
   }
   let xlabels='';
-  const nL=labels.length,lStep=Math.max(1,Math.ceil(nL/8)),rotL=nL>20;
   labels.forEach((l,i)=>{
     if(i%lStep!==0&&i!==nL-1)return;
     const x=toX(i).toFixed(1);
