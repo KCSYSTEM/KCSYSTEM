@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.19</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.20</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -493,14 +493,14 @@ canvas.chart-canvas{display:block;}
     <!-- HISTÓRICO -->
     <!-- MANEJOS -->
     <div id="view-manejos" class="view">
-      <div class="view-header">
-        <div><div class="view-title">Manejos</div><div class="view-sub">Transferências e movimentações de lotes</div></div>
+      <div class="view-header" style="flex-wrap:wrap;gap:8px;">
+        <div><div class="view-title">Manejos</div><div class="view-sub">Pipeline de produção de alevinos</div></div>
+        <button onclick="openManejoForm()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Nova Fase</button>
       </div>
-      <div style="padding:40px 20px;text-align:center;color:var(--text3);">
-        <div style="font-size:40px;margin-bottom:12px;">🔄</div>
-        <div style="font-size:15px;font-weight:700;color:var(--text2);">Em construção</div>
-        <div style="font-size:13px;margin-top:6px;">Em breve: transferências de lotes entre tanques.</div>
-      </div>
+      <!-- Resumo geral -->
+      <div id="manejos-resumo" style="padding:0 13px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"></div>
+      <!-- Pipeline -->
+      <div id="manejos-pipeline" style="padding:0 13px 80px;display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
     <!-- HISTÓRICO -->
@@ -1198,7 +1198,7 @@ function renderColetaGraficos(){
       if(rotate){
         paths+=`<text transform="rotate(-45,${x},${H-pad.b+12})" x="${x}" y="${H-pad.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${d}</text>`;
       } else {
-        paths+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d.slice(5)}</text>`;
+        paths+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d}</text>`;
       }
     });
 
@@ -1244,7 +1244,7 @@ function renderColetaGraficos(){
       const color=dot.getAttribute('data-color');
       tip.style.display='block';
       tip.style.borderLeft=`3px solid ${color}`;
-      tip.textContent=`${dates[i].slice(5)} · ${fNum(v)} ${gd.unit}`;
+      tip.textContent=`${dates[i]} · ${fNum(v)} ${gd.unit}`;
       const rect=wrapper.querySelector('svg').getBoundingClientRect();
       const dotRect=dot.getBoundingClientRect();
       const x=(dotRect.left-rect.left+dotRect.width/2);
@@ -2018,6 +2018,12 @@ async function load(){
     }
   }catch(e){console.warn('load racoes error',e);}
 
+  try{
+    // 4. Manejos do Supabase
+    const sbMan=await sbGet('manejos','select=data&order=timestamp.asc');
+    if(sbMan&&sbMan.length) manejos=sbMan.map(r=>r.data).filter(Boolean);
+  }catch(e){console.warn('load manejos error',e);}
+
   // 4. Remove fantasmas e garante tanques dos grupos
   const validIds=new Set();
   GROUPS.forEach(g=>g.tanks.forEach(td=>validIds.add('tank_'+g.id+'_'+td.num)));
@@ -2215,7 +2221,7 @@ function showView(v){
   document.getElementById('view-'+v)?.classList.add('active');
   document.querySelectorAll('.bottom-nav .nav-item').forEach(el=>el.classList.remove('active'));
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
-  if(v==='manejos'){/* em construção */}
+  if(v==='manejos')renderManejos();
   if(v==='history')renderGlobalHistory();
   if(v==='tanques')renderTankView();
   if(v==='settings')renderSettings();
@@ -4974,6 +4980,410 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('tank-sheet')?.addEventListener('touchstart',e=>{_ty=e.touches[0].clientY;},{passive:true});
   document.getElementById('tank-sheet')?.addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-_ty>80)closeSheet();},{passive:true});
 });
+
+// ═══════════════════════════════════════════════════════
+// MÓDULO MANEJOS
+// ═══════════════════════════════════════════════════════
+
+let manejos = []; // carregado do Supabase
+
+const FASES = {
+  larva:        { label:'Larva',         icon:'🥚', cor:'#7c3aed', unidade:'larvas',        prev:'coleta' },
+  povoamento:   { label:'Povoamento',    icon:'🐟', cor:'#2563eb', unidade:'microalevinos',  prev:'larva' },
+  transferencia:{ label:'Transferência', icon:'🚛', cor:'#16a34a', unidade:'alevinos',       prev:'povoamento' },
+};
+
+// ─── Load / Save ────────────────────────────────────────
+async function loadManejos(){
+  try{
+    const res = await sbGet('manejos','select=data&order=timestamp.asc');
+    if(res&&res.length) manejos = res.map(r=>r.data).filter(Boolean);
+  }catch(e){ console.warn('loadManejos',e); }
+}
+
+async function saveManejo(m){
+  await sbUpsert('manejos',[{id:m.id, data:m}]);
+  // Atualiza local
+  const idx = manejos.findIndex(x=>x.id===m.id);
+  if(idx>=0) manejos[idx]=m; else manejos.push(m);
+}
+
+async function deleteManejo(id){
+  await sbDelete('manejos',id);
+  manejos = manejos.filter(m=>m.id!==id);
+  renderManejos();
+}
+
+// ─── Render principal ───────────────────────────────────
+async function renderManejos(){
+  if(!manejos.length) await loadManejos();
+
+  // ── Resumo geral
+  const resumoEl = document.getElementById('manejos-resumo');
+  const pipeline = buildPipeline();
+
+  let totalOvos=0, totalAlevinos=0;
+  Object.values(pipeline).forEach(p=>{
+    const coleta = p.fases.find(f=>f.fase==='coleta');
+    const transf  = p.fases.filter(f=>f.fase==='transferencia');
+    if(coleta) totalOvos += coleta.qtd_total||0;
+    transf.forEach(t=>{ totalAlevinos += t.qtd_total||0; });
+  });
+
+  const efic = totalOvos ? Math.round(totalAlevinos/totalOvos*100) : 0;
+  resumoEl.innerHTML = `
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Total Ovos</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text);">${fNum(totalOvos)}</div>
+    </div>
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Total Alevinos</div>
+      <div style="font-size:18px;font-weight:800;color:#16a34a;">${fNum(totalAlevinos)}</div>
+    </div>
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Eficiência Geral</div>
+      <div style="font-size:18px;font-weight:800;color:${efic>=40?'#16a34a':efic>=25?'#d97706':'#dc2626'}">${efic}%</div>
+    </div>`;
+
+  // ── Pipeline por lote de origem
+  const pipelineEl = document.getElementById('manejos-pipeline');
+  const lotes = Object.values(pipeline).sort((a,b)=>b.data_inicio.localeCompare(a.data_inicio));
+
+  if(!lotes.length){
+    pipelineEl.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text3);">
+      <div style="font-size:36px;margin-bottom:10px;">🔄</div>
+      <div style="font-weight:700;color:var(--text2);">Nenhum manejo registrado</div>
+      <div style="font-size:13px;margin-top:6px;">Clique em "+ Nova Fase" para começar.</div>
+    </div>`;
+    return;
+  }
+
+  pipelineEl.innerHTML = lotes.map(p=>renderPipelineCard(p)).join('');
+}
+
+// ─── Constrói o pipeline por lote Coleta ────────────────
+function buildPipeline(){
+  // Agrupa todos os manejos por lote de coleta raiz
+  const coletaLotes = {}; // loteId_coleta → info
+
+  // Primeiro: mapeia lotes coleta a partir do módulo Coleta
+  const coletaRecs = records.filter(r=>!r.overridden&&r.lote&&r.desovaFemeas!=null);
+  const byLoteColeta = {};
+  coletaRecs.forEach(r=>{ if(!byLoteColeta[r.lote]) byLoteColeta[r.lote]={lote:r.lote,ovos:0,datas:[]}; });
+
+  // Calcula ovos totais por lote coleta
+  const coletaPanel = buildColetaByLote();
+  Object.entries(coletaPanel).forEach(([lote,info])=>{
+    byLoteColeta[lote] = { lote, ovos: info.ovosTotal||0, data: info.lastDate||'' };
+  });
+
+  // Pipeline de manejos
+  const pipeline = {};
+  Object.keys(byLoteColeta).forEach(lote=>{
+    if(!byLoteColeta[lote].ovos) return;
+    pipeline[lote] = {
+      lote_coleta: lote,
+      data_inicio: byLoteColeta[lote].data||'',
+      ovos: byLoteColeta[lote].ovos||0,
+      fases: [{fase:'coleta', lote_id:lote, qtd_total: byLoteColeta[lote].ovos, data: byLoteColeta[lote].data||''}],
+    };
+  });
+
+  // Adiciona fases de manejos
+  manejos.forEach(m=>{
+    const roots = getRootLotes(m.id);
+    roots.forEach(rootLote=>{
+      if(!pipeline[rootLote]) return;
+      const existing = pipeline[rootLote].fases.find(f=>f.id===m.id);
+      if(!existing) pipeline[rootLote].fases.push(m);
+    });
+  });
+
+  return pipeline;
+}
+
+function buildColetaByLote(){
+  const byLote = {};
+  records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.ovosPorMl!=null)).forEach(r=>{
+    if(!byLote[r.lote]) byLote[r.lote]={ovosTotal:0, lastDate:''};
+    const ovos = r.ovosPorMl!=null&&r.desovaML!=null ?
+      Math.round(r.ovosPorMl*r.desovaML*(1-(r.ovosGorados||0)/100)) : 0;
+    byLote[r.lote].ovosTotal += ovos;
+    if(r.date>byLote[r.lote].lastDate) byLote[r.lote].lastDate=r.date;
+  });
+  return byLote;
+}
+
+function getRootLotes(manejoId){
+  // Encontra o manejo e segue a cadeia de origens até a coleta
+  const m = manejos.find(x=>x.id===manejoId);
+  if(!m||!m.origens||!m.origens.length) return [];
+  const roots = [];
+  m.origens.forEach(o=>{
+    const prevManejo = manejos.find(x=>x.lote_id===o.lote_id);
+    if(!prevManejo){ roots.push(o.lote_id); } // é um lote Coleta
+    else{ roots.push(...getRootLotes(prevManejo.id)); }
+  });
+  return [...new Set(roots)];
+}
+
+// ─── Render card pipeline ───────────────────────────────
+function renderPipelineCard(p){
+  const fasesOrdem = ['coleta','larva','povoamento','transferencia'];
+  const fasesCores = {coleta:'#7c3aed',larva:'#06b6d4',povoamento:'#2563eb',transferencia:'#16a34a'};
+  const fasesIcons = {coleta:'🥚',larva:'🦐',povoamento:'🐟',transferencia:'🚛'};
+
+  // Ordena as fases
+  const fases = p.fases.sort((a,b)=>fasesOrdem.indexOf(a.fase)-fasesOrdem.indexOf(b.fase));
+  const coleta = fases.find(f=>f.fase==='coleta');
+  const transfs = fases.filter(f=>f.fase==='transferencia');
+  const totalAlevinos = transfs.reduce((s,t)=>s+(t.qtd_total||0),0);
+  const efic = coleta?.qtd_total ? Math.round(totalAlevinos/coleta.qtd_total*100) : null;
+
+  // Próxima fase disponível
+  const fasesExistentes = new Set(fases.map(f=>f.fase));
+  const proximaFase = ['larva','povoamento','transferencia'].find(f=>!fasesExistentes.has(f));
+
+  // Fases únicas (pode ter múltiplos de larva/pov/transf)
+  const fasesRender = [];
+  fasesOrdem.forEach(fase=>{
+    const itens = fases.filter(f=>f.fase===fase);
+    if(itens.length) fasesRender.push({fase, itens});
+  });
+
+  const etapas = fasesRender.map(({fase,itens})=>{
+    const cor = fasesCores[fase];
+    const icon = fasesIcons[fase];
+    const qtdTotal = itens.reduce((s,i)=>s+(i.qtd_total||0),0);
+    const prevFase = fasesOrdem[fasesOrdem.indexOf(fase)-1];
+    const prevQtd = prevFase ? fases.filter(f=>f.fase===prevFase).reduce((s,i)=>s+(i.qtd_total||0),0) : null;
+    const pct = prevQtd ? Math.round(qtdTotal/prevQtd*100) : null;
+    const destinos = itens.flatMap(i=>(i.destinos||[]).map(d=>d.tanque_id?tanks.find(t=>t.id===d.tanque_id)?.name||d.tanque_id:''));
+    const destinosStr = [...new Set(destinos.filter(Boolean))].join(', ');
+    const dataStr = itens.map(i=>i.data).sort().pop()?.slice(5)||'';
+
+    return `<div style="text-align:center;flex:1;min-width:80px;">
+      <div style="font-size:18px;">${icon}</div>
+      <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;margin:2px 0;">${FASES[fase]?.label||fase}</div>
+      <div style="font-size:13px;font-weight:800;color:var(--text);">${fNum(qtdTotal)}</div>
+      ${pct!=null?`<div style="font-size:10px;color:${pct>=70?'#16a34a':pct>=50?'#d97706':'#dc2626'};font-weight:700;">${pct}%</div>`:''}
+      ${destinosStr?`<div style="font-size:9px;color:var(--text3);margin-top:2px;">${destinosStr}</div>`:''}
+      ${dataStr?`<div style="font-size:9px;color:var(--text3);">${dataStr}</div>`:''}
+    </div>`;
+  }).join(`<div style="font-size:16px;color:var(--border2);align-self:center;padding-top:4px;">›</div>`);
+
+  const adminButtons = isAdmin() ? `
+    <div style="display:flex;gap:6px;margin-top:8px;">
+      ${proximaFase?`<button onclick="openManejoForm('${p.lote_coleta}','${proximaFase}')" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;cursor:pointer;">+ ${FASES[proximaFase]?.label||proximaFase}</button>`:'<div style="flex:1;font-size:11px;color:#16a34a;text-align:center;padding:7px;">✅ Pipeline completo</div>'}
+    </div>` : '';
+
+  return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div>
+        <span style="font-size:13px;font-weight:800;color:var(--text);">📦 ${p.lote_coleta}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px;">${p.data_inicio?.slice(0,10)||''}</span>
+      </div>
+      ${efic!=null?`<span style="font-size:12px;font-weight:700;background:${efic>=40?'#f0fdf4':efic>=25?'#fffbeb':'#fef2f2'};color:${efic>=40?'#16a34a':efic>=25?'#d97706':'#dc2626'};padding:3px 8px;border-radius:99px;">★ ${efic}% geral</span>`:''}
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:4px;overflow-x:auto;">
+      ${etapas}
+    </div>
+    ${adminButtons}
+  </div>`;
+}
+
+// ─── Formulário Nova Fase ───────────────────────────────
+function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
+  // Coleta todos os lotes disponíveis como origem
+  const lotesColeta = [...new Set(records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote))].sort().reverse();
+  const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
+  const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
+
+  const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===faseSugerida?'selected':''}>${v.icon} ${v.label}</option>`).join('');
+  const origensOpts = todosLotesOrigem.map(l=>`<option value="${l}" ${l===loteOrigemSugerido?'selected':''}>${l}</option>`).join('');
+  const tankOpts = tanks.filter(t=>!t.empty).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+
+  const html=`
+  <div id="manejo-overlay" onclick="if(event.target===this)closeManejoForm()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--surface);border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;padding:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:800;color:var(--text);">🔄 Registrar Fase</div>
+      <button onclick="closeManejoForm()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);">×</button>
+    </div>
+
+    <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">FASE</label>
+    <select id="mf-fase" onchange="updateManejoForm()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;">
+      ${fasesOpts}
+    </select>
+
+    <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">LOTE(S) DE ORIGEM</label>
+    <div id="mf-origens-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
+    <button onclick="addOrigemRow()" style="background:none;border:1.5px dashed var(--border2);border-radius:8px;padding:7px;width:100%;font-size:12px;color:var(--accent);cursor:pointer;margin-bottom:12px;">+ Adicionar origem</button>
+
+    <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">ID DO NOVO LOTE</label>
+    <input id="mf-lote-id" placeholder="Ex: L20250110" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;">
+
+    <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">DATA</label>
+    <input type="date" id="mf-data" value="${new Date().toISOString().split('T')[0]}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;">
+
+    <div id="mf-destinos-section">
+      <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">TANQUE(S) DESTINO</label>
+      <div id="mf-destinos-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
+      <button onclick="addDestinoRow()" style="background:none;border:1.5px dashed var(--border2);border-radius:8px;padding:7px;width:100%;font-size:12px;color:var(--accent);cursor:pointer;margin-bottom:12px;">+ Adicionar tanque destino</button>
+    </div>
+
+    <div id="mf-tamanhos-section" style="display:none;">
+      <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">DISTRIBUIÇÃO POR TAMANHO</label>
+      <div id="mf-tamanhos-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
+      <button onclick="addTamanhoRow()" style="background:none;border:1.5px dashed var(--border2);border-radius:8px;padding:7px;width:100%;font-size:12px;color:var(--accent);cursor:pointer;margin-bottom:12px;">+ Adicionar faixa de tamanho</button>
+    </div>
+
+    <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">OBSERVAÇÕES</label>
+    <textarea id="mf-obs" rows="2" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);resize:none;margin-bottom:16px;" placeholder="Opcional..."></textarea>
+
+    <div id="mf-preview" style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px;font-size:12px;color:#166534;margin-bottom:14px;display:none;"></div>
+
+    <button onclick="saveNovaFase()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+  </div></div>`;
+
+  document.body.insertAdjacentHTML('beforeend',html);
+
+  // Adiciona primeira origem sugerida
+  addOrigemRow(loteOrigemSugerido);
+  addDestinoRow();
+  updateManejoForm();
+
+  // Auto-gera lote_id
+  const fase = document.getElementById('mf-fase').value;
+  const prefix = {larva:'L',povoamento:'P',transferencia:'T'}[fase]||'M';
+  document.getElementById('mf-lote-id').value = prefix + new Date().toISOString().slice(0,10).replace(/-/g,'');
+}
+
+function closeManejoForm(){
+  document.getElementById('manejo-overlay')?.remove();
+}
+
+function updateManejoForm(){
+  const fase = document.getElementById('mf-fase')?.value;
+  const prefix = {larva:'L',povoamento:'P',transferencia:'T'}[fase]||'M';
+  const loteEl = document.getElementById('mf-lote-id');
+  if(loteEl && !loteEl.dataset.edited){
+    loteEl.value = prefix + new Date().toISOString().slice(0,10).replace(/-/g,'');
+  }
+  // Mostra seção de tamanhos só na transferência
+  const tamSection = document.getElementById('mf-tamanhos-section');
+  const destSection = document.getElementById('mf-destinos-section');
+  if(tamSection) tamSection.style.display = fase==='transferencia' ? 'block' : 'none';
+  // Na transferência, adiciona uma linha de tamanho se não tiver
+  if(fase==='transferencia'){
+    const lista = document.getElementById('mf-tamanhos-list');
+    if(lista && !lista.children.length) addTamanhoRow();
+  }
+}
+
+function addOrigemRow(loteDefault=''){
+  const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
+  const lotesColeta = [...new Set(records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote))].sort().reverse();
+  const todos = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
+  const opts = todos.map(l=>`<option value="${l}" ${l===loteDefault?'selected':''}>${l}</option>`).join('');
+  const id = 'origem_'+Date.now();
+  const row = document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;align-items:center;';
+  row.innerHTML=`
+    <select id="${id}_lote" style="flex:2;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+      ${opts}
+    </select>
+    <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
+  document.getElementById('mf-origens-list').appendChild(row);
+}
+
+function addDestinoRow(){
+  const tankOpts = tanks.filter(t=>!t.empty).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const id = 'dest_'+Date.now();
+  const row = document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;align-items:center;';
+  row.innerHTML=`
+    <select id="${id}_tank" style="flex:2;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+      ${tankOpts}
+    </select>
+    <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
+  document.getElementById('mf-destinos-list').appendChild(row);
+}
+
+function addTamanhoRow(){
+  const tankOpts = tanks.filter(t=>t.groupId==='geo-elevada'&&!t.empty).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const id = 'tam_'+Date.now();
+  const row = document.createElement('div');
+  row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
+  row.innerHTML=`
+    <select id="${id}_tank" style="flex:2;min-width:100px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+      ${tankOpts}
+    </select>
+    <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" style="flex:1;min-width:70px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <input type="number" id="${id}_peso" placeholder="Peso (g)" min="0" step="0.1" style="flex:1;min-width:80px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
+  document.getElementById('mf-tamanhos-list').appendChild(row);
+}
+
+async function saveNovaFase(){
+  const fase = document.getElementById('mf-fase').value;
+  const loteId = document.getElementById('mf-lote-id').value.trim();
+  const data = document.getElementById('mf-data').value;
+  const obs = document.getElementById('mf-obs').value.trim();
+
+  if(!loteId||!data){ showToast('Preencha o ID do lote e a data','error'); return; }
+
+  // Origens
+  const origens = [];
+  document.getElementById('mf-origens-list').querySelectorAll('div').forEach(row=>{
+    const loteEl = row.querySelector('[id$="_lote"]');
+    const qtdEl  = row.querySelector('[id$="_qtd"]');
+    if(loteEl&&qtdEl&&qtdEl.value){ origens.push({lote_id:loteEl.value, qtd:parseFloat(qtdEl.value)||0}); }
+  });
+  if(!origens.length){ showToast('Adicione pelo menos uma origem','error'); return; }
+
+  // Destinos
+  const destinos = [];
+  document.getElementById('mf-destinos-list')?.querySelectorAll('div').forEach(row=>{
+    const tankEl = row.querySelector('[id$="_tank"]');
+    const qtdEl  = row.querySelector('[id$="_qtd"]');
+    if(tankEl&&qtdEl&&qtdEl.value){ destinos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0}); }
+  });
+
+  // Tamanhos (transferência)
+  const tamanhos = [];
+  document.getElementById('mf-tamanhos-list')?.querySelectorAll('div').forEach(row=>{
+    const tankEl = row.querySelector('[id$="_tank"]');
+    const qtdEl  = row.querySelector('[id$="_qtd"]');
+    const pesoEl = row.querySelector('[id$="_peso"]');
+    if(tankEl&&qtdEl&&qtdEl.value){ tamanhos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0, peso_g:parseFloat(pesoEl?.value)||null}); }
+  });
+
+  const qtdTotal = origens.reduce((s,o)=>s+o.qtd,0);
+  // Para transferência, soma dos tamanhos
+  const qtdTransf = tamanhos.reduce((s,t)=>s+t.qtd,0);
+
+  const m = {
+    id: 'manejo_'+Date.now(),
+    fase, lote_id: loteId, data,
+    origens,
+    qtd_total: fase==='transferencia' ? qtdTransf||qtdTotal : qtdTotal,
+    destinos: fase==='transferencia' ? tamanhos : destinos,
+    obs,
+    username: currentUser?.username||'',
+    timestamp: new Date().toISOString(),
+  };
+
+  showToast('Salvando...','ok');
+  await saveManejo(m);
+  closeManejoForm();
+  showToast(`Fase ${FASES[fase]?.label} registrada ✓`,'ok');
+  renderManejos();
+}
+
+
 </script>
 </body>
 </html>
