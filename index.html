@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.17</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.19</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -939,15 +939,13 @@ function loadLimits(){try{const l=JSON.parse(localStorage.getItem('kc_limits'));
 
 // Salva um registro individual no Supabase
 async function saveRecord_sb(rec){
-  // Antes de salvar, verifica se existe registro anterior para (tankId, date, hapa)
-  // Se sim, arquiva em records_history
+  // Antes de salvar, arquiva registros anteriores do mesmo (tankId, date, hapa)
   try{
     const existing=records.filter(r=>
       r.tankId===rec.tankId &&
       r.date===rec.date &&
       r.hapa==rec.hapa &&
-      r.id!==rec.id &&
-      !r.overridden
+      r.id!==rec.id
     );
     if(existing.length){
       const toArchive=existing.map(r=>({
@@ -955,8 +953,12 @@ async function saveRecord_sb(rec){
         date:r.date, username:r.username, user_name:r.user,
         timestamp:r.timestamp, data:r
       }));
-      // Insere em records_history (silencioso, não bloqueia o save principal)
-      sbUpsert('records_history', toArchive).catch(()=>{});
+      // Insere em records_history
+      await sbUpsert('records_history', toArchive);
+      // Deleta de records
+      for(const r of existing){
+        await sbDelete('records', r.id);
+      }
     }
   }catch(e){console.warn('archive error',e);}
 
@@ -2266,7 +2268,14 @@ function getOfficialRecords(tankId, hapa=undefined){
   }
   const tank=tanks.find(t=>t.id===tankId);
   if((hapa===undefined||hapa===null)&&tank?.hapaNames?.length){
+    // Passo 1: para cada (date, hapa), pega apenas o registro mais recente
+    const byDayHapa={};
     recs.forEach(r=>{
+      const key=r.date+'__'+(r.hapa??'null');
+      if(!byDayHapa[key]||r.timestamp>byDayHapa[key].timestamp)byDayHapa[key]=r;
+    });
+    // Passo 2: soma entre hapas por dia
+    Object.values(byDayHapa).forEach(r=>{
       if(!byDay[r.date]){byDay[r.date]={...r,_hapasCount:1};}
       else{
         const d=byDay[r.date];
