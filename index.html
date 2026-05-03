@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.14</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.15</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1145,9 +1145,10 @@ function renderColetaGraficos(){
 
     // SVG simples
     const W=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),H=160;
-    const pad={t:10,b:30,l:50,r:10};
-    const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
     const n=dates.length;
+    const rotate=n>20;
+    const pad={t:10,b:rotate?62:30,l:50,r:10};
+    const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
     if(!n){card.querySelector(`#${gd.id}`).innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Sem dados</div>';return;}
 
     // Calcula max para escala
@@ -1165,10 +1166,16 @@ function renderColetaGraficos(){
       paths+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
       paths+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${val>=1000?fNum(Math.round(val/1000))+'k':fNum(val)}</text>`;
     });
-    // X labels
+    // X labels — máx 8, rotacionados se necessário
+    const maxLabels=Math.min(8,n);
+    const step=Math.max(1,Math.ceil(n/maxLabels));
     dates.forEach((d,i)=>{
-      if(n<=7||i%(Math.ceil(n/5))===0){
-        paths+=`<text x="${scaleX(i)}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d.slice(5)}</text>`;
+      if(i%step!==0&&i!==n-1)return;
+      const x=scaleX(i);
+      if(rotate){
+        paths+=`<text transform="rotate(-45,${x},${H-pad.b+12})" x="${x}" y="${H-pad.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${d}</text>`;
+      } else {
+        paths+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d.slice(5)}</text>`;
       }
     });
 
@@ -4750,7 +4757,10 @@ function renderCharts(){
 
 function makeSVGChart(title,unit,labels,vals,color){
   const W=700,H=180;
-  const pad={t:20,r:10,b:36,l:46};
+  const nLabels=labels.length;
+  const labelStep=Math.max(1,Math.ceil(nLabels/8));
+  const rotateX=nLabels>20;
+  const pad={t:20,r:10,b:rotateX?62:36,l:46};
   const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
   const nonNull=vals.filter(v=>v!==null);
   if(!nonNull.length)return document.createElement('div');
@@ -4768,7 +4778,13 @@ function makeSVGChart(title,unit,labels,vals,color){
     started=true;
     dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="8" fill="transparent" data-i="${i}" class="gcol-dot"/>`;
     dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="${color}" pointer-events="none"/>`;
-    xlabels+=`<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${labels[i].slice(0,5)}</text>`;
+    if(i%labelStep===0||i===nLabels-1){
+      if(rotateX){
+        xlabels+=`<text transform="rotate(-45,${x.toFixed(1)},${H-pad.b+12})" x="${x.toFixed(1)}" y="${H-pad.b+12}" text-anchor="end" font-size="8" fill="#8a9db5">${labels[i]}</text>`;
+      } else {
+        xlabels+=`<text x="${x.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${labels[i].slice(0,5)}</text>`;
+      }
+    }
   });
   for(let i=0;i<=4;i++){
     const v=mn+range*(1-i/4);
@@ -4812,7 +4828,7 @@ function makeSVGChart(title,unit,labels,vals,color){
 
 function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,label2){
   const W=700,H=180;
-  const pad={t:20,r:10,b:36,l:50};
+  const pad={t:20,r:10,b:rotL?62:36,l:50};
   const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
   const all=[...vals1,...vals2].filter(v=>v!==null);
   if(!all.length)return document.createElement('div');
@@ -4842,7 +4858,13 @@ function makeSVGDualChart(title,unit,labels,vals1,color1,vals2,color2,label1,lab
     ylabels+=`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${W-pad.r}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>`;
   }
   let xlabels='';
-  labels.forEach((l,i)=>{xlabels+=`<text x="${toX(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${l.slice(0,5)}</text>`;});
+  const nL=labels.length,lStep=Math.max(1,Math.ceil(nL/8)),rotL=nL>20;
+  labels.forEach((l,i)=>{
+    if(i%lStep!==0&&i!==nL-1)return;
+    const x=toX(i).toFixed(1);
+    if(rotL){xlabels+=`<text transform="rotate(-45,${x},${H-pad.b+12})" x="${x}" y="${H-pad.b+12}" text-anchor="end" font-size="8" fill="#8a9db5">${l}</text>`;}
+    else{xlabels+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="8" fill="#8a9db5">${l.slice(0,5)}</text>`;}
+  });
 
   const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
     ${ylabels}${makePath(vals1,color1)}${makePath(vals2,color2)}${xlabels}
