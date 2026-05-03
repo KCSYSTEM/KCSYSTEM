@@ -386,7 +386,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.16</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.17</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -939,6 +939,27 @@ function loadLimits(){try{const l=JSON.parse(localStorage.getItem('kc_limits'));
 
 // Salva um registro individual no Supabase
 async function saveRecord_sb(rec){
+  // Antes de salvar, verifica se existe registro anterior para (tankId, date, hapa)
+  // Se sim, arquiva em records_history
+  try{
+    const existing=records.filter(r=>
+      r.tankId===rec.tankId &&
+      r.date===rec.date &&
+      r.hapa==rec.hapa &&
+      r.id!==rec.id &&
+      !r.overridden
+    );
+    if(existing.length){
+      const toArchive=existing.map(r=>({
+        id:r.id, tank_id:r.tankId, tank_name:r.tankName,
+        date:r.date, username:r.username, user_name:r.user,
+        timestamp:r.timestamp, data:r
+      }));
+      // Insere em records_history (silencioso, não bloqueia o save principal)
+      sbUpsert('records_history', toArchive).catch(()=>{});
+    }
+  }catch(e){console.warn('archive error',e);}
+
   return sbUpsert('records',[{
     id:rec.id, tank_id:rec.tankId, tank_name:rec.tankName,
     date:rec.date, username:rec.username, user_name:rec.user,
