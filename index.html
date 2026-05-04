@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.22</title>
+<title>KC System v2.25</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -5079,7 +5079,12 @@ async function renderManejos(){
 
   // ── Pipeline por lote de origem
   const pipelineEl = document.getElementById('manejos-pipeline');
-  const lotes = Object.values(pipeline).sort((a,b)=>b.data_inicio.localeCompare(a.data_inicio));
+  // Ordena por data extraída do ID do lote (ex: C20250103 → 20250103), mais novo primeiro
+  const lotes = Object.values(pipeline).sort((a,b)=>{
+    const dateA = (a.lote_coleta.match(/\d{8}/)||['0'])[0];
+    const dateB = (b.lote_coleta.match(/\d{8}/)||['0'])[0];
+    return dateB.localeCompare(dateA);
+  });
 
   if(!lotes.length){
     pipelineEl.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text3);">
@@ -5313,6 +5318,24 @@ function updateManejoForm(){
   }
 }
 
+function getQtdLote(loteId){
+  // Busca a qtd total de um lote — primeiro em manejos, depois em coleta (ovos calculados)
+  const manejo = manejos.find(m=>m.lote_id===loteId);
+  if(manejo && manejo.qtd_total) return manejo.qtd_total;
+  // Tenta via buildColetaByLote (calcula ovosTotal = ml × ovosPorMl)
+  const coletaPanel = buildColetaByLote();
+  if(coletaPanel[loteId] && coletaPanel[loteId].ovosTotal) return coletaPanel[loteId].ovosTotal;
+  return null;
+}
+
+function preencheQtdOrigem(id){
+  const loteEl = document.getElementById(id+'_lote');
+  const qtdEl  = document.getElementById(id+'_qtd');
+  if(!loteEl||!qtdEl) return;
+  const qtd = getQtdLote(loteEl.value);
+  if(qtd!=null) qtdEl.value = qtd;
+}
+
 function addOrigemRow(loteDefault=''){
   const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
   const lotesColeta = [...new Set(records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote))].sort().reverse();
@@ -5322,12 +5345,14 @@ function addOrigemRow(loteDefault=''){
   const row = document.createElement('div');
   row.style.cssText='display:flex;gap:6px;align-items:center;';
   row.innerHTML=`
-    <select id="${id}_lote" style="flex:2;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <select id="${id}_lote" onchange="preencheQtdOrigem('${id}')" style="flex:2;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
       ${opts}
     </select>
     <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
     <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
   document.getElementById('mf-origens-list').appendChild(row);
+  // Auto-preenche qtd do lote selecionado ao abrir
+  if(loteDefault) preencheQtdOrigem(id);
 }
 
 function addDestinoRow(){
@@ -5408,11 +5433,18 @@ async function saveNovaFase(){
     timestamp: new Date().toISOString(),
   };
 
-  showToast('Salvando...','ok');
-  await saveManejo(m);
-  closeManejoForm();
-  showToast(`Fase ${FASES[fase]?.label} registrada ✓`,'ok');
-  renderManejos();
+  // Popup de progresso
+  showSaveProgress(0,1);
+  try{
+    await saveManejo(m);
+    showSaveDone(1);
+    closeManejoForm();
+    renderManejos();
+  } catch(e){
+    document.getElementById('save-popup')?.remove();
+    showToast('Erro ao salvar manejo','error');
+    console.error(e);
+  }
 }
 
 
