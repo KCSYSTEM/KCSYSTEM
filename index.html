@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.2</title>
+<title>KC System v2.21</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -386,7 +387,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.20</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.21</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -3419,6 +3420,7 @@ async function saveLancamentos(){
 async function _doSaveLancamentos(toSave,param,date){
   const prog=document.getElementById('lanc-progress');
   prog.style.display='block';prog.textContent=`Salvando 0/${toSave.length}...`;
+  showSaveProgress(0,toSave.length);
 
   let saved=0;
   for(const item of toSave){
@@ -3441,7 +3443,7 @@ async function _doSaveLancamentos(toSave,param,date){
       if(modo==='tambor'){
         // Tambor: diferença total dividida por hapas (getRacaoRealParaLinha já divide)
         const res=getRacaoRealParaLinha(rowId,hapaCount);
-        if(res.racaoReal==null){saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;continue;}
+        if(res.racaoReal==null){saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;showSaveProgress(saved,toSave.length);continue;}
         // res.racaoReal já é o valor POR HAPA (dividido dentro de getRacaoRealParaLinha)
         finalRacaoReal=res.racaoReal; // valor por hapa
         finalSobra=null;
@@ -3466,24 +3468,26 @@ async function _doSaveLancamentos(toSave,param,date){
     if(param==='racaoReal'&&hapaCount>0&&tank2?.hapaNames?.length){
       const rowId=item.rowId;
       const modo=_tambModo[rowId]||'balde';
-      const sobraTotal=finalSobra;
-      const sobraPorHapa=sobraTotal!=null?parseFloat((sobraTotal/hapaCount).toFixed(3)):null;
+      // finalSobra está em kg, converte para g
+      const sobraTotalG=finalSobra!=null?Math.round(finalSobra*1000):null;
+      const sobraPorHapaG=sobraTotalG!=null?sobraTotalG/hapaCount:null;
+      const sobraPorHapaKg=sobraPorHapaG!=null?sobraPorHapaG/1000:null;
       const baseTs=Date.now();
 
       for(let h=1;h<=hapaCount;h++){
         const exH=recForDate(item.tankId,date,h);
         const lastRH=lastRecHapa(item.tankId,h);
 
-        // Calcula ração real por hapa
-        let racaoPorHapa;
+        // Calcula ração real por hapa em gramas
+        let racaoPorHapaG;
         if(modo==='tambor'){
-          // finalRacaoReal já é o valor por hapa
-          racaoPorHapa=finalRacaoReal;
+          // finalRacaoReal em kg é o total → divide por hapas → converte para g
+          racaoPorHapaG=finalRacaoReal!=null?Math.round(finalRacaoReal*1000/hapaCount):null;
         } else {
-          // Balde: ideal do hapa - sobra do hapa
-          const idealHapa=exH?.racaoIdealG??lastRH?.racaoIdealG??null;
-          racaoPorHapa=idealHapa!=null&&sobraPorHapa!=null
-            ?parseFloat(Math.max(0,idealHapa-sobraPorHapa).toFixed(3))
+          // balde: idealHapa(g) - sobraPorHapa(g)
+          const idealHapaG=exH?.racaoIdealG??lastRH?.racaoIdealG??null;
+          racaoPorHapaG=idealHapaG!=null&&sobraPorHapaG!=null
+            ?Math.max(0,Math.round(idealHapaG-sobraPorHapaG))
             :null;
         }
 
@@ -3497,20 +3501,20 @@ async function _doSaveLancamentos(toSave,param,date){
           qty:param==='qty'?(finalValue??null):null,
           bio:param==='bio'?(finalValue??null):null,
           racao:'',racaoIdealG:exH?.racaoIdealG??lastRH?.racaoIdealG??null,
-          sobra:sobraPorHapa,racaoG:racaoPorHapa,
+          sobra:sobraPorHapaKg,racaoG:racaoPorHapaG,
           tratosIdeal:null,tratos:null,obs:'',
           overridden:false,hapa:h,
         };
         records.push(histH);
         if(exH){
-          exH.sobra=sobraPorHapa;exH.racaoG=racaoPorHapa;
+          exH.sobra=sobraPorHapaKg;exH.racaoG=racaoPorHapaG;
           const idx=records.findIndex(r=>r.id===exH.id);
           if(idx>=0)records[idx]=exH;
           await saveRecord_sb(exH);
         }
         await saveRecord_sb(histH);
       }
-      saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;
+      saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;showSaveProgress(saved,toSave.length);
       continue;
     }
 
@@ -3572,17 +3576,46 @@ async function _doSaveLancamentos(toSave,param,date){
 
     await saveRecord_sb(histRec);
     saved++;
-    prog.textContent=`Salvando ${saved}/${toSave.length}...`;
+    showSaveProgress(saved,toSave.length);
   }
 
   localStorage.setItem('kc_records',JSON.stringify(records));
   renderTankView();updateMapSub();
-  prog.textContent=`✓ ${saved} registros salvos!`;
-  setTimeout(()=>{prog.style.display='none';},3000);
-  showToast(`${saved} registros salvos ✓`,'ok');
-  // Limpa toggles para próxima vez
+  prog.style.display='none';
+  showSaveDone(saved);
   Object.keys(_tambModo).forEach(k=>delete _tambModo[k]);
   renderLancamentos();
+}
+
+function showSaveProgress(done,total){
+  let popup=document.getElementById('save-popup');
+  if(!popup){
+    popup=document.createElement('div');
+    popup.id='save-popup';
+    popup.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;';
+    popup.innerHTML=`<div style="background:var(--surface);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="font-size:32px;margin-bottom:10px;">💾</div>
+      <div id="save-popup-msg" style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">Salvando...</div>
+      <div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden;">
+        <div id="save-popup-bar" style="height:100%;background:var(--accent);border-radius:99px;transition:width 0.3s;width:0%;"></div>
+      </div>
+    </div>`;
+    document.body.appendChild(popup);
+  }
+  document.getElementById('save-popup-msg').textContent=`Salvando ${done}/${total}...`;
+  document.getElementById('save-popup-bar').style.width=`${Math.round(done/total*100)}%`;
+}
+
+function showSaveDone(saved){
+  const popup=document.getElementById('save-popup');
+  if(!popup)return;
+  popup.querySelector('div>div').innerHTML=`
+    <div style="font-size:40px;margin-bottom:12px;">✅</div>
+    <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;">Salvo!</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">${saved} registro${saved>1?'s':''} salvo${saved>1?'s':''} com sucesso.</div>
+    <button onclick="document.getElementById('save-popup').remove()"
+      style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 40px;font-size:15px;font-weight:700;cursor:pointer;width:100%;">OK</button>`;
+  popup.addEventListener('click',function(e){if(e.target===popup)popup.remove();});
 }
 
 // ===== DADOS HISTÓRICOS ITEM 2: Biometria e Qtd. Peixes 16/04 em diante =====
@@ -3957,27 +3990,26 @@ function renderPainel(){
       cVals.ph    =avg(hapaRecs.map(r=>r?.ph));
       cVals.mort  =sum(hapaRecs.map(r=>r?.mort||0));
 
-      // Item 4: qty = SOMA dos hapas (nunca recSemHapa para tanques com hapas)
-      // bio = MÉDIA dos hapas
+      // qty = SOMA dos hapas do dia
       const qtys=hapaRecs.map(r=>r?.qty).filter(v=>v!=null);
       cVals.qty=qtys.length?qtys.reduce((s,v)=>s+v,0):null;
 
-      // Item 3: se qty null no dia, busca soma dos hapas do dia anterior
-      if(cVals.qty==null){
-        const pd=new Date(date+'T12:00:00');pd.setDate(pd.getDate()-1);
-        const prevDate=pd.toISOString().split('T')[0];
-        const prevHapaRecs=hapaNames.map((_,i)=>recForDate(t.id,prevDate,i+1));
-        const prevQtys=prevHapaRecs.map(r=>r?.qty).filter(v=>v!=null);
-        if(prevQtys.length){cVals.qty=prevQtys.reduce((s,v)=>s+v,0);cVals._qtyPrev=true;}
-      }
-
       cVals.bio=avg(hapaRecs.map(r=>r?.bio));
-      // Item 3: se bio null, tenta dia anterior
-      if(cVals.bio==null){
-        const pd=prevDate(date);
-        const prevHapaRecs=hapaNames.map((_,i)=>recForDate(t.id,pd,i+1));
-        const prevBios=prevHapaRecs.map(r=>r?.bio).filter(v=>v!=null);
-        if(prevBios.length){cVals.bio=avg(prevBios);cVals._bioPrev=true;}
+
+      // Bug 3: se qty ou bio null, busca o último dia COM dado (não só D-1)
+      if(cVals.qty==null||cVals.bio==null){
+        const allPrev=hapaNames.map((_,i)=>{
+          const hRecs=getOfficialRecords(t.id,i+1).filter(r=>r.date<date);
+          return hRecs.length?hRecs[hRecs.length-1]:null;
+        });
+        if(cVals.qty==null){
+          const prevQtys=allPrev.map(r=>r?.qty).filter(v=>v!=null);
+          if(prevQtys.length){cVals.qty=prevQtys.reduce((s,v)=>s+v,0);cVals._qtyPrev=true;}
+        }
+        if(cVals.bio==null){
+          const prevBios=allPrev.map(r=>r?.bio).filter(v=>v!=null);
+          if(prevBios.length){cVals.bio=avg(prevBios);cVals._bioPrev=true;}
+        }
       }
 
       cVals._ideal=sum(hapaRecs.map(r=>r?.racaoIdealG));
@@ -4043,12 +4075,12 @@ function renderPainel(){
         Object.assign(vals,{o2:rec.o2,temp:rec.temp,amonia:rec.amonia,ph:rec.ph,mort:rec.mort||0,qty:rec.qty,bio:rec.bio,_ideal:rec.racaoIdealG,_real:rec.racaoG});
         vals._pct=(rec.racaoIdealG&&rec.racaoG)?Math.round(rec.racaoG/rec.racaoIdealG*100):null;
       }
-      // Item 3: qty e bio do dia anterior se não preenchidos hoje
+      // Bug 3: qty e bio — busca último registro com dado no histórico
       if(vals.qty==null||vals.bio==null){
-        const pd=new Date(date+'T12:00:00');pd.setDate(pd.getDate()-1);
-        const prevRec=recForDate(t.id,pd.toISOString().split('T')[0]);
-        if(vals.qty==null&&prevRec?.qty!=null){vals.qty=prevRec.qty;vals._qtyPrev=true;}
-        if(vals.bio==null&&prevRec?.bio!=null){vals.bio=prevRec.bio;vals._bioPrev=true;}
+        const allPrevRecs=getOfficialRecords(t.id,null).filter(r=>r.date<date);
+        const lastWithData=allPrevRecs.filter(r=>r.qty!=null||r.bio!=null).pop();
+        if(vals.qty==null&&lastWithData?.qty!=null){vals.qty=lastWithData.qty;vals._qtyPrev=true;}
+        if(vals.bio==null&&lastWithData?.bio!=null){vals.bio=lastWithData.bio;vals._bioPrev=true;}
       }
       vals._tca=tca?parseFloat(tca):null;
       if(vals._ideal!=null)vals._ideal=vals._ideal/1000;
