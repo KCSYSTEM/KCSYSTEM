@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.21</title>
+<title>KC System v2.22</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -387,7 +387,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.21</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.22</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -3481,8 +3481,8 @@ async function _doSaveLancamentos(toSave,param,date){
         // Calcula ração real por hapa em gramas
         let racaoPorHapaG;
         if(modo==='tambor'){
-          // finalRacaoReal em kg é o total → divide por hapas → converte para g
-          racaoPorHapaG=finalRacaoReal!=null?Math.round(finalRacaoReal*1000/hapaCount):null;
+          // finalRacaoReal em kg já é POR HAPA (dividido em getRacaoRealParaLinha) → apenas converte para g
+          racaoPorHapaG=finalRacaoReal!=null?Math.round(finalRacaoReal*1000):null;
         } else {
           // balde: idealHapa(g) - sobraPorHapa(g)
           const idealHapaG=exH?.racaoIdealG??lastRH?.racaoIdealG??null;
