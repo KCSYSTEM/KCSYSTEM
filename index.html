@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.26</title>
+<title>KC System v2.32</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -334,11 +334,12 @@ canvas.chart-canvas{display:block;}
 .lancamento-date-input{background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;}
 .lancamento-save-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .lancamento-save-btn:active{background:var(--accent2);}
-/* Toggle Tambor/Balde */
 .coleta-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 20px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:600;border-radius:10px;transition:all 0.15s;flex:1;}
 .coleta-nav-item.active{color:var(--accent);}
 .coleta-nav-item .nav-icon{font-size:20px;line-height:1;}
-.coleta-nav-item .nav-label{font-size:10px;font-weight:600;}overflow:hidden;width:fit-content;font-size:11px;font-weight:700;cursor:pointer;user-select:none;flex-shrink:0;}
+.coleta-nav-item .nav-label{font-size:10px;font-weight:600;}
+/* Toggle Tambor/Balde */
+.tambor-toggle{overflow:hidden;width:fit-content;font-size:11px;font-weight:700;cursor:pointer;user-select:none;flex-shrink:0;}
 .tambor-toggle .t-opt{padding:5px 10px;background:var(--bg);color:var(--text3);transition:all 0.15s;white-space:nowrap;}
 .tambor-toggle .t-opt.active{background:var(--accent);color:#fff;}
 .tambor-input-disabled{width:100%;background:#f0f4f8;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:#b0bec5;font-size:15px;font-family:'JetBrains Mono',monospace;cursor:not-allowed;}
@@ -395,7 +396,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.26</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.32</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -551,6 +552,13 @@ canvas.chart-canvas{display:block;}
               <div><div class="cfg-menu-label">Exportar Backup</div><div class="cfg-menu-sub">Baixar todos os dados como JSON</div></div>
             </div>
             <div class="cfg-menu-arrow">⬇</div>
+          </div>
+          <div class="cfg-menu-item" onclick="triggerImportBackup()">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#eff6ff;">📥</div>
+              <div><div class="cfg-menu-label">Importar Backup</div><div class="cfg-menu-sub">Restaurar dados a partir de arquivo JSON</div></div>
+            </div>
+            <div class="cfg-menu-arrow">⬆</div
           </div>
         </div>
       </div>
@@ -4133,21 +4141,176 @@ const PARAM_DEFS=[
   {key:'goradosPct',label:'% Ovos Gorados',   unit:'%',   hasMin:false,hasMax:true},
 ];
 
+
+function triggerImportBackup(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    try {
+      const text = await file.text();
+      const backup = JSON.parse(text);
+      await importBackup(backup);
+    } catch(err) {
+      showToast('Erro ao ler arquivo: ' + err.message, 'error');
+    }
+  };
+  input.click();
+}
+
+async function importBackup(backup){
+  // Valida estrutura
+  if(!backup.records || !backup.tanks){
+    showToast('Arquivo inválido — estrutura de backup incorreta','error');
+    return;
+  }
+
+  const totalRec    = backup.records?.length  || 0;
+  const totalTanks  = backup.tanks?.length    || 0;
+  const totalRacoes = backup.racoes?.length   || 0;
+  const totalManejos= backup.manejos?.length  || 0;
+  const totalUsers  = backup.users?.length    || 0;
+  const hasLimits   = !!backup.limits;
+
+  // Confirma com o usuário
+  showConfirm(
+    '📥 Importar Backup',
+    `Arquivo: ${backup.exportedAt?.slice(0,10)||'?'}\nRegistros: ${totalRec.toLocaleString('pt-BR')} · Manejos: ${totalManejos}\nTanques: ${totalTanks} · Rações: ${totalRacoes}\nUsuários: ${totalUsers} · Parâmetros: ${hasLimits?'✅':'—'}\n\nIsso vai MESCLAR os dados com o que já existe (não apaga nada). Confirmar?`,
+    async () => {
+      await _doImportBackup(backup);
+    }
+  );
+}
+
+async function _doImportBackup(backup){
+  // Mostra progresso
+  const totalSteps = 4;
+  showSaveProgress(0, totalSteps);
+
+  try {
+    // 1. Records
+    showSaveProgress(0, totalSteps);
+    if(backup.records?.length){
+      // Mescla: adiciona apenas records que não existem localmente (por id)
+      const existingIds = new Set(records.map(r=>r.id));
+      const novos = backup.records.filter(r=>!existingIds.has(r.id));
+      // Salva em lotes de 50 no Supabase
+      const rows = backup.records.map(r=>({
+        id: r.id,
+        tank_id: r.tankId,
+        tank_name: r.tankName,
+        date: r.date,
+        username: r.username,
+        user_name: r.user,
+        timestamp: r.timestamp,
+        data: r
+      }));
+      // Upsert em lotes
+      const batchSize = 100;
+      for(let i=0; i<rows.length; i+=batchSize){
+        await sbUpsert('records', rows.slice(i, i+batchSize));
+      }
+      // Atualiza local
+      backup.records.forEach(r=>{
+        const idx = records.findIndex(x=>x.id===r.id);
+        if(idx>=0) records[idx]=r; else records.push(r);
+      });
+    }
+    showSaveProgress(1, totalSteps);
+
+    // 2. Tanks
+    if(backup.tanks?.length){
+      const rows = backup.tanks.map(t=>({id:t.id, data:t}));
+      const batchSize = 50;
+      for(let i=0; i<rows.length; i+=batchSize){
+        await sbUpsert('tanks', rows.slice(i, i+batchSize));
+      }
+      backup.tanks.forEach(t=>{
+        const idx = tanks.findIndex(x=>x.id===t.id);
+        if(idx>=0) tanks[idx]=t; else tanks.push(t);
+      });
+    }
+    showSaveProgress(2, totalSteps);
+
+    // 3. Rações
+    if(backup.racoes?.length){
+      const rows = backup.racoes.map(r=>({id:r.id||'r_'+r.nome, data:r}));
+      await sbUpsert('racoes', rows);
+      backup.racoes.forEach(r=>{
+        const idx = racoes.findIndex(x=>x.id===r.id||x.nome===r.nome);
+        if(idx>=0) racoes[idx]=r; else racoes.push(r);
+      });
+    }
+    showSaveProgress(3, totalSteps);
+
+    // 4. Manejos
+    if(backup.manejos?.length){
+      const rows = backup.manejos.map(m=>({id:m.id, data:m}));
+      const batchSize = 50;
+      for(let i=0; i<rows.length; i+=batchSize){
+        await sbUpsert('manejos', rows.slice(i, i+batchSize));
+      }
+      backup.manejos.forEach(m=>{
+        const idx = manejos.findIndex(x=>x.id===m.id);
+        if(idx>=0) manejos[idx]=m; else manejos.push(m);
+      });
+    }
+    showSaveProgress(4, totalSteps);
+
+    // 5. Usuários
+    if(backup.users?.length){
+      backup.users.forEach(u=>{
+        const {login,...data} = u;
+        if(login) USERS[login] = data;
+      });
+      await saveUsers();
+    }
+
+    // 6. Parâmetros de alerta
+    if(backup.limits){
+      Object.assign(LIMITS, backup.limits);
+      saveLimits();
+    }
+
+    // Persiste local
+    localStorage.setItem('kc_records', JSON.stringify(records));
+    localStorage.setItem('kc_tanks', JSON.stringify(tanks));
+    localStorage.setItem('kc_racoes', JSON.stringify(racoes));
+
+    showSaveDone(totalSteps);
+    // Re-renderiza tudo
+    renderTankView();
+    updateMapSub();
+
+  } catch(err) {
+    document.getElementById('save-popup')?.remove();
+    showToast('Erro na importação: ' + err.message, 'error');
+    console.error('Import error:', err);
+  }
+}
+
 function exportBackup(){
   const date=new Date().toISOString().split('T')[0];
+  // Usuários: inclui todos (DEFAULT + extras), sem expor senhas de forma insegura — são as mesmas já no sistema
+  const usersBackup = Object.entries(USERS).map(([login,u])=>({login,...u}));
   const backup={
-    version:1,
+    version:3,
     exportedAt:new Date().toISOString(),
     exportedBy:currentUser?.username||'desconhecido',
-    // Dados completos
-    records,   // todos os registros de operação e coleta
-    tanks,     // configuração de todos os tanques
-    racoes,    // tabela de rações
-    // Metadados
+    records,        // registros de operação, coleta e matrizes
+    tanks,          // configuração de tanques (hapas, nome, status, etc.)
+    racoes,         // tabela de rações
+    manejos,        // pipeline de produção de alevinos
+    users:usersBackup, // usuários e senhas
+    limits:JSON.parse(JSON.stringify(LIMITS)), // parâmetros de alerta
     meta:{
       totalRecords:records.length,
       totalTanks:tanks.length,
       totalRacoes:racoes.length,
+      totalManejos:manejos.length,
+      totalUsers:usersBackup.length,
       dateRange:{
         from:records.length?records.reduce((min,r)=>r.date<min?r.date:min,records[0].date):null,
         to:records.length?records.reduce((max,r)=>r.date>max?r.date:max,records[0].date):null,
@@ -4162,7 +4325,7 @@ function exportBackup(){
   a.download=`kcsystem_backup_${date}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast(`Backup exportado: ${backup.meta.totalRecords} registros ✓`,'ok');
+  showToast(`Backup exportado: ${backup.meta.totalRecords} registros · ${manejos.length} manejos · ${usersBackup.length} usuários ✓`,'ok');
 }
 function renderParamsForm(){
   const el=document.getElementById('params-form');
@@ -5137,13 +5300,52 @@ function buildPipeline(){
 
 function buildColetaByLote(){
   const byLote = {};
-  records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.ovosPorMl!=null)).forEach(r=>{
-    if(!byLote[r.lote]) byLote[r.lote]={ovosTotal:0, lastDate:''};
-    const ovos = r.ovosPorMl!=null&&r.desovaML!=null ?
-      Math.round(r.ovosPorMl*r.desovaML*(1-(r.ovosGorados||0)/100)) : 0;
-    byLote[r.lote].ovosTotal += ovos;
-    if(r.date>byLote[r.lote].lastDate) byLote[r.lote].lastDate=r.date;
+  records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.ovosPorMl!=null||r.femeas!=null)).forEach(r=>{
+    if(!byLote[r.lote]) byLote[r.lote]={
+      ovosTotal:0, ovosBons:0, mlTotal:0, lastDate:'',
+      femeasReprod:0, femeasDesovaram:0,
+      _ovosMlVals:[], _goradosVals:[], _femeasHapas:new Set()
+    };
+    const l = byLote[r.lote];
+
+    // Fêmeas em reprodução (soma de femeas por hapa único — evita duplicatas por data)
+    if(r.femeas!=null){
+      const hapaKey = (r.tankId||'') + '_' + (r.hapa??'x');
+      if(!l._femeasHapas.has(hapaKey)){
+        l.femeasReprod += r.femeas;
+        l._femeasHapas.add(hapaKey);
+      }
+    }
+
+    // Fêmeas que desovaram
+    if(r.desovaFemeas!=null) l.femeasDesovaram += r.desovaFemeas;
+
+    // ML total
+    if(r.desovaML!=null) l.mlTotal += r.desovaML;
+
+    // Ovos/mL e gorados (para média)
+    if(r.ovosPorMl!=null) l._ovosMlVals.push(r.ovosPorMl);
+    if(r.ovosGorados!=null) l._goradosVals.push(r.ovosGorados);
+
+    // Ovos bons por record
+    if(r.ovosPorMl!=null&&r.desovaML!=null){
+      const ovos = r.ovosPorMl*r.desovaML*(1-(r.ovosGorados||0)/100);
+      l.ovosBons  += ovos;
+      l.ovosTotal += Math.round(r.ovosPorMl*r.desovaML);
+    }
+
+    if(r.date>l.lastDate) l.lastDate=r.date;
   });
+
+  // Calcula médias finais
+  Object.values(byLote).forEach(l=>{
+    l.ovosMlMedio  = l._ovosMlVals.length  ? parseFloat((l._ovosMlVals.reduce((s,v)=>s+v,0)/l._ovosMlVals.length).toFixed(1))   : null;
+    l.goradosMedio = l._goradosVals.length ? parseFloat((l._goradosVals.reduce((s,v)=>s+v,0)/l._goradosVals.length).toFixed(2)) : null;
+    l.naoGoradosPct = l.goradosMedio!=null  ? parseFloat((100-l.goradosMedio).toFixed(2)) : null;
+    l.ovosBons      = Math.round(l.ovosBons);
+    l.ovosPorFemea  = l.ovosBons&&l.femeasDesovaram ? Math.round(l.ovosBons/l.femeasDesovaram) : null;
+  });
+
   return byLote;
 }
 
@@ -5184,6 +5386,10 @@ function renderPipelineCard(p){
     if(itens.length) fasesRender.push({fase, itens});
   });
 
+  // Busca métricas detalhadas da coleta para este lote
+  const _coletaPanel = buildColetaByLote();
+  const _coletaInfo  = _coletaPanel[p.lote_coleta] || null;
+
   const etapas = fasesRender.map(({fase,itens})=>{
     const cor = fasesCores[fase];
     const icon = fasesIcons[fase];
@@ -5205,6 +5411,29 @@ function renderPipelineCard(p){
         if(manejoId) editBtn = `<button onclick="editManejoFase('${manejoId}')" style="margin-top:4px;background:none;border:1px solid ${cor};border-radius:5px;padding:2px 7px;font-size:10px;color:${cor};cursor:pointer;">✏️ editar</button>`;
       }
     }
+    // Detalhes extras da coleta
+    let coletaDetails = '';
+    if(fase==='coleta' && _coletaInfo){
+      const ci = _coletaInfo;
+      const fmt = (v,dec=0) => v!=null ? Number(v).toLocaleString('pt-BR',{maximumFractionDigits:dec}) : '—';
+      const row = (label,val,color='var(--text)') =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:10px;color:var(--text3);">${label}</span>
+          <span style="font-size:11px;font-weight:700;color:${color};">${val}</span>
+        </div>`;
+      coletaDetails = `<div style="margin-top:8px;background:rgba(124,58,237,0.04);border:1px solid rgba(124,58,237,0.15);border-radius:8px;padding:8px;text-align:left;">
+        ${ci.femeasReprod   ? row('Fêmeas em reprodução', fmt(ci.femeasReprod)) : ''}
+        ${row('Fêmeas desovaram',  fmt(ci.femeasDesovaram))}
+        ${row('Volume total (mL)', fmt(ci.mlTotal))}
+        ${row('Ovos/mL (média)',   fmt(ci.ovosMlMedio,1))}
+        ${row('Ovos totais',       fmt(ci.ovosTotal))}
+        ${row('% Gorados',         ci.goradosMedio!=null ? fmt(ci.goradosMedio,2)+'%' : '—', '#dc2626')}
+        ${row('% Não gorados',     ci.naoGoradosPct!=null ? fmt(ci.naoGoradosPct,2)+'%' : '—', '#16a34a')}
+        ${row('Ovos bons',         fmt(ci.ovosBons), '#16a34a')}
+        ${ci.ovosPorFemea!=null ? row('Ovos/fêmea', fmt(ci.ovosPorFemea)) : ''}
+      </div>`;
+    }
+
     return `<div style="text-align:center;flex:1;min-width:80px;">
       <div style="font-size:18px;">${icon}</div>
       <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;margin:2px 0;">${FASES[fase]?.label||fase}</div>
@@ -5213,6 +5442,7 @@ function renderPipelineCard(p){
       ${destinosStr?`<div style="font-size:9px;color:var(--text3);margin-top:2px;">${destinosStr}</div>`:''}
       ${dataStr?`<div style="font-size:9px;color:var(--text3);">${dataStr}</div>`:''}
       ${editBtn}
+      ${coletaDetails}
     </div>`;
   }).join(`<div style="font-size:16px;color:var(--border2);align-self:center;padding-top:4px;">›</div>`);
 
