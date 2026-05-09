@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.36</title>
+<title>KC System v2.37</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -396,7 +396,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.36</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.37</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1509,13 +1509,21 @@ function renderColeta(){
       <th style="min-width:80px;color:var(--text3);">Último</th>
     </tr></thead>`);
     let rows=[],ri=0;
+    const coletaLote=document.getElementById('coleta-lote')?.value.trim()||'';
     matTanks.forEach(t=>{
       (t.hapaNames||[]).forEach((nm,i)=>{
         const h=i+1;
-        const last=lastRecHapa(t.id,h);
+        // Busca o último record com dados de desova (desovaFemeas ou desovaML) para este hapa
+        // Se há um lote digitado, prioriza records desse lote
+        const hapaRecs=records.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden&&
+          (r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null));
+        const lastDesova=coletaLote
+          ? (hapaRecs.filter(r=>r.lote===coletaLote).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0]
+             || hapaRecs.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0])
+          : hapaRecs.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
         rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,
-          lastFemeas:last?.desovaFemeas??'',lastMl:last?.desovaML??'',
-          lastGorados:last?.ovosGorados??'',ri:ri++});
+          lastFemeas:lastDesova?.desovaFemeas??'',lastMl:lastDesova?.desovaML??'',
+          lastGorados:lastDesova?.ovosGorados??'',ri:ri++});
       });
     });
     tbody.innerHTML=rows.map(r=>`<tr>
@@ -5626,6 +5634,7 @@ function editManejoFase(manejoId){
     row.innerHTML=`
       <select id="${id}_tank" style="flex:2;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">${tankOpts.replace(`value="${d.tanque_id}"`,`value="${d.tanque_id}" selected`)}</select>
       <input type="number" id="${id}_qtd" value="${d.qtd||''}" placeholder="Qtd" min="0" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+      <input type="number" id="${id}_peso" value="${d.peso_g||''}" placeholder="Peso (g)" min="0" step="0.1" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
       <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
     destList.appendChild(row);
   });
@@ -5655,7 +5664,8 @@ async function saveEdicaoFase(manejoId){
   document.getElementById('mf-destinos-list').querySelectorAll('div').forEach(row=>{
     const tankEl = row.querySelector('[id$="_tank"]');
     const qtdEl  = row.querySelector('[id$="_qtd"]');
-    if(tankEl&&qtdEl&&qtdEl.value){ destinos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0}); }
+    const pesoEl = row.querySelector('[id$="_peso"]');
+    if(tankEl&&qtdEl&&qtdEl.value){ destinos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0, peso_g:parseFloat(pesoEl?.value)||null}); }
   });
   m.destinos = destinos;
   m.qtd_total = destinos.reduce((s,d)=>s+(d.qtd||0),0) || origens.reduce((s,o)=>s+(o.qtd||0),0);
@@ -5751,15 +5761,9 @@ function updateManejoForm(){
   if(loteEl && !loteEl.dataset.edited){
     loteEl.value = prefix + new Date().toISOString().slice(0,10).replace(/-/g,'');
   }
-  // Mostra seção de tamanhos só na transferência
+  // Seção de tamanhos removida — peso agora fica na coluna do destino
   const tamSection = document.getElementById('mf-tamanhos-section');
-  const destSection = document.getElementById('mf-destinos-section');
-  if(tamSection) tamSection.style.display = fase==='transferencia' ? 'block' : 'none';
-  // Na transferência, adiciona uma linha de tamanho se não tiver
-  if(fase==='transferencia'){
-    const lista = document.getElementById('mf-tamanhos-list');
-    if(lista && !lista.children.length) addTamanhoRow();
-  }
+  if(tamSection) tamSection.style.display = 'none';
 }
 
 function getQtdLote(loteId){
@@ -5809,6 +5813,7 @@ function addDestinoRow(){
       ${tankOpts}
     </select>
     <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <input type="number" id="${id}_peso" placeholder="Peso (g)" min="0" step="0.1" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
     <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
   document.getElementById('mf-destinos-list').appendChild(row);
 }
@@ -5845,37 +5850,29 @@ async function saveNovaFase(){
   });
   if(!origens.length){ showToast('Adicione pelo menos uma origem','error'); return; }
 
-  // Destinos
+  // Destinos (com peso opcional por tanque — usado especialmente na transferência)
   const destinos = [];
   document.getElementById('mf-destinos-list')?.querySelectorAll('div').forEach(row=>{
     const tankEl = row.querySelector('[id$="_tank"]');
     const qtdEl  = row.querySelector('[id$="_qtd"]');
-    if(tankEl&&qtdEl&&qtdEl.value){ destinos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0}); }
+    const pesoEl = row.querySelector('[id$="_peso"]');
+    if(tankEl&&qtdEl&&qtdEl.value){ destinos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0, peso_g:parseFloat(pesoEl?.value)||null}); }
   });
 
-  // Tamanhos (transferência)
+  // Tamanhos não usados mais — peso agora vai no destino
   const tamanhos = [];
-  document.getElementById('mf-tamanhos-list')?.querySelectorAll('div').forEach(row=>{
-    const tankEl = row.querySelector('[id$="_tank"]');
-    const qtdEl  = row.querySelector('[id$="_qtd"]');
-    const pesoEl = row.querySelector('[id$="_peso"]');
-    if(tankEl&&qtdEl&&qtdEl.value){ tamanhos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0, peso_g:parseFloat(pesoEl?.value)||null}); }
-  });
 
   // qtd_total = o que SAIU (destinos), não o que entrou (origens)
   const qtdOrigem  = origens.reduce((s,o)=>s+o.qtd,0);
   const qtdDestino = destinos.reduce((s,d)=>s+d.qtd,0);
-  const qtdTransf  = tamanhos.reduce((s,t)=>s+t.qtd,0);
-  const qtdTotal   = fase==='transferencia'
-    ? (qtdTransf||qtdOrigem)
-    : (qtdDestino||qtdOrigem); // usa destinos se preenchidos, senão origem como fallback
+  const qtdTotal   = qtdDestino||qtdOrigem; // usa destinos se preenchidos, senão origem como fallback
 
   const m = {
     id: 'manejo_'+Date.now(),
     fase, lote_id: loteId, data,
     origens,
     qtd_total: qtdTotal,
-    destinos: fase==='transferencia' ? tamanhos : destinos,
+    destinos,
     obs,
     username: currentUser?.username||'',
     timestamp: new Date().toISOString(),
