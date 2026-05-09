@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.39</title>
+<title>KC System v2.40</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -347,6 +347,11 @@ canvas.chart-canvas{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type="number"]{-moz-appearance:textfield;}
+
 </style>
 </head>
 <body>
@@ -396,7 +401,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.39</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.40</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -559,6 +564,13 @@ canvas.chart-canvas{display:block;}
               <div><div class="cfg-menu-label">Importar Backup</div><div class="cfg-menu-sub">Restaurar dados a partir de arquivo JSON</div></div>
             </div>
             <div class="cfg-menu-arrow">⬆</div>
+          </div>
+          <div class="cfg-menu-item" onclick="triggerLimpezaManejos()">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#fef9c3;">🧹</div>
+              <div><div class="cfg-menu-label">Limpar Manejos Duplicados</div><div class="cfg-menu-sub">Arquiva lançamentos antigos, mantém só o último</div></div>
+            </div>
+            <div class="cfg-menu-arrow">▶</div>
           </div>
         </div>
       </div>
@@ -1329,8 +1341,10 @@ function renderColetaPainel(){
   const cont=document.getElementById('coleta-painel-container');
   if(!cont)return;
 
-  const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote);
-  if(!coletaRecs.length){
+  // Records de desova (fêmeas/ml) E records de só-gorados (lançados separadamente)
+  const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&r.lote);
+  const coletaDesovaRecs=coletaRecs.filter(r=>r.desovaFemeas!=null||r.desovaML!=null);
+  if(!coletaDesovaRecs.length){
     cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">🥚</div>
       <div style="font-size:15px;font-weight:700;color:var(--text2);">Nenhuma coleta registrada</div>
@@ -1339,16 +1353,18 @@ function renderColetaPainel(){
     return;
   }
 
-  // Agrupa por lote
+  // Agrupa por lote — só soma femeas/ml dos records de desova, mas inclui todos no hapas para pegar gorados
   const byLote={};
   coletaRecs.forEach(r=>{
     if(!byLote[r.lote])byLote[r.lote]={lote:r.lote,dates:new Set(),femeas:0,ml:0,hapas:[]};
     const l=byLote[r.lote];
     l.dates.add(r.date);
-    l.femeas+=(r.desovaFemeas||0);
-    l.ml+=(r.desovaML||0);
+    if(r.desovaFemeas!=null)l.femeas+=(r.desovaFemeas||0);
+    if(r.desovaML!=null)l.ml+=(r.desovaML||0);
     l.hapas.push(r);
   });
+  // Remove lotes sem desova real
+  Object.keys(byLote).forEach(k=>{if(!byLote[k].ml&&!byLote[k].femeas)delete byLote[k];});
 
   // Enriquece com ovosPorMl e ovosGorados — gorados agora vem por hapa da desova
   Object.values(byLote).forEach(l=>{
@@ -1517,13 +1533,18 @@ function renderColeta(){
         // Se há um lote digitado, prioriza records desse lote
         const hapaRecs=records.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden&&
           (r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null));
-        const lastDesova=coletaLote
-          ? (hapaRecs.filter(r=>r.lote===coletaLote).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0]
-             || hapaRecs.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0])
-          : hapaRecs.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+        // Filtra por lote se digitado
+        const hapaRecsLote=coletaLote
+          ? (hapaRecs.filter(r=>r.lote===coletaLote).length ? hapaRecs.filter(r=>r.lote===coletaLote) : hapaRecs)
+          : hapaRecs;
+        const byTs=(arr)=>arr.slice().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+        // Busca o último record que tenha cada campo individualmente
+        const lastFemeasRec = byTs(hapaRecsLote.filter(r=>r.desovaFemeas!=null))[0];
+        const lastMlRec     = byTs(hapaRecsLote.filter(r=>r.desovaML!=null))[0];
+        const lastGoradosRec= byTs(hapaRecsLote.filter(r=>r.ovosGorados!=null))[0];
         rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,
-          lastFemeas:lastDesova?.desovaFemeas??'',lastMl:lastDesova?.desovaML??'',
-          lastGorados:lastDesova?.ovosGorados??'',ri:ri++});
+          lastFemeas:lastFemeasRec?.desovaFemeas??'',lastMl:lastMlRec?.desovaML??'',
+          lastGorados:lastGoradosRec?.ovosGorados??'',ri:ri++});
       });
     });
     tbody.innerHTML=rows.map(r=>`<tr>
@@ -5241,6 +5262,64 @@ async function loadManejos(){
   }catch(e){ console.warn('loadManejos',e); }
 }
 
+
+// ─── Limpeza manual de manejos duplicados ───────────────
+async function triggerLimpezaManejos(){
+  if(!manejos.length) await loadManejos();
+
+  // Descobre duplicatas sem rodar nada ainda
+  const grupos = {};
+  manejos.forEach(m=>{
+    const roots = getRootLotes(m.id);
+    const key = (roots[0]||'?')+'_'+m.fase;
+    if(!grupos[key]) grupos[key]=[];
+    grupos[key].push(m);
+  });
+  const duplicatas = Object.values(grupos).filter(g=>g.length>1);
+  const totalAntigos = duplicatas.reduce((s,g)=>s+g.length-1, 0);
+
+  if(!totalAntigos){
+    showToast('Nenhum duplicado encontrado ✓','ok');
+    return;
+  }
+
+  showConfirm(
+    '🧹 Limpar Manejos Duplicados',
+    `Encontrados ${totalAntigos} lançamento(s) antigo(s) em ${duplicatas.length} grupo(s).
+
+Os mais antigos serão arquivados em records_history.
+Só o mais recente de cada fase permanece.
+
+Confirmar?`,
+    async () => {
+      showSaveProgress(0, totalAntigos);
+      let done = 0;
+      for(const grupo of duplicatas){
+        const sorted = grupo.slice().sort((a,b)=>(b.timestamp||b.id).localeCompare(a.timestamp||a.id));
+        const [, ...antigos] = sorted;
+        for(const ant of antigos){
+          await sbUpsert('records_history',[{
+            id: ant.id,
+            tank_id: 'manejo',
+            tank_name: ant.fase||'manejo',
+            date: ant.data||'',
+            username: ant.username||'',
+            user_name: ant.username||'',
+            timestamp: ant.timestamp||new Date().toISOString(),
+            data: ant
+          }]);
+          await sbDelete('manejos', ant.id);
+          manejos = manejos.filter(x=>x.id!==ant.id);
+          done++;
+          showSaveProgress(done, totalAntigos);
+        }
+      }
+      showSaveDone(totalAntigos);
+      renderManejos();
+    }
+  );
+}
+
 async function _limparManejosDuplicados(){
   const grupos = {};
   manejos.filter(m=>!m.overridden).forEach(m=>{
@@ -5406,7 +5485,7 @@ function buildPipeline(){
 
 function buildColetaByLote(){
   const byLote = {};
-  records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.ovosPorMl!=null||r.femeas!=null)).forEach(r=>{
+  records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.ovosPorMl!=null||r.femeas!=null||r.ovosGorados!=null)).forEach(r=>{
     if(!byLote[r.lote]) byLote[r.lote]={
       ovosTotal:0, ovosBons:0, mlTotal:0, lastDate:'',
       femeasReprod:0, femeasDesovaram:0,
