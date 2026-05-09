@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.34</title>
+<title>KC System v2.35</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -396,7 +396,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.34</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.35</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -5487,7 +5487,17 @@ function renderPipelineCard(p){
 
   const adminButtons = isAdmin() ? `
     <div style="display:flex;gap:6px;margin-top:8px;">
-      ${proximaFase?`<button onclick="openManejoForm('${p.lote_coleta}','${proximaFase}')" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;cursor:pointer;">+ ${FASES[proximaFase]?.label||proximaFase}</button>`:'<div style="flex:1;font-size:11px;color:#16a34a;text-align:center;padding:7px;">✅ Pipeline completo</div>'}
+      ${proximaFase?(()=>{
+        // Lote de origem = lote_id da fase imediatamente anterior
+        const faseAnteriorMap = {larva:'coleta', povoamento:'larva', transferencia:'povoamento'};
+        const faseAnterior = faseAnteriorMap[proximaFase];
+        const fasesAnteriores = fases.filter(f=>f.fase===faseAnterior);
+        // Se é coleta, usa p.lote_coleta; senão pega o lote_id do manejo anterior
+        const loteOrigem = faseAnterior==='coleta'
+          ? p.lote_coleta
+          : (fasesAnteriores[fasesAnteriores.length-1]?.lote_id || p.lote_coleta);
+        return `<button onclick="openManejoForm('${loteOrigem}','${proximaFase}')" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;cursor:pointer;">+ ${FASES[proximaFase]?.label||proximaFase}</button>`;
+      })():'<div style="flex:1;font-size:11px;color:#16a34a;text-align:center;padding:7px;">✅ Pipeline completo</div>'}
     </div>` : '';
 
   return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px;">
@@ -5510,24 +5520,28 @@ function renderPipelineCard(p){
 // ─── Editar Coleta (navega para módulo Coleta com lote pré-selecionado) ────
 function editColeta(loteId){
   // Navega para o módulo Coleta → aba Lançar → pré-seleciona o lote
-  showModule('coleta');
-  showColetaView('coleta');
-  // Aguarda render e seta o lote
+  switchModule('coleta');
+  // switchModule chama showColetaView('matrizes') internamente,
+  // aguarda e depois navega para aba coleta com lote preenchido
   setTimeout(()=>{
-    const paramEl = document.getElementById('coleta-param');
-    if(paramEl && paramEl.value !== 'desova'){
-      paramEl.value = 'desova';
-      renderColeta();
-    }
-    const loteEl = document.getElementById('coleta-lote');
-    if(loteEl){
-      loteEl.value = loteId;
-      // Mostra o campo lote
-      const loteRow = document.getElementById('coleta-lote-row');
-      if(loteRow) loteRow.style.display='block';
-    }
-    showToast(`Editando coleta do lote ${loteId} — ajuste os valores e salve`, 'ok');
-  }, 300);
+    showColetaView('coleta');
+    setTimeout(()=>{
+      const paramEl = document.getElementById('coleta-param');
+      if(paramEl){
+        paramEl.value = 'desova';
+        renderColeta();
+      }
+      setTimeout(()=>{
+        const loteEl = document.getElementById('coleta-lote');
+        if(loteEl){
+          loteEl.value = loteId;
+          const loteRow = document.getElementById('coleta-lote-row');
+          if(loteRow) loteRow.style.display='block';
+        }
+        showToast(`Editando coleta do lote ${loteId} — ajuste os valores e salve`, 'ok');
+      }, 100);
+    }, 100);
+  }, 150);
 }
 
 // ─── Editar fase existente ──────────────────────────────
