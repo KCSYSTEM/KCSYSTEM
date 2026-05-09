@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.23</title>
+<title>KC System v2.24</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -387,7 +387,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.23</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.24</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2292,6 +2292,18 @@ function getOfficialRecords(tankId, hapa=undefined){
   return Object.values(byDay).sort((a,b)=>a.date.localeCompare(b.date));
 }
 function lastRec(id){const off=getOfficialRecords(id,null);return off.length?off[off.length-1]:null;}
+
+// Retorna o último valor não-nulo de um campo específico para um tanque,
+// percorrendo os registros oficiais do mais recente para o mais antigo.
+// Garante que qty e bio (lançados esporadicamente) não "somem" entre lançamentos.
+function lastValFor(tankId, field, hapa=null){
+  const off = getOfficialRecords(tankId, hapa===null?null:hapa);
+  for(let i=off.length-1;i>=0;i--){
+    if(off[i][field]!=null) return off[i][field];
+  }
+  return null;
+}
+
 function lastRecHapa(id,hapa){
   if(!hapa)return lastRec(id);
   const off=getOfficialRecords(id,hapa);
@@ -3875,9 +3887,11 @@ function renderPainel(){
   function tcaAcum(t){
     const recs=t.hapas?getOfficialRecords(t.id,null):getOfficialRecords(t.id);
     const totalRacao=recs.reduce((s,r)=>(r.racaoG||0)+s,0);
-    const last=recs[recs.length-1];
-    if(!last||!last.qty||!last.bio)return null;
-    const biomassa=last.qty*last.bio/1000;
+    // qty e bio: busca último valor não-nulo independentemente
+    const qty=lastValFor(t.id,'qty',null);
+    const bio=lastValFor(t.id,'bio',null);
+    if(!qty||!bio)return null;
+    const biomassa=qty*bio/1000;
     if(!biomassa)return null;
     return(totalRacao/1000/biomassa).toFixed(3);
   }
@@ -3984,11 +3998,12 @@ function renderPainel(){
           return hRecs.length?hRecs[hRecs.length-1]:null;
         });
         if(cVals.qty==null){
-          const prevQtys=allPrev.map(r=>r?.qty).filter(v=>v!=null);
+          // lastValFor busca campo a campo, independente dos outros
+          const prevQtys=hapaNames.map((_,i)=>lastValFor(t.id,'qty',i+1)).filter(v=>v!=null);
           if(prevQtys.length){cVals.qty=prevQtys.reduce((s,v)=>s+v,0);cVals._qtyPrev=true;}
         }
         if(cVals.bio==null){
-          const prevBios=allPrev.map(r=>r?.bio).filter(v=>v!=null);
+          const prevBios=hapaNames.map((_,i)=>lastValFor(t.id,'bio',i+1)).filter(v=>v!=null);
           if(prevBios.length){cVals.bio=avg(prevBios);cVals._bioPrev=true;}
         }
       }
@@ -4026,13 +4041,9 @@ function renderPainel(){
           Object.assign(hv,{o2:hr.o2,temp:hr.temp,amonia:hr.amonia,ph:hr.ph,mort:hr.mort||0,qty:hr.qty,bio:hr.bio,_ideal:hr.racaoIdealG,_real:hr.racaoG});
           hv._pct=(hr.racaoIdealG&&hr.racaoG)?Math.round(hr.racaoG/hr.racaoIdealG*100):null;
         }
-        // Fallback: qty e bio do dia anterior se não há no dia atual
-        if(hv.qty==null||hv.bio==null){
-          const pd=new Date(date+'T12:00:00');pd.setDate(pd.getDate()-1);
-          const prevHr=recForDate(t.id,pd.toISOString().split('T')[0],h);
-          if(hv.qty==null&&prevHr?.qty!=null){hv.qty=prevHr.qty;hv._qtyPrev=true;}
-          if(hv.bio==null&&prevHr?.bio!=null){hv.bio=prevHr.bio;hv._bioPrev=true;}
-        }
+        // Fallback: qty e bio — busca último valor não-nulo no histórico (não só D-1)
+        if(hv.qty==null){const v=lastValFor(t.id,'qty',h);if(v!=null){hv.qty=v;hv._qtyPrev=true;}}
+        if(hv.bio==null){const v=lastValFor(t.id,'bio',h);if(v!=null){hv.bio=v;hv._bioPrev=true;}}
         hv._tca=null;
         if(hv._ideal!=null)hv._ideal=hv._ideal/1000;
         if(hv._real!=null)hv._real=hv._real/1000;
@@ -4056,13 +4067,9 @@ function renderPainel(){
         Object.assign(vals,{o2:rec.o2,temp:rec.temp,amonia:rec.amonia,ph:rec.ph,mort:rec.mort||0,qty:rec.qty,bio:rec.bio,_ideal:rec.racaoIdealG,_real:rec.racaoG});
         vals._pct=(rec.racaoIdealG&&rec.racaoG)?Math.round(rec.racaoG/rec.racaoIdealG*100):null;
       }
-      // Bug 3: qty e bio — busca último registro com dado no histórico
-      if(vals.qty==null||vals.bio==null){
-        const allPrevRecs=getOfficialRecords(t.id,null).filter(r=>r.date<date);
-        const lastWithData=allPrevRecs.filter(r=>r.qty!=null||r.bio!=null).pop();
-        if(vals.qty==null&&lastWithData?.qty!=null){vals.qty=lastWithData.qty;vals._qtyPrev=true;}
-        if(vals.bio==null&&lastWithData?.bio!=null){vals.bio=lastWithData.bio;vals._bioPrev=true;}
-      }
+      // qty e bio independentes — busca último valor não-nulo campo a campo
+      if(vals.qty==null){const v=lastValFor(t.id,'qty',null);if(v!=null){vals.qty=v;vals._qtyPrev=true;}}
+      if(vals.bio==null){const v=lastValFor(t.id,'bio',null);if(v!=null){vals.bio=v;vals._bioPrev=true;}}
       vals._tca=tca?parseFloat(tca):null;
       if(vals._ideal!=null)vals._ideal=vals._ideal/1000;
       if(vals._real!=null)vals._real=vals._real/1000;
