@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.35</title>
+<title>KC System v2.36</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -396,7 +396,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.35</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.36</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1523,7 +1523,7 @@ function renderColeta(){
       <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="0" step="0.1" inputmode="decimal" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${r.lastFemeas!==''?`♀${r.lastFemeas}`:r.lastMl!==''?`${r.lastMl}mL`:r.lastGorados!==''?`${r.lastGorados}%`:'—'}</td>
+      <td style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">${r.lastFemeas!==''?`<div>♀ ${r.lastFemeas}</div>`:''} ${r.lastMl!==''?`<div>💧 ${r.lastMl}mL</div>`:''} ${r.lastGorados!==''?`<div>💀 ${r.lastGorados}%</div>`:''} ${r.lastFemeas===''&&r.lastMl===''&&r.lastGorados===''?'—':''}</td>
     </tr>`).join('');
 
   } else {
@@ -5553,7 +5553,7 @@ function editManejoFase(manejoId){
   const lotesManejo = manejos.map(x=>x.lote_id).filter(Boolean);
   const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===m.fase?'selected':''}>${v.icon} ${v.label}</option>`).join('');
-  const tankOpts = tanks.filter(t=>!t.empty).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 
   const html=`
   <div id="manejo-overlay" onclick="if(event.target===this)closeManejoForm()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;">
@@ -5682,7 +5682,7 @@ function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
 
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===faseSugerida?'selected':''}>${v.icon} ${v.label}</option>`).join('');
   const origensOpts = todosLotesOrigem.map(l=>`<option value="${l}" ${l===loteOrigemSugerido?'selected':''}>${l}</option>`).join('');
-  const tankOpts = tanks.filter(t=>!t.empty).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 
   const html=`
   <div id="manejo-overlay" onclick="if(event.target===this)closeManejoForm()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;">
@@ -5800,7 +5800,7 @@ function addOrigemRow(loteDefault=''){
 }
 
 function addDestinoRow(){
-  const tankOpts = tanks.filter(t=>!t.empty).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   const id = 'dest_'+Date.now();
   const row = document.createElement('div');
   row.style.cssText='display:flex;gap:6px;align-items:center;';
@@ -5814,7 +5814,7 @@ function addDestinoRow(){
 }
 
 function addTamanhoRow(){
-  const tankOpts = tanks.filter(t=>t.groupId==='geo-elevada'&&!t.empty).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.filter(t=>t.groupId==='geo-elevada').sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   const id = 'tam_'+Date.now();
   const row = document.createElement('div');
   row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
