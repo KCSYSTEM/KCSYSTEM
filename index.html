@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.25</title>
+<title>KC System v2.23</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -387,7 +387,7 @@ canvas.chart-canvas{display:block;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.22</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.23</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -940,29 +940,8 @@ function loadLimits(){try{const l=JSON.parse(localStorage.getItem('kc_limits'));
 
 // Salva um registro individual no Supabase
 async function saveRecord_sb(rec){
-  // Antes de salvar, arquiva registros anteriores do mesmo (tankId, date, hapa)
-  try{
-    const existing=records.filter(r=>
-      r.tankId===rec.tankId &&
-      r.date===rec.date &&
-      r.hapa==rec.hapa &&
-      r.id!==rec.id
-    );
-    if(existing.length){
-      const toArchive=existing.map(r=>({
-        id:r.id, tank_id:r.tankId, tank_name:r.tankName,
-        date:r.date, username:r.username, user_name:r.user,
-        timestamp:r.timestamp, data:r
-      }));
-      // Insere em records_history
-      await sbUpsert('records_history', toArchive);
-      // Deleta de records
-      for(const r of existing){
-        await sbDelete('records', r.id);
-      }
-    }
-  }catch(e){console.warn('archive error',e);}
-
+  // Apenas persiste o registro no Supabase — sem arquivamento automático.
+  // O arquivamento é responsabilidade de quem chama (saveRecord, _doSaveLancamentos, etc.)
   return sbUpsert('records',[{
     id:rec.id, tank_id:rec.tankId, tank_name:rec.tankName,
     date:rec.date, username:rec.username, user_name:rec.user,
@@ -2228,7 +2207,12 @@ function showView(v){
   if(v==='settings')renderSettings();
   if(v==='graficos'){populateChartTankSelect();renderCharts();}
   if(v==='lancamentos'){initLancamentos();}
-  if(v==='painel')renderPainel();
+  if(v==='painel'){
+    // Sempre inicia com a data de hoje ao entrar no painel
+    const pdEl=document.getElementById('painel-date');
+    if(pdEl) pdEl.value=new Date().toISOString().split('T')[0];
+    renderPainel();
+  }
   document.getElementById('main').scrollTop=0;
 }
 function goHome(){currentGroupId=null;showView('tanques');}
@@ -2629,7 +2613,16 @@ async function saveRecord(){
       `Já existe um registro para ${formatDate(date)}${activeHapa?` (${hapaLabel(activeTank,activeHapa)})`:''} neste tanque.\nSalvar manterá o original no histórico e usará este como o registro oficial do dia.`,
       async()=>{
         const idx=records.findIndex(r=>r.id===existing.id);
-        if(idx>=0){records[idx].overridden=true;await saveRecord_sb(records[idx]);}
+        if(idx>=0){
+          records[idx].overridden=true;
+          // Arquiva explicitamente em records_history
+          await sbUpsert('records_history',[{
+            id:records[idx].id, tank_id:records[idx].tankId, tank_name:records[idx].tankName,
+            date:records[idx].date, username:records[idx].username, user_name:records[idx].user,
+            timestamp:records[idx].timestamp, data:records[idx]
+          }]);
+          await sbDelete('records', records[idx].id);
+        }
         await saveOneRecord(rec);
         renderTankView();updateMapSub();showToast('Registro atualizado ✓','ok');switchTab('historico');
       }
@@ -3518,7 +3511,7 @@ async function _doSaveLancamentos(toSave,param,date){
       continue;
     }
 
-    // Cria registro histórico copiando dados existentes do dia para não apagar
+    // Registro de histórico: apenas o campo lançado (sem copiar outros campos)
     const base=existing||{};
     const histRec={
       id:'lanc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
@@ -3526,22 +3519,10 @@ async function _doSaveLancamentos(toSave,param,date){
       user:currentUser.name,username:currentUser.username,
       timestamp:new Date().toISOString(),
       lote:base.lote||lastR?.lote||tank.lote||'',
-      temp:base.temp??null,
-      o2:base.o2??null,
-      amonia:base.amonia??null,
-      ph:base.ph??null,
-      mort:base.mort??0,
-      qty:param==='qty'?(finalValue??null):(base.qty??null),
-      bio:param==='bio'?(finalValue??null):(base.bio??null),
-      racao:base.racao||'',
-      racaoIdealG:base.racaoIdealG??lastR?.racaoIdealG??null,
-      sobra:base.sobra??null,
-      racaoG:base.racaoG??null,
-      tratosIdeal:base.tratosIdeal??null,
-      tratos:base.tratos??null,
-      obs:'',
-      overridden:false,
-      hapa:item.hapaNum||null,
+      temp:null,o2:null,amonia:null,ph:null,mort:null,
+      qty:null,bio:null,racao:'',racaoIdealG:null,
+      sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
+      obs:'',overridden:false,hapa:item.hapaNum||null,
     };
 
     // Converte kg → g para parâmetros de ração
@@ -3559,7 +3540,7 @@ async function _doSaveLancamentos(toSave,param,date){
 
     records.push(histRec);
 
-    // Mescla no registro consolidado
+    // Mescla no registro consolidado existente (atualiza só o campo lançado)
     if(existing){
       if(param==='tempO2'){
         existing.temp=item.value;existing.o2=item.o2Value;
@@ -3567,7 +3548,7 @@ async function _doSaveLancamentos(toSave,param,date){
         existing.sobra=finalSobra;
         existing.racaoG=finalRacaoReal??finalValue;
       } else {
-        existing[param]=finalValue;
+        existing[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
       }
       const idx=records.findIndex(r=>r.id===existing.id);
       if(idx>=0)records[idx]=existing;
