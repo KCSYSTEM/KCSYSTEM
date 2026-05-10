@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.41</title>
+<title>KC System v2.42</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -401,7 +401,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.41</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.42</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -5538,14 +5538,21 @@ function buildColetaByLote(){
     // ML total
     if(r.desovaML!=null) l.mlTotal += r.desovaML;
 
-    // Ovos/mL e gorados (para média)
+    // Ovos/mL — média simples por lançamento de lote
     if(r.ovosPorMl!=null) l._ovosMlVals.push(r.ovosPorMl);
-    if(r.ovosGorados!=null) l._goradosVals.push(r.ovosGorados);
 
-    // Ovos bons por record
+    // Gorados — só coleta UMA entrada por hapa (o record mais recente com ovosGorados)
+    // A deduplicação é feita depois; aqui apenas guarda {hapaKey, valor, timestamp}
+    if(r.ovosGorados!=null){
+      const hk = (r.tankId||'lote')+'_'+(r.hapa??'x');
+      if(!l._goradosByHapa) l._goradosByHapa={};
+      if(!l._goradosByHapa[hk]||((r.timestamp||'')>(l._goradosByHapa[hk].ts||''))){
+        l._goradosByHapa[hk]={val:r.ovosGorados,ts:r.timestamp||''};
+      }
+    }
+
+    // Ovos totais por record (ml × ovosPorMl)
     if(r.ovosPorMl!=null&&r.desovaML!=null){
-      const ovos = r.ovosPorMl*r.desovaML*(1-(r.ovosGorados||0)/100);
-      l.ovosBons  += ovos;
       l.ovosTotal += Math.round(r.ovosPorMl*r.desovaML);
     }
 
@@ -5554,11 +5561,29 @@ function buildColetaByLote(){
 
   // Calcula médias finais
   Object.values(byLote).forEach(l=>{
-    l.ovosMlMedio  = l._ovosMlVals.length  ? parseFloat((l._ovosMlVals.reduce((s,v)=>s+v,0)/l._ovosMlVals.length).toFixed(1))   : null;
-    l.goradosMedio = l._goradosVals.length ? parseFloat((l._goradosVals.reduce((s,v)=>s+v,0)/l._goradosVals.length).toFixed(2)) : null;
-    l.naoGoradosPct = l.goradosMedio!=null  ? parseFloat((100-l.goradosMedio).toFixed(2)) : null;
-    l.ovosBons      = Math.round(l.ovosBons);
-    l.ovosPorFemea  = l.ovosBons&&l.femeasDesovaram ? Math.round(l.ovosBons/l.femeasDesovaram) : null;
+    l.ovosMlMedio = l._ovosMlVals.length
+      ? parseFloat((l._ovosMlVals.reduce((s,v)=>s+v,0)/l._ovosMlVals.length).toFixed(1))
+      : null;
+
+    // Gorados: média dos valores únicos por hapa (último lançamento de cada hapa)
+    const goradosVals = l._goradosByHapa ? Object.values(l._goradosByHapa).map(x=>x.val) : [];
+    l._goradosVals = goradosVals; // mantém compatibilidade
+    l.goradosMedio = goradosVals.length
+      ? parseFloat((goradosVals.reduce((s,v)=>s+v,0)/goradosVals.length).toFixed(2))
+      : null;
+    l.naoGoradosPct = l.goradosMedio!=null ? parseFloat((100-l.goradosMedio).toFixed(2)) : null;
+
+    // Ovos bons = ovosTotal × (1 - gorados%)
+    // Se não há ovosPorMl lançado mas há ml e ovosMlMedio, reconstrói ovosTotal
+    if(!l.ovosTotal && l.mlTotal && l.ovosMlMedio){
+      l.ovosTotal = Math.round(l.mlTotal * l.ovosMlMedio);
+    }
+    l.ovosBons = l.ovosTotal && l.goradosMedio!=null
+      ? Math.round(l.ovosTotal * (1 - l.goradosMedio/100))
+      : (l.ovosTotal || 0);
+    l.ovosPorFemea = l.ovosBons&&l.femeasDesovaram
+      ? Math.round(l.ovosBons/l.femeasDesovaram)
+      : null;
   });
 
   return byLote;
