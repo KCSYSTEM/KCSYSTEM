@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v3.0</title>
+<title>KC System v3.1</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -401,7 +401,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v2.42</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.1</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -3731,146 +3731,136 @@ async function _doSaveLancamentos(toSave,param,date){
   showSaveProgress(0,toSave.length);
 
   let saved=0;
+  const baseTs=Date.now();
+
   for(const item of toSave){
     const tank=tanks.find(t=>t.id===item.tankId);
     if(!tank)continue;
 
     const existing=recForDate(item.tankId,date,item.hapaNum);
-    const lastR=lastRec(item.tankId);
+    const lastR=item.hapaNum ? lastRecHapa(item.tankId,item.hapaNum) : lastRec(item.tankId);
 
     let finalValue=item.value;
     let finalSobra=null;
     let finalRacaoReal=null;
 
-    // Se for ração real, processa modo tambor ou balde
+    // ── Processa ração real (tambor ou balde) ──────────────
     if(param==='racaoReal'){
       const rowId=item.rowId;
       const modo=_tambModo[rowId]||'balde';
       const hapaCount=item.hapas||0;
-
       if(modo==='tambor'){
-        // Tambor: diferença total dividida por hapas (getRacaoRealParaLinha já divide)
         const res=getRacaoRealParaLinha(rowId,hapaCount);
-        if(res.racaoReal==null){saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;showSaveProgress(saved,toSave.length);continue;}
-        // res.racaoReal já é o valor POR HAPA (dividido dentro de getRacaoRealParaLinha)
-        finalRacaoReal=res.racaoReal; // valor por hapa
+        if(res.racaoReal==null){saved++;showSaveProgress(saved,toSave.length);continue;}
+        finalRacaoReal=res.racaoReal;
         finalSobra=null;
       } else {
-        // Balde: sobra total informada, divide por hapas para calcular por hapa
-        const sobraTotal=item.value;
-        if(hapaCount>0){
-          // Não calcula finalRacaoReal aqui — calcula por hapa no loop abaixo
-          finalSobra=sobraTotal;
-        } else {
-          // Tanque sem hapas: lógica normal
-          finalSobra=sobraTotal;
-          const ideal=existing?.racaoIdealG||lastR?.racaoIdealG||null;
-          if(ideal!=null&&sobraTotal!=null)finalRacaoReal=Math.max(0,ideal-sobraTotal);
+        finalSobra=item.value;
+        if(!hapaCount){
+          const ideal=existing?.racaoIdealG??lastR?.racaoIdealG??null;
+          if(ideal!=null&&finalSobra!=null) finalRacaoReal=Math.max(0,ideal-finalSobra);
         }
       }
     }
 
-    // Se tanque tem hapas, salva um registro por hapa
+    // ── Tanque com hapas + ração real → salva por hapa ─────
     const hapaCount=item.hapas||0;
-    const tank2=tanks.find(t=>t.id===item.tankId);
-    if(param==='racaoReal'&&hapaCount>0&&tank2?.hapaNames?.length){
+    if(param==='racaoReal'&&hapaCount>0&&tank.hapaNames?.length){
       const rowId=item.rowId;
       const modo=_tambModo[rowId]||'balde';
-      // finalSobra está em kg, converte para g
       const sobraTotalG=finalSobra!=null?Math.round(finalSobra*1000):null;
       const sobraPorHapaG=sobraTotalG!=null?sobraTotalG/hapaCount:null;
       const sobraPorHapaKg=sobraPorHapaG!=null?sobraPorHapaG/1000:null;
-      const baseTs=Date.now();
 
       for(let h=1;h<=hapaCount;h++){
         const exH=recForDate(item.tankId,date,h);
         const lastRH=lastRecHapa(item.tankId,h);
-
-        // Calcula ração real por hapa em gramas
         let racaoPorHapaG;
         if(modo==='tambor'){
-          // finalRacaoReal em kg já é POR HAPA (dividido em getRacaoRealParaLinha) → apenas converte para g
           racaoPorHapaG=finalRacaoReal!=null?Math.round(finalRacaoReal*1000):null;
         } else {
-          // balde: idealHapa(g) - sobraPorHapa(g)
           const idealHapaG=exH?.racaoIdealG??lastRH?.racaoIdealG??null;
           racaoPorHapaG=idealHapaG!=null&&sobraPorHapaG!=null
-            ?Math.max(0,Math.round(idealHapaG-sobraPorHapaG))
-            :null;
+            ?Math.max(0,Math.round(idealHapaG-sobraPorHapaG)):null;
         }
-
-        const histH={
-          id:`lanc_${baseTs}_h${h}_${item.tankId.slice(-4)}`,
-          tankId:item.tankId,tankName:tank.name,date,
-          user:currentUser.name,username:currentUser.username,
-          timestamp:new Date(baseTs+h).toISOString(),
-          lote:exH?.lote||lastRH?.lote||tank.lote||'',
-          temp:null,o2:null,amonia:null,ph:null,mort:0,
-          qty:param==='qty'?(finalValue??null):null,
-          bio:param==='bio'?(finalValue??null):null,
-          racao:'',racaoIdealG:exH?.racaoIdealG??lastRH?.racaoIdealG??null,
-          sobra:sobraPorHapaKg,racaoG:racaoPorHapaG,
-          tratosIdeal:null,tratos:null,obs:'',
-          overridden:false,hapa:h,
-        };
-        records.push(histH);
         if(exH){
-          exH.sobra=sobraPorHapaKg;exH.racaoG=racaoPorHapaG;
+          // Mescla no registro existente do hapa
+          exH.sobra=sobraPorHapaKg; exH.racaoG=racaoPorHapaG;
+          exH.user=currentUser.name; exH.username=currentUser.username;
+          exH.timestamp=new Date(baseTs+h).toISOString();
           const idx=records.findIndex(r=>r.id===exH.id);
-          if(idx>=0)records[idx]=exH;
+          if(idx>=0) records[idx]=exH;
           await saveTankRecord_sb(exH);
+        } else {
+          // Cria novo registro para o hapa
+          const newH={
+            id:`lanc_${baseTs}_h${h}_${item.tankId.slice(-4)}`,
+            tankId:item.tankId,tankName:tank.name,date,
+            user:currentUser.name,username:currentUser.username,
+            timestamp:new Date(baseTs+h).toISOString(),
+            lote:lastRH?.lote||tank.lote||'',hapa:h,
+            temp:null,o2:null,amonia:null,ph:null,mort:null,
+            qty:null,bio:null,racao:'',
+            racaoIdealG:lastRH?.racaoIdealG??null,
+            sobra:sobraPorHapaKg,racaoG:racaoPorHapaG,
+            tratosIdeal:null,tratos:null,obs:'',overridden:false,
+          };
+          records.push(newH);
+          await saveTankRecord_sb(newH);
         }
-        await saveTankRecord_sb(histH);
       }
-      saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;showSaveProgress(saved,toSave.length);
+      saved++;showSaveProgress(saved,toSave.length);
       continue;
     }
 
-    // Registro de histórico: apenas o campo lançado (sem copiar outros campos)
-    const base=existing||{};
-    const histRec={
-      id:'lanc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
-      tankId:item.tankId,tankName:tank.name,date,
-      user:currentUser.name,username:currentUser.username,
-      timestamp:new Date().toISOString(),
-      lote:base.lote||lastR?.lote||tank.lote||'',
-      temp:null,o2:null,amonia:null,ph:null,mort:null,
-      qty:null,bio:null,racao:'',racaoIdealG:null,
-      sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
-      obs:'',overridden:false,hapa:item.hapaNum||null,
-    };
-
-    // Converte kg → g para parâmetros de ração
+    // ── Caso geral: tanque sem hapas ou param não-ração ────
     let finalValueForSave=finalValue;
-    if(param==='racaoIdealG'&&finalValue!=null)finalValueForSave=parseFloat((finalValue*1000).toFixed(3));
-    if(param==='tempO2'){
-      histRec.temp=item.value;
-      histRec.o2=item.o2Value;
-    } else if(param==='racaoReal'){
-      histRec.sobra=finalSobra;
-      histRec.racaoG=finalRacaoReal;
-    } else {
-      histRec[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
-    }
+    if(param==='racaoIdealG'&&finalValue!=null)
+      finalValueForSave=parseFloat((finalValue*1000).toFixed(3));
 
-    records.push(histRec);
-
-    // Mescla no registro consolidado existente (atualiza só o campo lançado)
     if(existing){
+      // ── Mescla no registro existente do dia ──────────────
       if(param==='tempO2'){
-        existing.temp=item.value;existing.o2=item.o2Value;
+        existing.temp=item.value; existing.o2=item.o2Value;
       } else if(param==='racaoReal'){
-        existing.sobra=finalSobra;
-        existing.racaoG=finalRacaoReal??finalValue;
+        existing.sobra=finalSobra; existing.racaoG=finalRacaoReal??finalValue;
       } else {
         existing[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
       }
+      existing.user=currentUser.name;
+      existing.username=currentUser.username;
+      existing.timestamp=new Date(baseTs+saved).toISOString();
       const idx=records.findIndex(r=>r.id===existing.id);
-      if(idx>=0)records[idx]=existing;
+      if(idx>=0) records[idx]=existing;
       await saveTankRecord_sb(existing);
+    } else {
+      // ── Cria novo registro do dia ─────────────────────────
+      const newRec={
+        id:'lanc_'+baseTs+'_'+Math.random().toString(36).slice(2,6),
+        tankId:item.tankId,tankName:tank.name,date,
+        user:currentUser.name,username:currentUser.username,
+        timestamp:new Date(baseTs+saved).toISOString(),
+        lote:lastR?.lote||tank.lote||'',
+        hapa:item.hapaNum||null,
+        temp:null,o2:null,amonia:null,ph:null,mort:null,
+        qty:lastR?.qty??null,   // ← persiste qty do último registro
+        bio:lastR?.bio??null,   // ← persiste bio do último registro
+        racao:'',
+        racaoIdealG:lastR?.racaoIdealG??null,
+        sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
+        obs:'',overridden:false,
+      };
+      if(param==='tempO2'){
+        newRec.temp=item.value; newRec.o2=item.o2Value;
+      } else if(param==='racaoReal'){
+        newRec.sobra=finalSobra; newRec.racaoG=finalRacaoReal??finalValue;
+      } else {
+        newRec[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
+      }
+      records.push(newRec);
+      await saveTankRecord_sb(newRec);
     }
 
-    await saveTankRecord_sb(histRec);
     saved++;
     showSaveProgress(saved,toSave.length);
   }
