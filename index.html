@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v2.42</title>
+<title>KC System v3.0</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -913,6 +913,9 @@ const DEFAULT_RACOES=[
 ];
 
 let currentUser=null,tanks=[],records=[],racoes=[],activeTank=null,activeTab='registro',currentGroupId=null,activeHapa=null;
+// Array separado para registros de coleta/desova (lidos de coleta_records no Supabase)
+let coletaRecords=[];
+try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.parse(cc);}catch(e){}
 let confirmCallback=null;
 
 // ===== SUPABASE =====
@@ -966,16 +969,149 @@ function forceLogout(){
 function saveLimits(){localStorage.setItem('kc_limits',JSON.stringify(LIMITS));}
 function loadLimits(){try{const l=JSON.parse(localStorage.getItem('kc_limits'));if(l)Object.assign(LIMITS,l);}catch(e){}}
 
-// Salva um registro individual no Supabase
-async function saveRecord_sb(rec){
-  // Apenas persiste o registro no Supabase — sem arquivamento automático.
-  // O arquivamento é responsabilidade de quem chama (saveRecord, _doSaveLancamentos, etc.)
-  return sbUpsert('records',[{
-    id:rec.id, tank_id:rec.tankId, tank_name:rec.tankName,
-    date:rec.date, username:rec.username, user_name:rec.user,
-    timestamp:rec.timestamp, data:rec
-  }]);
+// ── Converte objeto rec (camelCase) → row tank_records (snake_case) ──────────
+function recToTankRow(rec, reason){
+  const row={
+    id:            rec.id,
+    tank_id:       rec.tankId||rec.tank_id||null,
+    tank_name:     rec.tankName||rec.tank_name||null,
+    hapa:          rec.hapa!=null?parseInt(rec.hapa):null,
+    date:          rec.date||null,
+    timestamp:     rec.timestamp||new Date().toISOString(),
+    username:      rec.username||null,
+    user_name:     rec.user||rec.user_name||null,
+    temp:          rec.temp??null,
+    o2:            rec.o2??null,
+    amonia:        rec.amonia??null,
+    ph:            rec.ph??null,
+    mort:          rec.mort!=null?parseInt(rec.mort):null,
+    qty:           rec.qty!=null?parseInt(rec.qty):null,
+    bio:           rec.bio??null,
+    racao_id:      rec.racao||rec.racao_id||null,
+    racao_ideal_g: rec.racaoIdealG??rec.racao_ideal_g??null,
+    sobra_g:       rec.sobra??rec.sobra_g??null,
+    racao_g:       rec.racaoG??rec.racao_g??null,
+    tratos_ideal:  rec.tratosIdeal!=null?parseFloat(rec.tratosIdeal):null,
+    tratos:        rec.tratos!=null?parseInt(rec.tratos):null,
+    lote:          rec.lote||null,
+    obs:           rec.obs||null,
+    overridden:    rec.overridden||false,
+  };
+  if(reason){
+    row.archived_at=rec.archived_at||new Date().toISOString();
+    row.archived_by=rec.username||null;
+    row.reason=reason;
+  }
+  return row;
 }
+
+// Converte row tank_records → objeto rec (camelCase) para manter compatibilidade interna
+function tankRowToRec(row){
+  return {
+    id:           row.id,
+    tankId:       row.tank_id,
+    tankName:     row.tank_name,
+    hapa:         row.hapa,
+    date:         row.date,
+    timestamp:    row.timestamp,
+    username:     row.username,
+    user:         row.user_name,
+    temp:         row.temp,
+    o2:           row.o2,
+    amonia:       row.amonia,
+    ph:           row.ph,
+    mort:         row.mort,
+    qty:          row.qty,
+    bio:          row.bio,
+    racao:        row.racao_id,
+    racaoIdealG:  row.racao_ideal_g,
+    sobra:        row.sobra_g,
+    racaoG:       row.racao_g,
+    tratosIdeal:  row.tratos_ideal,
+    tratos:       row.tratos,
+    lote:         row.lote,
+    obs:          row.obs,
+    overridden:   row.overridden,
+  };
+}
+
+// Converte objeto coleta → row coleta_records
+function coletaToRow(rec, reason){
+  const row={
+    id:           rec.id,
+    lote:         rec.lote||null,
+    tank_id:      rec.tankId||rec.tank_id||null,
+    tank_name:    rec.tankName||rec.tank_name||null,
+    hapa:         rec.hapa!=null?parseInt(rec.hapa):null,
+    hapa_name:    rec.hapaName||rec.hapa_name||('Hapa '+(rec.hapa??'')),
+    date:         rec.date||null,
+    timestamp:    rec.timestamp||new Date().toISOString(),
+    username:     rec.username||null,
+    user_name:    rec.user||rec.user_name||null,
+    femeas:       rec.desovaFemeas??rec.femeas??null,
+    ml:           rec.desovaML??rec.ml??null,
+    ovos_por_ml:  rec.ovosPorMl??rec.ovos_por_ml??null,
+    ovos_gorados: rec.ovosGorados??rec.ovos_gorados??null,
+    overridden:   rec.overridden||false,
+  };
+  if(reason){
+    row.archived_at=rec.archived_at||new Date().toISOString();
+    row.archived_by=rec.username||null;
+    row.reason=reason;
+  }
+  return row;
+}
+
+// Converte row coleta_records → objeto com campos camelCase
+function coletaRowToRec(row){
+  return {
+    id:            row.id,
+    lote:          row.lote,
+    tankId:        row.tank_id,
+    tankName:      row.tank_name,
+    hapa:          row.hapa,
+    hapaName:      row.hapa_name,
+    date:          row.date,
+    timestamp:     row.timestamp,
+    username:      row.username,
+    user:          row.user_name,
+    desovaFemeas:  row.femeas,
+    femeas:        row.femeas,
+    desovaML:      row.ml,
+    ml:            row.ml,
+    ovosPorMl:     row.ovos_por_ml,
+    ovosGorados:   row.ovos_gorados,
+    overridden:    row.overridden,
+  };
+}
+
+// ── Salva um record operacional na nova tabela ──────────────────────────────
+async function saveTankRecord_sb(rec){
+  return sbUpsert('tank_records',[recToTankRow(rec)]);
+}
+
+// Arquiva um record operacional em tank_records_history e remove do tank_records
+async function archiveTankRecord(rec){
+  await sbUpsert('tank_records_history',[recToTankRow(rec,'update')]);
+  await sbDelete('tank_records',rec.id);
+}
+
+// ── Salva um record de coleta na nova tabela ────────────────────────────────
+async function saveColetaRecord_sb(rec){
+  return sbUpsert('coleta_records',[coletaToRow(rec)]);
+}
+
+// Arquiva um record de coleta
+async function archiveColetaRecord(rec){
+  await sbUpsert('coleta_records_history',[coletaToRow(rec,'update')]);
+  await sbDelete('coleta_records',rec.id);
+}
+
+// ── Decide qual tabela usar baseado no tipo do record ───────────────────────
+function isColetaRec(rec){
+  return rec.desovaFemeas!=null||rec.desovaML!=null||(rec.ovosGorados!=null&&rec.lote);
+}
+
 // Salva configuração de todos os tanques
 async function saveTanks_sb(){
   const rows=tanks.map(t=>({id:t.id,data:t}));
@@ -1000,7 +1136,12 @@ function save(){
 async function saveOneRecord(rec){
   records.push(rec);
   localStorage.setItem('kc_records',JSON.stringify(records));
-  const ok=await saveRecord_sb(rec);
+  let ok;
+  if(isColetaRec(rec)){
+    ok=await saveColetaRecord_sb(rec);
+  } else {
+    ok=await saveTankRecord_sb(rec);
+  }
   if(!ok)showToast('⚠ Salvo localmente (sem conexão)','error');
 }
 
@@ -1092,7 +1233,7 @@ function renderColetaGraficos(){
   if(!cont)return;
 
   // Monta dataset por data
-  const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote);
+  const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote&&!coletaRecords.some(c=>c.id===r.id))];
   if(!coletaRecs.length){
     cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">📈</div>
@@ -1272,16 +1413,21 @@ function renderColetaGraficos(){
 
 async function deleteColetaLote(lote){
   if(!confirm(`Deletar todos os registros do lote "${lote}"?\n\nEsta ação não pode ser desfeita.`))return;
-  const toDelete=records.filter(r=>r.lote===lote);
+  const toDeleteColeta=coletaRecords.filter(r=>r.lote===lote);
+  const toDeleteRec=records.filter(r=>r.lote===lote&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null));
+  const toDelete=[...toDeleteColeta,...toDeleteRec];
   if(!toDelete.length){showToast('Nenhum registro encontrado','error');return;}
   showToast('Deletando...','ok');
   let erros=0;
-  for(const r of toDelete){
-    try{
-      await sbDelete('records',r.id);
-      records=records.filter(x=>x.id!==r.id);
-    }catch(e){erros++;}
+  for(const r of toDeleteColeta){
+    try{await sbDelete('coleta_records',r.id);coletaRecords=coletaRecords.filter(x=>x.id!==r.id);}
+    catch(e){erros++;}
   }
+  for(const r of toDeleteRec){
+    try{await sbDelete('records',r.id);records=records.filter(x=>x.id!==r.id);}
+    catch(e){erros++;}
+  }
+  localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
   localStorage.setItem('kc_records',JSON.stringify(records));
   if(erros)showToast(`${toDelete.length-erros} deletados, ${erros} erros`,'error');
   else showToast(`Lote "${lote}" deletado ✓`,'ok');
@@ -1299,9 +1445,8 @@ function renderColetaHistorico(){
     ovosPorMl:{l:'Ovos/mL',fmt:v=>fNum(v)},
   };
 
-  const coletaRecs=records.filter(r=>!r.overridden&&r.lote&&
-    (r.desovaFemeas!=null||r.desovaML!=null||r.ovosPorMl!=null||r.ovosGorados!=null)
-  ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+  const _allColeta=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosPorMl!=null||r.ovosGorados!=null)&&!coletaRecords.some(c=>c.id===r.id))];
+  const coletaRecs=_allColeta.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
 
   if(!coletaRecs.length){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum lançamento ainda.</div>';
@@ -1342,7 +1487,7 @@ function renderColetaPainel(){
   if(!cont)return;
 
   // Records de desova (fêmeas/ml) E records de só-gorados (lançados separadamente)
-  const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&r.lote);
+  const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&r.lote&&!coletaRecords.some(c=>c.id===r.id))];
   const coletaDesovaRecs=coletaRecs.filter(r=>r.desovaFemeas!=null||r.desovaML!=null);
   if(!coletaDesovaRecs.length){
     cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
@@ -1530,7 +1675,7 @@ function renderColeta(){
 
     // Se há lote digitado e existem records desse lote → modo edição: usa tanques/hapas reais do lote
     const loteExistente = coletaLote
-      ? records.filter(r=>r.lote===coletaLote&&!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null))
+      ? [...coletaRecords.filter(r=>r.lote===coletaLote&&!r.overridden),...records.filter(r=>r.lote===coletaLote&&!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&!coletaRecords.some(c=>c.id===r.id))]
       : [];
 
     if(coletaLote && loteExistente.length){
@@ -1566,8 +1711,7 @@ function renderColeta(){
       matTanks.forEach(t=>{
         (t.hapaNames||[]).forEach((nm,i)=>{
           const h=i+1;
-          const hapaRecs=records.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden&&
-            (r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null));
+          const hapaRecs=[...coletaRecords.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden),...records.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&!coletaRecords.some(c=>c.id===r.id))];
           const lastFemeasRec  = byTs(hapaRecs.filter(r=>r.desovaFemeas!=null))[0];
           const lastMlRec      = byTs(hapaRecs.filter(r=>r.desovaML!=null))[0];
           const lastGoradosRec = byTs(hapaRecs.filter(r=>r.ovosGorados!=null))[0];
@@ -1587,7 +1731,7 @@ function renderColeta(){
 
   } else {
     // Por lote (ovosPorMl ou ovosGorados)
-    const coletaRecs=records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote);
+    const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote&&!coletaRecords.some(c=>c.id===r.id))];
     const byLote={};
     coletaRecs.forEach(r=>{
       if(!byLote[r.lote])byLote[r.lote]={lote:r.lote,femeas:0,ml:0,lastDate:''};
@@ -1662,40 +1806,53 @@ async function saveColeta(){
     if(!toSave.length){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
     for(const item of toSave){
       const tank=tanks.find(t=>t.id===item.tankId);
+      const hapaName=tank?.hapaNames?.[item.hapaNum-1]||('Hapa '+item.hapaNum);
+      // Arquiva registro anterior do mesmo lote/hapa se existir
+      const existing=coletaRecords.find(r=>r.lote===lote&&r.tankId===item.tankId&&r.hapa==item.hapaNum&&!r.overridden);
+      if(existing){
+        existing.overridden=true;
+        await archiveColetaRecord(existing);
+        const ei=coletaRecords.findIndex(r=>r.id===existing.id);
+        if(ei>=0)coletaRecords.splice(ei,1);
+      }
       const rec={id:`coleta_${baseTs}_h${item.hapaNum}_${item.tankId.slice(-4)}`,
-        tankId:item.tankId,tankName:tank?.name||item.tankId,date,
+        lote,tankId:item.tankId,tankName:tank?.name||item.tankId,
+        hapa:item.hapaNum,hapaName,date,
         user:currentUser.name,username:currentUser.username,
         timestamp:new Date(baseTs+saved).toISOString(),
-        lote,desovaFemeas:item.femeas,desovaML:item.ml,ovosGorados:item.ovosGorados??null,
-        temp:null,o2:null,amonia:null,ph:null,mort:0,qty:null,bio:null,
-        racao:'',racaoIdealG:null,sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
-        obs:'',overridden:false,hapa:item.hapaNum};
-      records.push(rec);await saveRecord_sb(rec);saved++;
+        desovaFemeas:item.femeas,desovaML:item.ml,ovosGorados:item.ovosGorados??null,
+        overridden:false};
+      coletaRecords.push(rec);
+      await saveColetaRecord_sb(rec);
+      saved++;
     }
+    localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
   } else {
+    // Parâmetros por lote (ovosPorMl, ovosGorados agregado) — também vai para coleta_records
     const inputs=document.querySelectorAll('#coleta-tbody input[data-lote]');
     for(const inp of inputs){
       if(!inp.value.trim())continue;
       const lote=inp.dataset.lote;
       const field=inp.dataset.field;
       const rec={id:`coleta_${field}_${baseTs}_${lote.replace(/\s/g,'_')}`,
-        tankId:'coleta_geral',tankName:'Coleta',date,
+        lote,tankId:'coleta_geral',tankName:'Coleta',hapa:null,hapaName:null,date,
         user:currentUser.name,username:currentUser.username,
         timestamp:new Date(baseTs+saved).toISOString(),
-        lote,[field]:parseFloat(inp.value),
-        temp:null,o2:null,amonia:null,ph:null,mort:0,qty:null,bio:null,
-        racao:'',racaoIdealG:null,sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
-        desovaFemeas:null,desovaML:null,obs:'',overridden:false,hapa:null};
-      records.push(rec);await saveRecord_sb(rec);saved++;
+        desovaFemeas:null,desovaML:null,
+        ovosPorMl:field==='ovosPorMl'?parseFloat(inp.value):null,
+        ovosGorados:field==='ovosGorados'?parseFloat(inp.value):null,
+        overridden:false};
+      coletaRecords.push(rec);
+      await saveColetaRecord_sb(rec);
+      saved++;
     }
     if(!saved){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
+    localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
   }
 
-  localStorage.setItem('kc_records',JSON.stringify(records));
   prog.style.display='none';
   renderColeta();
   renderColetaPainel();
-  // Popup de confirmação com botão OK
   showColetaSalvoPopup(saved);
 }
 
@@ -1888,15 +2045,24 @@ function startRealtime(){
   _realtimeWs.onopen=()=>{
     console.log('Realtime conectado ✓');
 
-    // Envia join no canal de records
+    // Envia join nos canais de dados
     const joinRecords={
-      topic:'realtime:public:records',
+      topic:'realtime:public:tank_records',
       event:'phx_join',
       payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
-        {event:'INSERT',schema:'public',table:'records'},
-        {event:'UPDATE',schema:'public',table:'records'},
+        {event:'INSERT',schema:'public',table:'tank_records'},
+        {event:'UPDATE',schema:'public',table:'tank_records'},
       ]}},
       ref:'1'
+    };
+    const joinColetaRecords={
+      topic:'realtime:public:coleta_records',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'coleta_records'},
+        {event:'UPDATE',schema:'public',table:'coleta_records'},
+      ]}},
+      ref:'4'
     };
     const joinTanks={
       topic:'realtime:public:tanks',
@@ -1918,6 +2084,7 @@ function startRealtime(){
       ref:'3'
     };
     _realtimeWs.send(JSON.stringify(joinRecords));
+    _realtimeWs.send(JSON.stringify(joinColetaRecords));
     _realtimeWs.send(JSON.stringify(joinTanks));
     _realtimeWs.send(JSON.stringify(joinUsers));
 
@@ -1939,6 +2106,18 @@ function startRealtime(){
         const row=payload.record||payload.new;
         if(!row)return;
 
+        if(table==='tank_records'){
+          const rec=tankRowToRec(row);
+          onRealtimeRecord(rec);
+        }
+        if(table==='coleta_records'){
+          const colRec=coletaRowToRec(row);
+          if(!colRec.overridden){
+            const ei=coletaRecords.findIndex(r=>r.id===colRec.id);
+            if(ei>=0)coletaRecords[ei]=colRec;else coletaRecords.push(colRec);
+            localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
+          }
+        }
         if(table==='records'&&row.data){
           onRealtimeRecord(row.data);
         }
@@ -2036,50 +2215,65 @@ function showSyncBadge(msg){
 async function load(){
   loadLimits();
   showSyncStatus('Sincronizando...');
+
+  // ── 1. Tanques ────────────────────────────────────────────
   try{
-    // 1. Tanques do Supabase
     const sbTanks=await sbGet('tanks','select=id,data');
-    if(sbTanks&&sbTanks.length){
-      tanks=sbTanks.map(r=>r.data).filter(Boolean);
-    }
+    if(sbTanks&&sbTanks.length) tanks=sbTanks.map(r=>r.data).filter(Boolean);
   }catch(e){console.warn('load tanks error',e);}
 
+  // ── 2. Records operacionais de tank_records ───────────────
   try{
-    // 2. Registros do Supabase — busca em páginas de 1000 para não perder dados
-    let allRecs=[];
-    let offset=0;
-    const pageSize=1000;
+    let allRows=[], offset=0, pageSize=1000;
     while(true){
-      const page=await sbGet('records',`select=data&order=timestamp.asc&limit=${pageSize}&offset=${offset}`);
-      if(!page||!page.length)break;
-      allRecs=allRecs.concat(page.map(r=>r.data).filter(Boolean));
-      if(page.length<pageSize)break; // última página
+      const page=await sbGet('tank_records',`select=*&order=timestamp.asc&limit=${pageSize}&offset=${offset}`);
+      if(!page||!page.length) break;
+      allRows=allRows.concat(page);
+      if(page.length<pageSize) break;
       offset+=pageSize;
     }
-    if(allRecs.length){
-      // Merge: preserva registros locais não confirmados no Supabase
-      const sbIds=new Set(allRecs.map(r=>r.id));
-      const localOnly=records.filter(r=>r.id&&!sbIds.has(r.id));
-      records=[...allRecs,...localOnly];
-      localStorage.setItem('kc_records',JSON.stringify(records));
+    if(allRows.length){
+      const fromSb=allRows.map(tankRowToRec);
+      const sbIds=new Set(fromSb.map(r=>r.id));
+      // Preserva registros locais não confirmados (sem internet)
+      const localOnly=records.filter(r=>r.id&&!sbIds.has(r.id)&&!isColetaRec(r));
+      // Registros de coleta que estavam no cache local ficam
+      const coletaLocal=records.filter(r=>isColetaRec(r));
+      records=[...fromSb,...localOnly,...coletaLocal];
     }
-  }catch(e){console.warn('load records error',e);}
+  }catch(e){console.warn('load tank_records error',e);}
 
+  // ── 3. Records de coleta de coleta_records ────────────────
   try{
-    // 3. Rações do Supabase
-    const sbRac=await sbGet('racoes','select=data');
-    if(sbRac&&sbRac.length){
-      racoes=sbRac.map(r=>r.data).filter(Boolean);
+    let allColeta=[], offset=0, pageSize=1000;
+    while(true){
+      const page=await sbGet('coleta_records',`select=*&order=timestamp.asc&limit=${pageSize}&offset=${offset}`);
+      if(!page||!page.length) break;
+      allColeta=allColeta.concat(page);
+      if(page.length<pageSize) break;
+      offset+=pageSize;
     }
+    if(allColeta.length){
+      coletaRecords=allColeta.map(coletaRowToRec);
+      // Remove coleta do array records (estava misturado antes — garante sem duplicatas)
+      records=records.filter(r=>!isColetaRec(r));
+      localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
+    }
+  }catch(e){console.warn('load coleta_records error',e);}
+
+  // ── 4. Rações ─────────────────────────────────────────────
+  try{
+    const sbRac=await sbGet('racoes','select=data');
+    if(sbRac&&sbRac.length) racoes=sbRac.map(r=>r.data).filter(Boolean);
   }catch(e){console.warn('load racoes error',e);}
 
+  // ── 5. Manejos ────────────────────────────────────────────
   try{
-    // 4. Manejos do Supabase
     const sbMan=await sbGet('manejos','select=data&order=id.asc');
     if(sbMan&&sbMan.length) manejos=sbMan.map(r=>r.data).filter(Boolean);
   }catch(e){console.warn('load manejos error',e);}
 
-  // 4. Remove fantasmas e garante tanques dos grupos
+  // ── 6. Garante estrutura de tanques ───────────────────────
   const validIds=new Set();
   GROUPS.forEach(g=>g.tanks.forEach(td=>validIds.add('tank_'+g.id+'_'+td.num)));
   tanks=tanks.filter(t=>validIds.has(t.id)||!t.id.startsWith('tank_'));
@@ -2088,20 +2282,20 @@ async function load(){
       tanks.push({id:'tank_'+g.id+'_'+td.num,groupId:g.id,name:td.name,num:td.num,species:'Não informado',volume:td.volume,shape:td.shape,large:td.large||false});
   }));
 
-  // 5. Garante rações
-  if(!racoes.length)racoes=DEFAULT_RACOES.map((x,i)=>({...x,id:'r'+i}));
+  // ── 7. Garante rações ─────────────────────────────────────
+  if(!racoes.length) racoes=DEFAULT_RACOES.map((x,i)=>({...x,id:'r'+i}));
 
-  // 6. Persiste localmente como cache
+  // ── 8. Cache local ────────────────────────────────────────
   localStorage.setItem('kc_tanks',JSON.stringify(tanks));
   localStorage.setItem('kc_records',JSON.stringify(records));
   localStorage.setItem('kc_racoes',JSON.stringify(racoes));
 
   hideSyncStatus();
-  // Atualiza indicador de sync com o registro mais recente
-  const lastRec=records.length?records.reduce((a,b)=>a.timestamp>b.timestamp?a:b):null;
-  updateSyncIndicator('ok',lastRec);
+  const allRecs=[...records,...coletaRecords];
+  const lastR=allRecs.length?allRecs.reduce((a,b)=>a.timestamp>b.timestamp?a:b):null;
+  updateSyncIndicator('ok',lastR);
 
-  // Re-renderiza a view ativa do módulo coleta (sempre, pois o load pode ter trazido novos dados)
+  // Re-renderiza módulo coleta se ativo
   if(activeModule==='coleta'){
     const activeColetaNav=document.querySelector('.coleta-nav-item.active');
     const activeView=activeColetaNav?.id?.replace('nav-col-','');
@@ -2110,7 +2304,6 @@ async function load(){
     else if(activeView==='historico')renderColetaHistorico();
     else if(activeView==='matrizes')renderMatrizes();
   }
-  // Processa view pendente (quando usuário entrou no módulo antes do load terminar)
   if(_pendingColetaView){
     showColetaView(_pendingColetaView);
     _pendingColetaView=null;
@@ -2697,18 +2890,14 @@ async function saveRecord(){
   if(existing){
     showConfirm(
       'Registro existente',
-      `Já existe um registro para ${formatDate(date)}${activeHapa?` (${hapaLabel(activeTank,activeHapa)})`:''} neste tanque.\nSalvar manterá o original no histórico e usará este como o registro oficial do dia.`,
+      `Já existe um registro para ${formatDate(date)}${activeHapa?` (${hapaLabel(activeTank,activeHapa)})`:''} neste tanque.
+Salvar manterá o original no histórico e usará este como o registro oficial do dia.`,
       async()=>{
         const idx=records.findIndex(r=>r.id===existing.id);
         if(idx>=0){
           records[idx].overridden=true;
-          // Arquiva explicitamente em records_history
-          await sbUpsert('records_history',[{
-            id:records[idx].id, tank_id:records[idx].tankId, tank_name:records[idx].tankName,
-            date:records[idx].date, username:records[idx].username, user_name:records[idx].user,
-            timestamp:records[idx].timestamp, data:records[idx]
-          }]);
-          await sbDelete('records', records[idx].id);
+          await archiveTankRecord(records[idx]);
+          records.splice(idx,1);
         }
         await saveOneRecord(rec);
         renderTankView();updateMapSub();showToast('Registro atualizado ✓','ok');switchTab('historico');
@@ -3629,9 +3818,9 @@ async function _doSaveLancamentos(toSave,param,date){
           exH.sobra=sobraPorHapaKg;exH.racaoG=racaoPorHapaG;
           const idx=records.findIndex(r=>r.id===exH.id);
           if(idx>=0)records[idx]=exH;
-          await saveRecord_sb(exH);
+          await saveTankRecord_sb(exH);
         }
-        await saveRecord_sb(histH);
+        await saveTankRecord_sb(histH);
       }
       saved++;prog.textContent=`Salvando ${saved}/${toSave.length}...`;showSaveProgress(saved,toSave.length);
       continue;
@@ -3678,10 +3867,10 @@ async function _doSaveLancamentos(toSave,param,date){
       }
       const idx=records.findIndex(r=>r.id===existing.id);
       if(idx>=0)records[idx]=existing;
-      await saveRecord_sb(existing);
+      await saveTankRecord_sb(existing);
     }
 
-    await saveRecord_sb(histRec);
+    await saveTankRecord_sb(histRec);
     saved++;
     showSaveProgress(saved,toSave.length);
   }
@@ -5478,7 +5667,7 @@ function buildPipeline(){
   const coletaLotes = {}; // loteId_coleta → info
 
   // Primeiro: mapeia lotes coleta a partir do módulo Coleta
-  const coletaRecs = records.filter(r=>!r.overridden&&r.lote&&r.desovaFemeas!=null);
+  const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote&&r.desovaFemeas!=null),...records.filter(r=>!r.overridden&&r.lote&&r.desovaFemeas!=null&&!coletaRecords.some(c=>c.id===r.id))];
   const byLoteColeta = {};
   coletaRecs.forEach(r=>{ if(!byLoteColeta[r.lote]) byLoteColeta[r.lote]={lote:r.lote,ovos:0,datas:[]}; });
 
@@ -5515,7 +5704,13 @@ function buildPipeline(){
 
 function buildColetaByLote(){
   const byLote = {};
-  records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.ovosPorMl!=null||r.femeas!=null||r.ovosGorados!=null)).forEach(r=>{
+  // Lê de coletaRecords (nova tabela) + fallback para records legado
+  const allColeta=[
+    ...coletaRecords.filter(r=>!r.overridden&&r.lote),
+    ...records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null||r.ovosPorMl!=null))
+      .filter(r=>!coletaRecords.some(c=>c.id===r.id)) // evita duplicatas
+  ];
+  allColeta.forEach(r=>{
     if(!byLote[r.lote]) byLote[r.lote]={
       ovosTotal:0, ovosBons:0, mlTotal:0, lastDate:'',
       femeasReprod:0, femeasDesovaram:0,
@@ -5746,7 +5941,7 @@ function editManejoFase(manejoId){
   const m = manejos.find(x=>x.id===manejoId);
   if(!m){ showToast('Manejo não encontrado','error'); return; }
 
-  const lotesColeta = [...new Set(records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote))].sort().reverse();
+  const lotesColeta=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote)])].sort().reverse();
   const lotesManejo = manejos.map(x=>x.lote_id).filter(Boolean);
   const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===m.fase?'selected':''}>${v.icon} ${v.label}</option>`).join('');
@@ -5801,7 +5996,7 @@ function editManejoFase(manejoId){
   // Preenche origens existentes
   const origemList = document.getElementById('mf-origens-list');
   (m.origens||[]).forEach(o=>{
-    const todos = [...new Set([...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote),...manejos.map(x=>x.lote_id).filter(Boolean)])].sort().reverse();
+    const todos=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote),...manejos.map(x=>x.lote_id).filter(Boolean)])].sort().reverse();
     const opts = todos.map(l=>`<option value="${l}" ${l===o.lote_id?'selected':''}>${l}</option>`).join('');
     const id = 'origem_'+Date.now()+Math.random().toString(36).slice(2,5);
     const row = document.createElement('div');
@@ -5875,7 +6070,7 @@ async function saveEdicaoFase(manejoId){
 // ─── Formulário Nova Fase ───────────────────────────────
 function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
   // Coleta todos os lotes disponíveis como origem
-  const lotesColeta = [...new Set(records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote))].sort().reverse();
+  const lotesColeta=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote)])].sort().reverse();
   const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
   const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
 
@@ -5975,7 +6170,7 @@ function preencheQtdOrigem(id){
 
 function addOrigemRow(loteDefault=''){
   const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
-  const lotesColeta = [...new Set(records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote))].sort().reverse();
+  const lotesColeta=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote)])].sort().reverse();
   const todos = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
   const opts = todos.map(l=>`<option value="${l}" ${l===loteDefault?'selected':''}>${l}</option>`).join('');
   const id = 'origem_'+Date.now();
