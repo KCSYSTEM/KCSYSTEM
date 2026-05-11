@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v3.5</title>
+<title>KC System v3.6</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -401,7 +401,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.5</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.6</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -4427,11 +4427,17 @@ function renderPainel(){
         }
       }
 
-      cVals._ideal=sum(hapaRecs.map(r=>r?.racaoIdealG));
-      if(cVals._ideal!=null)cVals._ideal=cVals._ideal/1000;
-      cVals._real =sum(hapaRecs.map(r=>r?.racaoG));
-      if(cVals._real!=null)cVals._real=cVals._real/1000;
-      cVals._pct  =(cVals._ideal&&cVals._real)?Math.round(cVals._real/cVals._ideal*100):null;
+      // racaoIdealG: usa do dia se disponível, senão último valor (persiste como qty/bio)
+      const idealVals=hapaNames.map((_,i)=>{
+        const fromDay=hapaRecs[i]?.racaoIdealG;
+        return fromDay??lastValFor(t.id,'racaoIdealG',i+1);
+      });
+      const realVals=hapaNames.map((_,i)=>hapaRecs[i]?.racaoG??null);
+      const idealSum=sum(idealVals);
+      const realSum=sum(realVals);
+      cVals._ideal=idealSum!=null?idealSum/1000:null;
+      cVals._real =realSum!=null?realSum/1000:null;
+      cVals._pct  =(idealSum&&realSum!=null)?Math.round(realSum/idealSum*100):null;
       cVals._tca  =tcaAcum(t)?parseFloat(tcaAcum(t)):null;
 
       const anyHapaData=hapaRecs.some(r=>r!=null);
@@ -4464,8 +4470,12 @@ function renderPainel(){
         if(hv.qty==null){const v=lastValFor(t.id,'qty',h);if(v!=null){hv.qty=v;hv._qtyPrev=true;}}
         if(hv.bio==null){const v=lastValFor(t.id,'bio',h);if(v!=null){hv.bio=v;hv._bioPrev=true;}}
         hv._tca=null;
+        // Fallback racaoIdealG — persiste último valor como qty/bio
+        if(hv._ideal==null){const v=lastValFor(t.id,'racaoIdealG',h);if(v!=null)hv._ideal=v;}
         if(hv._ideal!=null)hv._ideal=hv._ideal/1000;
         if(hv._real!=null)hv._real=hv._real/1000;
+        // Recalcula _pct com fallback incluído
+        if(hv._ideal&&hv._real!=null)hv._pct=Math.round((hv._real*1000)/(hv._ideal*1000)*100);
         const isLast=i===hapaNames.length-1;
         rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:${isLast?'4px':'1px'};background:#f3f0fb;border:1px solid #e0d9f5;border-top:none;${isLast?'border-radius:0 0 8px 8px;':''}">`;
         rows+=`<div></div><div style="padding:5px 6px 5px 12px;font-size:11px;color:#7c3aed;font-weight:600;">🪣 ${nm}</div>`;
@@ -4489,9 +4499,13 @@ function renderPainel(){
       // qty e bio independentes — busca último valor não-nulo campo a campo
       if(vals.qty==null){const v=lastValFor(t.id,'qty',null);if(v!=null){vals.qty=v;vals._qtyPrev=true;}}
       if(vals.bio==null){const v=lastValFor(t.id,'bio',null);if(v!=null){vals.bio=v;vals._bioPrev=true;}}
+      // Fallback racaoIdealG — persiste último valor lançado
+      if(vals._ideal==null){const v=lastValFor(t.id,'racaoIdealG',null);if(v!=null)vals._ideal=v;}
       vals._tca=tca?parseFloat(tca):null;
       if(vals._ideal!=null)vals._ideal=vals._ideal/1000;
       if(vals._real!=null)vals._real=vals._real/1000;
+      // Recalcula _pct com fallback incluído
+      if(vals._ideal&&vals._real!=null)vals._pct=Math.round((vals._real*1000)/(vals._ideal*1000)*100);
       const rowBg=rec?'#fff':'#f8fafc';
       rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
       rows+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${t.name}</div>`;
