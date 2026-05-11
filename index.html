@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.3</title>
+<title>KC System v3.5</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -401,7 +401,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.3</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.5</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1556,11 +1556,7 @@ function renderColetaPainel(){
       ?parseFloat((l.ovosTotal*(1-l.ovosGorados/100)).toFixed(0)):null;
   });
 
-  const lotes=Object.values(byLote).sort((a,b)=>{
-    const maxA=[...a.dates].sort().pop()||'';
-    const maxB=[...b.dates].sort().pop()||'';
-    return maxB.localeCompare(maxA);
-  });
+  const lotes=Object.values(byLote).sort((a,b)=>b.lote.localeCompare(a.lote));
 
   cont.innerHTML='';
   const wrapper=document.createElement('div');
@@ -2997,18 +2993,83 @@ function buildHistoricoEl(){
     femeas:{l:'Fêmeas',fmt:v=>fNum(v)+' un'},
   };
 
-  // Gera UMA linha por registro (agrupando todos os campos)
+  // Agrupa records por (date, hapa) → mostra campos alterados vs registro anterior
+  // Se o record tem _changedFields gravado usa ele; senão compara com anterior
+  const TRACKED=Object.keys(FIELD_LABELS);
+
   recs.slice(0,60).forEach(r=>{
     const hapaStr=r.hapa?` · 🪣 ${hapaLabel(activeTank,r.hapa)}`:'';
     const loteStr=r.lote?` · 📦 ${r.lote}`:'';
 
-    // Coleta campos não-nulos deste registro
-    const camposList=[];
-    Object.entries(FIELD_LABELS).forEach(([field,cfg])=>{
+    // Determina campos realmente alterados
+    let changedFields;
+    if(r._changedFields && r._changedFields.length){
+      // Gravado explicitamente no momento do save — fonte mais confiável
+      changedFields=r._changedFields;
+    } else if(/^lanc_/.test(r.id||'')){
+      // Lançamento de parâmetro: compara com o lanc_ anterior do mesmo dia/hapa
+      // para eliminar campos herdados (copiados pelo _doSaveLancamentos legado)
+      const prevSameDay=records.filter(p=>
+        p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&
+        p.date===r.date&&(p.timestamp||'')<(r.timestamp||'')
+      ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+
+      if(prevSameDay){
+        // Mostra apenas campos que mudaram em relação ao lanc_ anterior do mesmo dia
+        changedFields=TRACKED.filter(f=>{
+          const vNew=r[f]; const vOld=prevSameDay[f];
+          if(vNew==null)return false;
+          if(vOld==null)return true;
+          return Math.abs(Number(vNew)-Number(vOld))>0.001;
+        });
+      } else {
+        // Primeiro lanc_ do dia: compara com o registro mais recente de outro dia
+        const prevOtherDay=records.filter(p=>
+          p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&
+          p.date!==r.date&&(p.timestamp||'')<(r.timestamp||'')
+        ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+        if(prevOtherDay){
+          changedFields=TRACKED.filter(f=>{
+            const vNew=r[f]; const vOld=prevOtherDay[f];
+            if(vNew==null)return false;
+            if(vOld==null)return true;
+            return Math.abs(Number(vNew)-Number(vOld))>0.001;
+          });
+        } else {
+          changedFields=TRACKED.filter(f=>r[f]!=null);
+        }
+      }
+      // Garante que mort=0 não seja silenciado
+      if(r.mort===0&&!changedFields.includes('mort')&&prevSameDay==null)
+        changedFields.push('mort');
+    } else if(/^rec_/.test(r.id||'')){
+      // Registro completo do tanque (aba Registro) → mostra tudo não-nulo
+      changedFields=TRACKED.filter(f=>r[f]!=null);
+    } else {
+      // Registros legados (wpp_, bioqty_, hist_): compara com anterior para detectar mudanças
+      const prev=records.filter(p=>
+        p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&
+        (p.timestamp||'')<(r.timestamp||'')
+      ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+      if(prev){
+        changedFields=TRACKED.filter(f=>{
+          const vNew=r[f]; const vOld=prev[f];
+          if(vNew==null&&vOld==null)return false;
+          if(vNew==null||vOld==null)return true;
+          return Math.abs(Number(vNew)-Number(vOld))>0.001;
+        });
+      } else {
+        changedFields=TRACKED.filter(f=>r[f]!=null);
+      }
+    }
+    if(!changedFields.length)return;
+
+    const camposList=changedFields.map(field=>{
+      const cfg=FIELD_LABELS[field];
       const v=r[field];
-      if(v==null)return;
-      camposList.push(`<span style="color:var(--text2);">${cfg.l}:</span> <span style="color:var(--accent);font-weight:700;">${cfg.fmt(v)}</span>`);
-    });
+      if(!cfg||v==null)return null;
+      return`<span style="color:var(--text2);">${cfg.l}:</span> <span style="color:var(--accent);font-weight:700;">${cfg.fmt(v)}</span>`;
+    }).filter(Boolean);
     if(!camposList.length)return;
 
     const item=document.createElement('div');
@@ -3374,55 +3435,81 @@ function renderGlobalHistory(){
 
   if(!allLines.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
 
-  // Gera linhas de records
-  const lines=[];
-  sorted.forEach((r)=>{
-    const prev=records.filter(p=>
-      p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&(p.timestamp||'')<(r.timestamp||'')
-    ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
-    Object.entries(FIELD_LABELS).forEach(([field,cfg])=>{
-      const newVal=r[field];
-      if(newVal==null)return;
-      const oldVal=prev?.[field];
-      lines.push({ts:r.timestamp,date:r.date,user:r.user||r.username||'—',
-        tankName:r.tankName,hapa:r.hapa,field,label:cfg.l,fmt:cfg.fmt,newVal,oldVal,lote:r.lote,
-        _isRecord:true});
-    });
-  });
-
-  // Junta records + manejos e ordena por timestamp
-  const allEntries=[...lines,...manejoLines].sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
-
-  if(!allEntries.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
-
-  el.innerHTML=allEntries.slice(0,150).map(l=>{
-    if(l._isManejo){
-      return`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);background:rgba(22,163,74,0.03);">
-        <div style="flex-shrink:0;width:7px;height:7px;border-radius:50%;background:#16a34a;margin-top:5px;"></div>
-        <div style="flex:1;min-width:0;font-size:13px;color:var(--text);">
-          <span style="color:var(--text3);font-size:11px;">
-            ${l.ts?formatDate(l.ts.slice(0,10))+' · '+formatTime(l.ts):'—'}
-            &nbsp;·&nbsp; Dado de: <strong style="color:var(--text2);">${formatDate(l.date)}</strong>
-          </span><br>
-          <strong>${l.user}</strong> registrou <span style="color:#16a34a;font-weight:700;">${l.desc}</span>
-        </div>
-      </div>`;
+  // ── Função que determina campos alterados (mesma lógica do buildHistoricoEl) ──
+  const TRACKED_G=Object.keys(FIELD_LABELS);
+  function getChangedFields(r){
+    if(r._changedFields&&r._changedFields.length) return r._changedFields;
+    if(/^lanc_/.test(r.id||'')){
+      const prevSameDay=records.filter(p=>
+        p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&
+        p.date===r.date&&(p.timestamp||'')<(r.timestamp||'')
+      ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+      const base=prevSameDay||records.filter(p=>
+        p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&
+        p.date!==r.date&&(p.timestamp||'')<(r.timestamp||'')
+      ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+      if(base){
+        return TRACKED_G.filter(f=>{
+          const vN=r[f],vO=base[f];
+          if(vN==null)return false;
+          if(vO==null)return true;
+          return Math.abs(Number(vN)-Number(vO))>0.001;
+        });
+      }
+      return TRACKED_G.filter(f=>r[f]!=null);
     }
-    const hapaStr=l.hapa?` · Hapa ${l.hapa}`:'';
-    const loteStr=l.lote?` · 📦 ${l.lote}`:'';
-    const oldStr=l.oldVal!=null?`<span style="color:var(--text3);text-decoration:line-through;margin-right:4px;">${l.fmt(l.oldVal)}</span>`:'';
-    return`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);">
+    if(/^rec_/.test(r.id||'')) return TRACKED_G.filter(f=>r[f]!=null);
+    // legado
+    const prev=records.filter(p=>
+      p.tankId===r.tankId&&p.hapa==r.hapa&&p.id!==r.id&&
+      (p.timestamp||'')<(r.timestamp||'')
+    ).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''))[0];
+    if(prev){
+      return TRACKED_G.filter(f=>{
+        const vN=r[f],vO=prev[f];
+        if(vN==null&&vO==null)return false;
+        if(vN==null||vO==null)return vN!=null;
+        return Math.abs(Number(vN)-Number(vO))>0.001;
+      });
+    }
+    return TRACKED_G.filter(f=>r[f]!=null);
+  }
+
+  // ── Monta uma entrada por registro (não por campo) ──────────────────
+  const recordLines=sorted.map(r=>{
+    const changed=getChangedFields(r);
+    if(!changed.length) return null;
+    const camposList=changed.map(f=>{
+      const cfg=FIELD_LABELS[f]; if(!cfg||r[f]==null)return null;
+      return`<span style="color:var(--text2);">${cfg.l}:</span> <span style="color:var(--accent);font-weight:700;">${cfg.fmt(r[f])}</span>`;
+    }).filter(Boolean);
+    if(!camposList.length) return null;
+    const hapaStr=r.hapa?` · 🪣 Hapa ${r.hapa}`:'';
+    const loteStr=r.lote?` · 📦 ${r.lote}`:'';
+    return{ts:r.timestamp,html:`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);">
       <div style="flex-shrink:0;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:5px;"></div>
-      <div style="flex:1;min-width:0;font-size:13px;color:var(--text);">
-        <span style="color:var(--text3);font-size:11px;">
-          Alterado em: ${l.ts?formatDate(l.ts.slice(0,10))+' · '+formatTime(l.ts):'—'}
-          &nbsp;·&nbsp; Dado de: <strong style="color:var(--text2);">${formatDate(l.date)}</strong>
-          &nbsp;·&nbsp; ${l.tankName}${hapaStr}${loteStr}
-        </span><br>
-        <strong>${l.user}</strong> alterou <strong>${l.label}</strong>: ${oldStr}<span style="color:var(--accent);font-weight:700;">${l.fmt(l.newVal)}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px;">
+          ${r.timestamp?formatDate(r.timestamp.slice(0,10))+' · '+formatTime(r.timestamp):'—'}
+          &nbsp;·&nbsp; <strong style="color:var(--text2);">${r.user||r.username||'—'}</strong>
+          &nbsp;·&nbsp; ${r.tankName||''}${hapaStr}${loteStr}
+        </div>
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">${camposList.join(' &nbsp;·&nbsp; ')}</div>
       </div>
-    </div>`;
-  }).join('');
+    </div>`};
+  }).filter(Boolean);
+
+  const manejoHtmlLines=manejoLines.map(l=>({ts:l.ts,html:`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);background:rgba(22,163,74,0.03);">
+    <div style="flex-shrink:0;width:7px;height:7px;border-radius:50%;background:#16a34a;margin-top:5px;"></div>
+    <div style="flex:1;min-width:0;font-size:13px;color:var(--text);">
+      <span style="color:var(--text3);font-size:11px;">${l.ts?formatDate(l.ts.slice(0,10))+' · '+formatTime(l.ts):'—'}&nbsp;·&nbsp;<strong style="color:var(--text2);">${l.user}</strong></span><br>
+      <span style="color:#16a34a;font-weight:700;">${l.desc}</span>
+    </div>
+  </div>`}));
+
+  const allEntries=[...recordLines,...manejoHtmlLines].sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
+  if(!allEntries.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
+  el.innerHTML=allEntries.slice(0,150).map(e=>e.html).join('');
 }
 
 // ===== LANÇAMENTOS =====
@@ -3522,6 +3609,8 @@ function renderLancamentos(){
   });
 
   const extraHeaders=isRacao?`
+    <th style="min-width:120px;">Tipo de Ração</th>
+    <th style="min-width:100px;">Sobra (kg)</th>
     <th style="min-width:130px;text-align:center;">Método</th>
     <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Início do dia (kg)</span></th>
     <th style="min-width:110px;">Sobra Tambor<br><span style="font-size:9px;font-weight:400;">Final do dia (kg)</span></th>`
@@ -3583,21 +3672,23 @@ function renderLancamentos(){
     // Modo ração — com toggle tambor/balde (balde é padrão — tambor inputs escuros desde o início)
     const rowId=r.tankId.replace(/[^a-z0-9]/gi,'_');
     const disabledStyle='background:#d0d8e4;border-color:#b0bcc8;color:#7a8fa3;cursor:not-allowed;';
-    const racaoOpts=racoes.map(rc=>`<option value="${rc.id||rc.nome}" ${(dayRec?.racao||lastRec2?.racao)===rc.id||''?'selected':''}>${rc.nome||rc.id}</option>`).join('');
+    const lastRecForRacao=lastRec(r.tankId);
+    const racaoAtual=dayRec?.racao||lastRecForRacao?.racao||'';
+    const racaoOpts=racoes.map(rc=>`<option value="${rc.id||rc.nome}" ${racaoAtual===(rc.id||rc.nome)?'selected':''}>${rc.nome||rc.id}</option>`).join('');
     return`<tr>
       ${tankCell}
-      <td>
-        <input class="lancamento-input" type="number"
-          id="lanc-input-${rowId}" data-tank="${r.tankId}" data-hapa="" data-hapas="${r.hapas}"
-          step="0.001" inputmode="decimal" placeholder="Sobra (kg)"
-          oninput="this.classList.toggle('filled',this.value!=='')">
-      </td>
       <td>
         <select id="lanc-racao-tipo-${rowId}" data-tank="${r.tankId}"
           style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 6px;color:var(--text);font-size:12px;outline:none;-webkit-appearance:none;">
           <option value="">— Ração —</option>
           ${racaoOpts}
         </select>
+      </td>
+      <td>
+        <input class="lancamento-input" type="number"
+          id="lanc-input-${rowId}" data-tank="${r.tankId}" data-hapa="" data-hapas="${r.hapas}"
+          step="0.001" inputmode="decimal" placeholder="Sobra (kg)"
+          oninput="this.classList.toggle('filled',this.value!=='')">
       </td>
       <td style="text-align:center;">
         <div class="tambor-toggle" onclick="toggleTambor('${rowId}')">
@@ -3817,7 +3908,7 @@ async function _doSaveLancamentos(toSave,param,date){
             lote:lastRH?.lote||tank.lote||'',hapa:h,
             temp:null,o2:null,amonia:null,ph:null,mort:null,
             qty:null,bio:null,racao:'',
-            racaoIdealG:lastRH?.racaoIdealG??null,
+            racaoIdealG:null,
             sobra:sobraPorHapaKg,racaoG:racaoPorHapaG,
             tratosIdeal:null,tratos:null,obs:'',overridden:false,
           };
@@ -3852,6 +3943,9 @@ async function _doSaveLancamentos(toSave,param,date){
       existing.user=currentUser.name;
       existing.username=currentUser.username;
       existing.timestamp=new Date(baseTs+saved).toISOString();
+      // Registra quais campos foram alterados neste lançamento
+      const _cf=param==='tempO2'?['temp','o2']:param==='racaoReal'?['sobra','racaoG'].filter(f=>existing[f]!=null):[param==='racaoIdealG'?'racaoIdealG':param];
+      existing._changedFields=_cf;
       const idx=records.findIndex(r=>r.id===existing.id);
       if(idx>=0) records[idx]=existing;
       await saveTankRecord_sb(existing);
@@ -3865,12 +3959,9 @@ async function _doSaveLancamentos(toSave,param,date){
         lote:lastR?.lote||tank.lote||'',
         hapa:item.hapaNum||null,
         temp:null,o2:null,amonia:null,ph:null,mort:null,
-        qty:lastR?.qty??null,   // ← persiste qty do último registro
-        bio:lastR?.bio??null,   // ← persiste bio do último registro
-        racao:'',
-        racaoIdealG:lastR?.racaoIdealG??null,
-        sobra:null,racaoG:null,tratosIdeal:null,tratos:null,
-        obs:'',overridden:false,
+        qty:null,bio:null,racao:'',
+        racaoIdealG:null,sobra:null,racaoG:null,
+        tratosIdeal:null,tratos:null,obs:'',overridden:false,
       };
       if(param==='tempO2'){
         newRec.temp=item.value; newRec.o2=item.o2Value;
@@ -3880,6 +3971,9 @@ async function _doSaveLancamentos(toSave,param,date){
       } else {
         newRec[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
       }
+      // Registra campos alterados no novo registro
+      const _cfNew=param==='tempO2'?['temp','o2']:param==='racaoReal'?['sobra','racaoG'].filter(f=>newRec[f]!=null):[param==='racaoIdealG'?'racaoIdealG':param];
+      newRec._changedFields=_cfNew;
       records.push(newRec);
       await saveTankRecord_sb(newRec);
     }
@@ -4252,14 +4346,23 @@ function renderPainel(){
 
   if(!ativos.length&&!vazios.length){cont.innerHTML='<div style="text-align:center;color:var(--text3);padding:30px 0;font-size:13px;">Nenhum dado registrado ainda.</div>';return;}
 
-  const renderCell=(v,lk,isPrev=false)=>{
+  const renderCell=(v,lk,isPrev=false,fieldKey='')=>{
     let light='⚪';
     if(lk&&v!=null){
       if(lk==='racaoPct'){light=v>=(LIMITS.racaoPct?.min||70)?'🟢':v>=50?'🟡':'🔴';}
       else{light=trafficLight(v,lk);}
     }
     if(isPrev)light='⬜';
-    const display=v!=null?fNum(v):'—';
+    // Formata com casas decimais por campo
+    let display='—';
+    if(v!=null){
+      if(fieldKey==='_ideal'||fieldKey==='_real')display=gToKg(v);
+      else if(fieldKey==='o2'||fieldKey==='temp')display=fNum(v,1);
+      else if(fieldKey==='amonia'||fieldKey==='ph')display=fNum(v,2);
+      else if(fieldKey==='_pct')display=fNum(v,0)+'%';
+      else if(fieldKey==='_tca')display=fNum(v,2);
+      else display=fNum(v);
+    }
     const style=isPrev?'font-size:12px;font-weight:500;color:var(--text3);font-style:italic;':'font-size:12px;font-weight:600;color:var(--text);';
     return`<div style="padding:6px 2px;text-align:center;font-size:11px;font-family:'JetBrains Mono',monospace;">${light}<br><span style="${style}">${display}</span></div>`;
   };
@@ -4343,7 +4446,7 @@ function renderPainel(){
       rows+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${t.name}${hapaBadge}</div>`;
       cols.forEach(c=>{
         const isPrev=(c.k==='qty'&&cVals._qtyPrev)||(c.k==='bio'&&cVals._bioPrev);
-        rows+=renderCell(cVals[c.k],c.lk,isPrev);
+        rows+=renderCell(cVals[c.k],c.lk,isPrev,c.k);
       });
       rows+=`</div>`;
 
@@ -4368,7 +4471,7 @@ function renderPainel(){
         rows+=`<div></div><div style="padding:5px 6px 5px 12px;font-size:11px;color:#7c3aed;font-weight:600;">🪣 ${nm}</div>`;
         cols.forEach(c=>{
           const isPrev=(c.k==='qty'&&hv._qtyPrev)||(c.k==='bio'&&hv._bioPrev);
-          rows+=renderCell(hv[c.k],c.lk,isPrev);
+          rows+=renderCell(hv[c.k],c.lk,isPrev,c.k);
         });
         rows+=`</div>`;
       });
@@ -4394,7 +4497,7 @@ function renderPainel(){
       rows+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${t.name}</div>`;
       cols.forEach(c=>{
         const isPrev=(c.k==='qty'&&vals._qtyPrev)||(c.k==='bio'&&vals._bioPrev);
-        rows+=renderCell(vals[c.k],c.lk,isPrev);
+        rows+=renderCell(vals[c.k],c.lk,isPrev,c.k);
       });
       rows+=`</div>`;
     }
