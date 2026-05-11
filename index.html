@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v3.6</title>
+<title>KC System v3.8</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -401,7 +401,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.6</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.8</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -3879,41 +3879,43 @@ async function _doSaveLancamentos(toSave,param,date){
     if(param==='racaoReal'&&hapaCount>0&&tank.hapaNames?.length){
       const rowId=item.rowId;
       const modo=_tambModo[rowId]||'balde';
-      const sobraTotalG=finalSobra!=null?Math.round(finalSobra):null; // finalSobra já em g
-      const sobraPorHapaG=sobraTotalG!=null?sobraTotalG/hapaCount:null;
-      const sobraPorHapaKg=sobraPorHapaG!=null?sobraPorHapaG/1000:null;
+      // finalSobra já está em gramas (convertido no início do loop)
+      const sobraTotalG=finalSobra!=null?Math.round(finalSobra):null;
+      const sobraPorHapaG=sobraTotalG!=null?Math.round(sobraTotalG/hapaCount):null;
 
       for(let h=1;h<=hapaCount;h++){
         const exH=recForDate(item.tankId,date,h);
-        const lastRH=lastRecHapa(item.tankId,h);
+        // idealHapaG: do registro do dia se disponível, senão do histórico
+        const idealHapaG=(exH?.racaoIdealG)??lastValFor(item.tankId,'racaoIdealG',h)??null;
         let racaoPorHapaG;
         if(modo==='tambor'){
           racaoPorHapaG=finalRacaoReal!=null?Math.round(finalRacaoReal*1000):null;
         } else {
-          const idealHapaG=exH?.racaoIdealG??lastRH?.racaoIdealG??null;
           racaoPorHapaG=idealHapaG!=null&&sobraPorHapaG!=null
             ?Math.max(0,Math.round(idealHapaG-sobraPorHapaG)):null;
         }
         if(exH){
-          // Mescla no registro existente do hapa
-          exH.sobra=sobraPorHapaKg; exH.racaoG=racaoPorHapaG;
+          // Mescla no registro existente do hapa — tudo em gramas
+          exH.sobra=sobraPorHapaG;
+          exH.racaoG=racaoPorHapaG;
+          if(!exH.racaoIdealG&&idealHapaG) exH.racaoIdealG=idealHapaG;
           exH.user=currentUser.name; exH.username=currentUser.username;
           exH.timestamp=new Date(baseTs+h).toISOString();
           const idx=records.findIndex(r=>r.id===exH.id);
           if(idx>=0) records[idx]=exH;
           await saveTankRecord_sb(exH);
         } else {
-          // Cria novo registro para o hapa
           const newH={
             id:`lanc_${baseTs}_h${h}_${item.tankId.slice(-4)}`,
             tankId:item.tankId,tankName:tank.name,date,
             user:currentUser.name,username:currentUser.username,
             timestamp:new Date(baseTs+h).toISOString(),
-            lote:lastRH?.lote||tank.lote||'',hapa:h,
+            lote:lastValFor(item.tankId,'lote',h)||tank.lote||'',hapa:h,
             temp:null,o2:null,amonia:null,ph:null,mort:null,
             qty:null,bio:null,racao:'',
-            racaoIdealG:null,
-            sobra:sobraPorHapaKg,racaoG:racaoPorHapaG,
+            racaoIdealG:idealHapaG,  // preserva o ideal no novo registro
+            sobra:sobraPorHapaG,
+            racaoG:racaoPorHapaG,
             tratosIdeal:null,tratos:null,obs:'',overridden:false,
           };
           records.push(newH);
@@ -4436,7 +4438,11 @@ function renderPainel(){
         const fromDay=hapaRecs[i]?.racaoIdealG;
         return fromDay??lastValFor(t.id,'racaoIdealG',i+1);
       });
-      const realVals=hapaNames.map((_,i)=>hapaRecs[i]?.racaoG??null);
+      const realVals=hapaNames.map((_,i)=>{
+        // racaoG: usa do registro do dia; se não existe, não usa fallback (sem ração = null)
+        const r=hapaRecs[i];
+        return r?.racaoG??null;
+      });
       const idealSum=sum(idealVals);
       const realSum=sum(realVals);
       cVals._ideal=idealSum!=null?idealSum/1000:null;
