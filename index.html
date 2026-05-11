@@ -1055,6 +1055,8 @@ function tankRowToRec(row){
     tratos:       row.tratos,
     lote:         row.lote,
     obs:          row.obs,
+    machos:       row.machos??null,
+    femeas:       row.femeas??null,
     overridden:   row.overridden,
   };
 }
@@ -1076,6 +1078,8 @@ function coletaToRow(rec, reason){
     ml:           rec.desovaML??rec.ml??null,
     ovos_por_ml:  rec.ovosPorMl??rec.ovos_por_ml??null,
     ovos_gorados: rec.ovosGorados??rec.ovos_gorados??null,
+    machos:        rec.machos??null,
+    femeas:        rec.femeas??null,
     overridden:   rec.overridden||false,
   };
   if(reason){
