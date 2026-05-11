@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v3.1</title>
+<title>KC System v3.2</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -401,7 +401,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.1</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.2</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2962,58 +2962,30 @@ function buildHistoricoEl(){
     femeas:{l:'Fêmeas',fmt:v=>fNum(v)+' un'},
   };
 
-  // Gera uma linha por campo alterado por registro
-  const lines=[];
-  recs.forEach(r=>{
-    // Acha o registro anterior (mais antigo do mesmo dia+hapa ou anterior)
-    const prev=records.filter(p=>
-      p.tankId===r.tankId&&
-      p.hapa==r.hapa&&
-      p.id!==r.id&&
-      p.timestamp<r.timestamp
-    ).sort((a,b)=>b.timestamp?.localeCompare(a.timestamp)||0)[0];
+  // Gera UMA linha por registro (agrupando todos os campos)
+  recs.slice(0,60).forEach(r=>{
+    const hapaStr=r.hapa?` · 🪣 ${hapaLabel(activeTank,r.hapa)}`:'';
+    const loteStr=r.lote?` · 📦 ${r.lote}`:'';
 
+    // Coleta campos não-nulos deste registro
+    const camposList=[];
     Object.entries(FIELD_LABELS).forEach(([field,cfg])=>{
-      const newVal=r[field];
-      if(newVal==null&&newVal!==0)return;
-      const oldVal=prev?.[field];
-      lines.push({
-        ts:r.timestamp,
-        date:r.date,
-        user:r.user||r.username||'—',
-        hapa:r.hapa,
-        field,
-        label:cfg.l,
-        fmt:cfg.fmt,
-        newVal,
-        oldVal,
-        lote:r.lote,
-      });
+      const v=r[field];
+      if(v==null)return;
+      camposList.push(`<span style="color:var(--text2);">${cfg.l}:</span> <span style="color:var(--accent);font-weight:700;">${cfg.fmt(v)}</span>`);
     });
-  });
+    if(!camposList.length)return;
 
-  // Ordena por timestamp desc
-  lines.sort((a,b)=>b.ts?.localeCompare(a.ts)||0);
-
-  if(!lines.length){
-    div.innerHTML=`<div class="history-empty">Nenhuma alteração registrada ainda.</div>`;return div;
-  }
-
-  lines.slice(0,100).forEach(l=>{
-    const hapaStr=l.hapa?` · 🪣 ${hapaLabel(activeTank,l.hapa)}`:'';
-    const loteStr=l.lote?` · 📦 ${l.lote}`:'';
-    const oldStr=l.oldVal!=null?`<span style="color:var(--text3);text-decoration:line-through;">${l.fmt(l.oldVal)}</span> → `:'';
     const item=document.createElement('div');
     item.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:10px 13px;border-bottom:1px solid var(--border);';
     item.innerHTML=`
       <div style="flex-shrink:0;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;"></div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:2px;">
-          Alterado em: ${l.ts?formatDate(l.ts.slice(0,10))+' · '+formatTime(l.ts):'—'}
-          &nbsp;·&nbsp; Dado de: <strong style="color:var(--text2);">${formatDate(l.date)}</strong>${hapaStr}${loteStr}
+        <div style="font-size:12px;color:var(--text3);margin-bottom:3px;">
+          ${r.timestamp?formatDate(r.timestamp.slice(0,10))+' · '+formatTime(r.timestamp):'—'}
+          &nbsp;·&nbsp; <strong style="color:var(--text2);">${r.user||r.username||'—'}</strong>${hapaStr}${loteStr}
         </div>
-        <div style="font-size:13px;color:var(--text);"><strong>${l.user}</strong> alterou <strong>${l.label}</strong></div>
-        <div style="font-size:13px;margin-top:2px;">${oldStr}<span style="color:var(--accent);font-weight:700;">${l.fmt(l.newVal)}</span></div>
+        <div style="font-size:13px;color:var(--text);line-height:1.8;">${camposList.join(' &nbsp;·&nbsp; ')}</div>
       </div>`;
     div.appendChild(item);
   });
@@ -3755,7 +3727,8 @@ async function _doSaveLancamentos(toSave,param,date){
         finalRacaoReal=res.racaoReal;
         finalSobra=null;
       } else {
-        finalSobra=item.value;
+        // item.value vem do input em kg — converte para g (mesmo padrão de collectRecord)
+        finalSobra=item.value!=null?parseFloat((item.value*1000).toFixed(3)):null;
         if(!hapaCount){
           const ideal=existing?.racaoIdealG??lastR?.racaoIdealG??null;
           if(ideal!=null&&finalSobra!=null) finalRacaoReal=Math.max(0,ideal-finalSobra);
@@ -3768,7 +3741,7 @@ async function _doSaveLancamentos(toSave,param,date){
     if(param==='racaoReal'&&hapaCount>0&&tank.hapaNames?.length){
       const rowId=item.rowId;
       const modo=_tambModo[rowId]||'balde';
-      const sobraTotalG=finalSobra!=null?Math.round(finalSobra*1000):null;
+      const sobraTotalG=finalSobra!=null?Math.round(finalSobra):null; // finalSobra já em g
       const sobraPorHapaG=sobraTotalG!=null?sobraTotalG/hapaCount:null;
       const sobraPorHapaKg=sobraPorHapaG!=null?sobraPorHapaG/1000:null;
 
