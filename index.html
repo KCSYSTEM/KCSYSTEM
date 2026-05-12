@@ -4428,7 +4428,7 @@ function renderPainel(){
     // Formata com casas decimais por campo
     let display='—';
     if(v!=null){
-      if(fieldKey==='_ideal'||fieldKey==='_real')display=gToKg(v);
+      if(fieldKey==='_ideal'||fieldKey==='_real')display=fNum(v,2)+' kg'; // v já em kg (dividido antes)
       else if(fieldKey==='o2'||fieldKey==='temp')display=fNum(v,1);
       else if(fieldKey==='amonia'||fieldKey==='ph')display=fNum(v,2);
       else if(fieldKey==='_pct')display=fNum(v,0)+'%';
