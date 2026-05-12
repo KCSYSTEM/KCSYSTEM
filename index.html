@@ -1057,6 +1057,7 @@ function tankRowToRec(row){
     obs:          row.obs,
     machos:       row.machos??null,
     femeas:       row.femeas??null,
+    racaoLancada: row.racao_lancada??null,
     overridden:   row.overridden,
   };
 }
@@ -1080,6 +1081,7 @@ function coletaToRow(rec, reason){
     ovos_gorados: rec.ovosGorados??rec.ovos_gorados??null,
     machos:        rec.machos??null,
     femeas:        rec.femeas??null,
+    racao_lancada: rec.racaoLancada??null,
     overridden:   rec.overridden||false,
   };
   if(reason){
@@ -3689,10 +3691,19 @@ function renderLancamentos(){
         </select>
       </td>
       <td>
-        <input class="lancamento-input" type="number"
-          id="lanc-input-${rowId}" data-tank="${r.tankId}" data-hapa="" data-hapas="${r.hapas}"
-          step="0.001" inputmode="decimal" placeholder="Sobra (kg)"
-          oninput="this.classList.toggle('filled',this.value!=='')">
+        <div style="display:flex;gap:4px;align-items:center;">
+          <input class="lancamento-input" type="number"
+            id="lanc-input-${rowId}" data-tank="${r.tankId}" data-hapa="" data-hapas="${r.hapas}"
+            step="0.001" inputmode="decimal" placeholder="Sobra (kg)"
+            style="flex:1;min-width:0;"
+            oninput="this.classList.toggle('filled',this.value!=='')" >
+          <button type="button" title="Confirmar alimentação zero (sem sobra)"
+            id="lanc-zero-${rowId}"
+            onclick="toggleAlimZero('${rowId}')"
+            style="flex-shrink:0;padding:6px 8px;font-size:11px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;transition:background 0.15s;">
+            🚫 Zero
+          </button>
+        </div>
       </td>
       <td style="text-align:center;">
         <div class="tambor-toggle" onclick="toggleTambor('${rowId}')">
@@ -3718,6 +3729,19 @@ function renderLancamentos(){
 
 // Estado dos toggles por id de linha
 const _tambModo={};
+const _zeroMode={};  // tankId → true se "alimentação zero" marcada
+function toggleAlimZero(rowId){
+  _zeroMode[rowId]=!_zeroMode[rowId];
+  const btn=document.getElementById('lanc-zero-'+rowId);
+  const inp=document.getElementById('lanc-input-'+rowId);
+  if(_zeroMode[rowId]){
+    btn.style.background='var(--danger)';btn.style.color='#fff';btn.style.borderColor='var(--danger)';
+    if(inp){inp.value='0';inp.disabled=true;inp.classList.add('filled');}
+  } else {
+    btn.style.background='var(--bg)';btn.style.color='var(--text2)';btn.style.borderColor='var(--border2)';
+    if(inp){inp.value='';inp.disabled=false;inp.classList.remove('filled');}
+  }
+}
 
 function toggleTambor(rowId){
   const cur=_tambModo[rowId]||'balde';
@@ -3858,6 +3882,8 @@ async function _doSaveLancamentos(toSave,param,date){
     if(param==='racaoReal'){
       const rowId=item.rowId;
       const modo=_tambModo[rowId]||'balde';
+      const isZero=_zeroMode[rowId]===true;
+      if(isZero){finalSobra=null;finalRacaoReal=null;}  // tratado abaixo por bloco
       const hapaCount=item.hapas||0;
       if(modo==='tambor'){
         const res=getRacaoRealParaLinha(rowId,hapaCount);
@@ -3879,25 +3905,52 @@ async function _doSaveLancamentos(toSave,param,date){
     if(param==='racaoReal'&&hapaCount>0&&tank.hapaNames?.length){
       const rowId=item.rowId;
       const modo=_tambModo[rowId]||'balde';
-      // finalSobra já está em gramas (convertido no início do loop)
-      const sobraTotalG=finalSobra!=null?Math.round(finalSobra):null;
-      const sobraPorHapaG=sobraTotalG!=null?Math.round(sobraTotalG/hapaCount):null;
+      // isZero: sem alimentação — sobra = ideal total, racaoG = 0
+      const sobraTotalG=isZero?null:(finalSobra!=null?Math.round(finalSobra):null);
+
+      // Passo 1: coletar ideal de cada hapa para calcular sobra proporcional
+      const ideaisHapa=[];
+      for(let h=1;h<=hapaCount;h++){
+        const exH=recForDate(item.tankId,date,h);
+        const ig=(exH?.racaoIdealG)??lastValFor(item.tankId,'racaoIdealG',h)??null;
+        ideaisHapa.push(ig);
+      }
+      const idealTotalG=ideaisHapa.reduce((s,v)=>s+(v??0),0)||null;
 
       for(let h=1;h<=hapaCount;h++){
         const exH=recForDate(item.tankId,date,h);
-        // idealHapaG: do registro do dia se disponível, senão do histórico
-        const idealHapaG=(exH?.racaoIdealG)??lastValFor(item.tankId,'racaoIdealG',h)??null;
-        let racaoPorHapaG;
-        if(modo==='tambor'){
-          racaoPorHapaG=finalRacaoReal!=null?Math.round(finalRacaoReal*1000):null;
+        const idealHapaG=ideaisHapa[h-1];
+
+        let sobraPorHapaG=null;
+        let racaoPorHapaG=null;
+
+        if(isZero){
+          // Alimentação zero confirmada: sobra = ideal, racaoG = 0
+          sobraPorHapaG=idealHapaG??0;
+          racaoPorHapaG=0;
+        } else if(modo==='tambor'){
+          racaoPorHapaG=finalRacaoReal!=null?
+            (idealTotalG&&idealHapaG?Math.round(finalRacaoReal*1000*(idealHapaG/idealTotalG)):Math.round(finalRacaoReal*1000)):null;
+          sobraPorHapaG=idealHapaG!=null&&racaoPorHapaG!=null?Math.max(0,Math.round(idealHapaG-racaoPorHapaG)):null;
         } else {
+          // Balde: divide sobra total PROPORCIONAL ao ideal de cada hapa
+          if(sobraTotalG!=null&&idealTotalG){
+            sobraPorHapaG=Math.round(sobraTotalG*(idealHapaG??0)/idealTotalG);
+          } else if(sobraTotalG!=null){
+            sobraPorHapaG=Math.round(sobraTotalG/hapaCount);
+          }
           racaoPorHapaG=idealHapaG!=null&&sobraPorHapaG!=null
             ?Math.max(0,Math.round(idealHapaG-sobraPorHapaG)):null;
         }
+
+        const saveData={
+          sobra:sobraPorHapaG,
+          racaoG:racaoPorHapaG,
+          racaoLancada:true,  // marca explicitamente que a ração foi lançada
+        };
+
         if(exH){
-          // Mescla no registro existente do hapa — tudo em gramas
-          exH.sobra=sobraPorHapaG;
-          exH.racaoG=racaoPorHapaG;
+          Object.assign(exH, saveData);
           if(!exH.racaoIdealG&&idealHapaG) exH.racaoIdealG=idealHapaG;
           exH.user=currentUser.name; exH.username=currentUser.username;
           exH.timestamp=new Date(baseTs+h).toISOString();
@@ -3913,9 +3966,8 @@ async function _doSaveLancamentos(toSave,param,date){
             lote:lastValFor(item.tankId,'lote',h)||tank.lote||'',hapa:h,
             temp:null,o2:null,amonia:null,ph:null,mort:null,
             qty:null,bio:null,racao:'',
-            racaoIdealG:idealHapaG,  // preserva o ideal no novo registro
-            sobra:sobraPorHapaG,
-            racaoG:racaoPorHapaG,
+            racaoIdealG:idealHapaG,
+            ...saveData,
             tratosIdeal:null,tratos:null,obs:'',overridden:false,
           };
           records.push(newH);
@@ -3941,7 +3993,14 @@ async function _doSaveLancamentos(toSave,param,date){
       if(param==='tempO2'){
         existing.temp=item.value; existing.o2=item.o2Value;
       } else if(param==='racaoReal'){
-        existing.sobra=finalSobra; existing.racaoG=finalRacaoReal??finalValue;
+        if(isZero){
+          // Alimentação zero: sobra = ideal, real = 0
+          const idealAtual=existing.racaoIdealG??lastValFor(item.tankId,'racaoIdealG',null)??0;
+          existing.sobra=idealAtual; existing.racaoG=0;
+        } else {
+          existing.sobra=finalSobra; existing.racaoG=finalRacaoReal??finalValue;
+        }
+        existing.racaoLancada=true;
         if(racaoTipo)existing.racao=racaoTipo;
       } else {
         existing[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
@@ -3972,7 +4031,13 @@ async function _doSaveLancamentos(toSave,param,date){
       if(param==='tempO2'){
         newRec.temp=item.value; newRec.o2=item.o2Value;
       } else if(param==='racaoReal'){
-        newRec.sobra=finalSobra; newRec.racaoG=finalRacaoReal??finalValue;
+        if(isZero){
+          const idealAtual=lastValFor(item.tankId,'racaoIdealG',null)??0;
+          newRec.sobra=idealAtual; newRec.racaoG=0;
+        } else {
+          newRec.sobra=finalSobra; newRec.racaoG=finalRacaoReal??finalValue;
+        }
+        newRec.racaoLancada=true;
         if(racaoTipo)newRec.racao=racaoTipo;
       } else {
         newRec[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
@@ -3993,6 +4058,7 @@ async function _doSaveLancamentos(toSave,param,date){
   prog.style.display='none';
   showSaveDone(saved);
   Object.keys(_tambModo).forEach(k=>delete _tambModo[k]);
+  Object.keys(_zeroMode).forEach(k=>delete _zeroMode[k]);
   renderLancamentos();
 }
 
@@ -4439,9 +4505,12 @@ function renderPainel(){
         return fromDay??lastValFor(t.id,'racaoIdealG',i+1);
       });
       const realVals=hapaNames.map((_,i)=>{
-        // racaoG: usa do registro do dia; se não existe, não usa fallback (sem ração = null)
         const r=hapaRecs[i];
-        return r?.racaoG??null;
+        // Só usa racaoG se ração foi explicitamente lançada (racaoLancada=true)
+        // racaoG=0 sem racaoLancada = não lançado ainda
+        if(!r)return null;
+        if(r.racaoLancada===true)return r.racaoG??0;
+        return null;
       });
       const idealSum=sum(idealVals);
       const realSum=sum(realVals);
@@ -4473,8 +4542,9 @@ function renderPainel(){
         const hr=hapaRecs[i];
         const hv={};
         if(hr){
-          Object.assign(hv,{o2:hr.o2,temp:hr.temp,amonia:hr.amonia,ph:hr.ph,mort:hr.mort||0,qty:hr.qty,bio:hr.bio,_ideal:hr.racaoIdealG,_real:hr.racaoG});
-          hv._pct=(hr.racaoIdealG&&hr.racaoG)?Math.round(hr.racaoG/hr.racaoIdealG*100):null;
+          Object.assign(hv,{o2:hr.o2,temp:hr.temp,amonia:hr.amonia,ph:hr.ph,mort:hr.mort||0,qty:hr.qty,bio:hr.bio,_ideal:hr.racaoIdealG});
+          hv._real=hr.racaoLancada===true?(hr.racaoG??0):null;
+          hv._pct=(hv._ideal&&hv._real!=null)?Math.round(hv._real/hv._ideal*100):null;
         }
         // Fallback: qty e bio — busca último valor não-nulo no histórico (não só D-1)
         if(hv.qty==null){const v=lastValFor(t.id,'qty',h);if(v!=null){hv.qty=v;hv._qtyPrev=true;}}
@@ -4503,8 +4573,10 @@ function renderPainel(){
       const tca=tcaAcum(t);
       const vals={};
       if(rec){
-        Object.assign(vals,{o2:rec.o2,temp:rec.temp,amonia:rec.amonia,ph:rec.ph,mort:rec.mort||0,qty:rec.qty,bio:rec.bio,_ideal:rec.racaoIdealG,_real:rec.racaoG});
-        vals._pct=(rec.racaoIdealG&&rec.racaoG)?Math.round(rec.racaoG/rec.racaoIdealG*100):null;
+        Object.assign(vals,{o2:rec.o2,temp:rec.temp,amonia:rec.amonia,ph:rec.ph,mort:rec.mort||0,qty:rec.qty,bio:rec.bio,_ideal:rec.racaoIdealG});
+        // racaoG só válido se ração foi explicitamente lançada
+        vals._real=rec.racaoLancada===true?(rec.racaoG??0):null;
+        vals._pct=(vals._ideal&&vals._real!=null)?Math.round(vals._real/vals._ideal*100):null;
       }
       // qty e bio independentes — busca último valor não-nulo campo a campo
       if(vals.qty==null){const v=lastValFor(t.id,'qty',null);if(v!=null){vals.qty=v;vals._qtyPrev=true;}}
