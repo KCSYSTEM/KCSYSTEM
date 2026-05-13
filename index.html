@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.8</title>
+<title>KC System v4.9</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.8</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.9</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -7062,19 +7062,29 @@ function showImportPopup(periodo, resumoPorUser) {
 }
 
 async function importarPontoXLS(file) {
+  try {
   if (typeof XLSX === 'undefined') {
-    showToast('Biblioteca XLS não carregada. Verifique a conexão.', 'error');
+    showToast('❌ SheetJS não carregado — verifique conexão', 'error');
     return;
   }
+  showToast('📂 Lendo arquivo...', 'ok');
+
   const buf = await file.arrayBuffer();
+  showToast(`📦 Buffer: ${buf.byteLength} bytes`, 'ok');
+
   const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+  const abas = wb.SheetNames.join(', ');
+  showToast(`📋 Abas encontradas: ${abas}`, 'ok');
+
   const ws = wb.Sheets['registros'];
-  if (!ws) { showToast('Aba "registros" não encontrada no arquivo.', 'error'); return; }
+  if (!ws) { showToast(`❌ Aba "registros" não encontrada. Abas: ${abas}`, 'error'); return; }
 
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  showToast(`📊 Linhas lidas: ${data.length}`, 'ok');
 
   // Linha 3 (índice 2): período → extrai ano e mês
   const periodoStr = (data[2] || []).join(' ');
+  showToast(`📅 Período detectado: "${periodoStr}"`, 'ok');
   const periodoMatch = periodoStr.match(/(\d{4})\/(\d{2})/);
   const ano  = periodoMatch ? parseInt(periodoMatch[1]) : new Date().getFullYear();
   const mes  = periodoMatch ? parseInt(periodoMatch[2]) : new Date().getMonth() + 1;
@@ -7146,7 +7156,11 @@ async function importarPontoXLS(file) {
     renderPonto();
     showImportPopup(`${mesesNomes[mes]} ${ano}`, resumoPorUser);
   } else {
-    showToast('Nenhuma batida encontrada no arquivo.', 'error');
+    showToast('⚠️ Nenhuma batida encontrada no arquivo.', 'error');
+  }
+  } catch(err) {
+    showToast(`❌ Erro: ${err.message}`, 'error');
+    console.error('importarPontoXLS error:', err);
   }
 }
 
@@ -7244,11 +7258,13 @@ function renderPonto() {
   const uploadWrap = document.getElementById('ponto-upload-wrap');
   if (uploadWrap) uploadWrap.style.display = isAdmin() ? 'flex' : 'none';
 
-  // Quais usuários mostrar (lucas não aparece; PONTO_EXTRA só adiciona quem não está em USERS)
+  // Quais usuários mostrar — deduplicado por username em minúsculo, lucas excluído
   const usersLower = new Set(Object.keys(USERS).map(k => k.toLowerCase()));
   const extraPontoKeys = Object.keys(PONTO_EXTRA_USERS).filter(u => !usersLower.has(u.toLowerCase()));
+  const _seenPonto = new Set();
   const usersToShow = isAdmin()
-    ? [...Object.keys(USERS).filter(u => u !== 'lucas'), ...extraPontoKeys]
+    ? [...Object.keys(USERS).filter(u => u.toLowerCase() !== 'lucas'), ...extraPontoKeys]
+        .filter(u => { const l = u.toLowerCase(); if (_seenPonto.has(l)) return false; _seenPonto.add(l); return true; })
     : [currentUser?.username];
 
   // Dias úteis do mês (seg-sáb) — mês 0-indexed internamente
@@ -7267,12 +7283,13 @@ function renderPonto() {
   resumoCards.innerHTML = '';
 
   usersToShow.forEach(uname => {
-    const uInfo = USERS[uname] || PONTO_EXTRA_USERS[uname] || { name: uname };
-    const uDados = pontoData[uname] || {};
+    const uInfo = USERS[uname] || PONTO_EXTRA_USERS[uname] || PONTO_EXTRA_USERS[uname.toLowerCase()] || { name: uname };
+    const uKey = uname.toLowerCase();
+    const uDados = pontoData[uname] || pontoData[uKey] || {};
 
     let totalTrabMin = 0, totalEsperadoMin = 0, almocosCurtos = 0, diasRegistrados = 0;
     const todayStr = new Date().toISOString().split('T')[0];
-    const atestadosUser = pontoAtestados[uname] || {};
+    const atestadosUser = pontoAtestados[uname] || pontoAtestados[uKey] || {};
 
     diasUteis.forEach(d => {
       const key = d.toISOString().split('T')[0];
@@ -7326,9 +7343,10 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
   _pontoDetalheUser = uname;
   const detalheEl = document.getElementById('ponto-detalhe');
   if (!detalheEl) return;
-  const uInfo = USERS[uname] || PONTO_EXTRA_USERS[uname] || { name: uname };
-  const uDados = pontoData[uname] || {};
-  const atestadosUser = pontoAtestados[uname] || {};
+  const uInfo = USERS[uname] || PONTO_EXTRA_USERS[uname] || PONTO_EXTRA_USERS[uname.toLowerCase()] || { name: uname };
+  const uKey = uname.toLowerCase();
+  const uDados = pontoData[uname] || pontoData[uKey] || {};
+  const atestadosUser = pontoAtestados[uname] || pontoAtestados[uKey] || {};
   const admin = isAdmin();
   const todayStr = new Date().toISOString().split('T')[0];
 
