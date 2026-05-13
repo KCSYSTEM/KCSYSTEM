@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v3.14</title>
+<title>KC System v4.5</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -391,6 +391,9 @@ input[type="number"]{-moz-appearance:textfield;}
         <div onclick="switchModule('coleta')" id="mod-btn-coleta" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-coleta-only">
           <span>🧬</span> Coleta
         </div>
+        <div onclick="switchModule('pessoal')" id="mod-btn-pessoal" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
+          <span>👤</span> Pessoal
+        </div>
         <div onclick="switchModule('config')" id="mod-btn-config" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
           <span>⚙️</span> Configuração
         </div>
@@ -401,7 +404,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v3.14</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.5</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -639,6 +642,81 @@ input[type="number"]{-moz-appearance:textfield;}
   </div>
 
 
+
+
+<!-- ===== MÓDULO PESSOAL ===== -->
+<div id="modulo-pessoal" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+  <!-- Nav abas -->
+  <div style="display:flex;border-bottom:2px solid var(--border);background:var(--surface);flex-shrink:0;">
+    <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-bottom:2px solid var(--accent);cursor:pointer;margin-bottom:-2px;">🎯 Metas</button>
+    <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🕐 Ponto</button>
+  </div>
+
+  <!-- VIEW METAS -->
+  <div id="pview-metas" class="pview" style="flex:1;overflow-y:auto;display:block;">
+    <div class="view-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div><div class="view-title">Metas do Mês</div><div class="view-sub">Acompanhe seu bônus em tempo real</div></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="meta-mes" onchange="renderMetas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5" selected>Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="meta-ano" onchange="renderMetas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
+          <option value="2026" selected>2026</option><option value="2027">2027</option>
+        </select>
+        <span id="meta-perfil-label" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--accent-dim);color:var(--accent);"></span>
+      </div>
+    </div>
+
+    <!-- Tabela de metas -->
+    <div style="padding:0 16px 16px;">
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;" id="meta-tabela-wrap">
+        <!-- gerado por JS -->
+      </div>
+
+      <!-- Painel admin: lançar metas -->
+      <div id="meta-admin-panel" style="display:none;margin-top:24px;background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;">⚙️ Lançar valores do mês <span id="meta-admin-mesano"></span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;" id="meta-admin-inputs">
+          <!-- gerado por JS -->
+        </div>
+        <button onclick="salvarMetas()" style="margin-top:12px;padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar metas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW PONTO -->
+  <div id="pview-ponto" class="pview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div><div class="view-title">Controle de Ponto</div><div class="view-sub">Banco de horas e frequência</div></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="ponto-mes" onchange="renderPonto()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5" selected>Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="ponto-ano" onchange="renderPonto()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
+          <option value="2026" selected>2026</option><option value="2027">2027</option>
+        </select>
+        <label id="ponto-upload-wrap" style="display:none;padding:8px 14px;background:var(--accent);color:#fff;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">
+          📂 Importar .dat
+          <input type="file" accept=".dat,.txt,.AFD,.afd" id="ponto-file-input" style="display:none;" onchange="importarPonto(this)">
+        </label>
+      </div>
+    </div>
+
+    <div style="padding:0 16px 16px;">
+      <!-- Resumo banco de horas (admin vê todos, user vê só o seu) -->
+      <div id="ponto-resumo-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px;"></div>
+
+      <!-- Tabela detalhada -->
+      <div id="ponto-detalhe" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MÓDULO COLETA ===== -->
   <div id="modulo-coleta" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
@@ -915,6 +993,8 @@ function fField(field,val){
   if(field==='racaoIdealG'||field==='racaoG')return gToKg(val,2);
   return fNum(val);
 }
+function numOrNull(s){const v=parseFloat(s);return isNaN(v)?null:v;}
+function intOrNull(s){const v=parseInt(s);return isNaN(v)?null:v;}
 const GROUPS=[
   {id:'escavados',name:'Escavados',icon:'🟫',shape:'rect',paired:true,tanks:Array.from({length:15},(_,i)=>({num:i+1,name:`Tanque ${i+1}`,shape:'rect',volume:600,large:false}))},
   {id:'geomembrana',name:'Geo. Escavada',icon:'🟦',shape:'rect',paired:false,tanks:Array.from({length:4},(_,i)=>({num:i+16,name:`Tanque ${i+16}`,shape:'rect',volume:800,large:false}))},
@@ -944,6 +1024,7 @@ let confirmCallback=null;
 
 // ===== SUPABASE =====
 const SB_URL='https://fsxoyytkmzqonrgfapgm.supabase.co';
+
 const SB_KEY='sb_publishable_hc1kFz6iao7_YRfTnlB6xw_4gYcLE3A';
 function sbHeaders(){return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};}
 
@@ -1184,21 +1265,21 @@ function toggleModuleMenu(){
 }
 
 function switchModule(mod){
-  if((mod==='coleta'||mod==='config')&&!isAdmin()){
+  if((mod==='coleta'||mod==='config'||mod==='pessoal')&&!isAdmin()){
     showToast('Módulo restrito a administradores','error');
     document.getElementById('module-dropdown').style.display='none';
     return;
   }
   activeModule=mod;
   document.getElementById('module-dropdown').style.display='none';
-  const labels={operacao:'OPERAÇÃO',coleta:'COLETA',config:'CONFIG.'};
+  const labels={operacao:'OPERAÇÃO',coleta:'COLETA',config:'CONFIG.',pessoal:'PESSOAL'};
   document.getElementById('module-label').textContent=labels[mod]||mod.toUpperCase();
 
   // Estilos do dropdown
   const base='padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;';
   const active=base+'color:var(--accent);background:var(--accent-dim);';
   const inactive=base+'color:var(--text2);';
-  ['operacao','coleta','config'].forEach(m=>{
+  ['operacao','coleta','config','pessoal'].forEach(m=>{
     const el=document.getElementById('mod-btn-'+m);
     if(el)el.style.cssText=mod===m?active:inactive;
   });
@@ -1207,23 +1288,27 @@ function switchModule(mod){
   const navEl=document.querySelector('.bottom-nav');
   const fabEl=document.getElementById('fab-btn');
   const colEl=document.getElementById('modulo-coleta');
+  const pessoalEl=document.getElementById('modulo-pessoal');
 
   // Esconde tudo primeiro
   opEl.style.display='none'; navEl.style.display='none';
-  colEl.style.display='none'; if(fabEl)fabEl.style.display='none';
+  colEl.style.display='none'; pessoalEl.style.display='none';
+  if(fabEl)fabEl.style.display='none';
 
   if(mod==='operacao'){
     opEl.style.display=''; navEl.style.display='';
     if(fabEl&&currentUser?.role==='admin')fabEl.style.display='';
   } else if(mod==='coleta'){
     colEl.style.display='flex';
-    // Se o load ainda não terminou, mostra matrizes e vai atualizar o painel quando terminar
     showColetaView('matrizes');
-    // Força re-render do painel assim que o load terminar (caso já tenha terminado, roda imediato)
     _pendingColetaView='painel';
   } else if(mod==='config'){
     opEl.style.display=''; navEl.style.display='';
     showView('settings');
+  } else if(mod==='pessoal'){
+    pessoalEl.style.display='flex';
+    // Garante render após o DOM estar visível
+    requestAnimationFrame(() => showPessoalView('metas'));
   }
 }
 
@@ -2252,6 +2337,7 @@ async function load(){
   loadLimits();
   showSyncStatus('Sincronizando...');
 
+
   // ── 1. Tanques ────────────────────────────────────────────
   try{
     const sbTanks=await sbGet('tanks','select=id,data');
@@ -2883,11 +2969,11 @@ function checkAlerts(){
 
 function collectRecord(){
   const tempVal=parseFloat(document.getElementById('reg-temp').value);
-  const idealKg=parseFloat(document.getElementById('reg-racao-ideal').value)||null;
-  const sobraKg=parseFloat(document.getElementById('reg-sobra').value)||null;
+  const idealKg=numOrNull(document.getElementById('reg-racao-ideal').value);
+  const sobraKg=numOrNull(document.getElementById('reg-sobra').value);
   const ideal=idealKg!=null?parseFloat((idealKg*1000).toFixed(3)):null;
   const sobra=sobraKg!=null?parseFloat((sobraKg*1000).toFixed(3)):null;
-  let racaoG=parseFloat(document.getElementById('reg-racao-real').value)||null;
+  let racaoG=numOrNull(document.getElementById('reg-racao-real').value);
   if(racaoG!=null)racaoG=parseFloat((racaoG*1000).toFixed(3));
   if(ideal!=null&&sobra!=null)racaoG=parseFloat(Math.max(0,ideal-sobra).toFixed(3));
   return{
@@ -2899,12 +2985,12 @@ function collectRecord(){
     timestamp:new Date().toISOString(),
     lote:document.getElementById('reg-lote').value.trim(),
     temp:!isNaN(tempVal)?Math.round(tempVal*10)/10:null,
-    o2:parseFloat(document.getElementById('reg-o2').value)||null,
-    amonia:parseFloat(document.getElementById('reg-amonia').value)||null,
-    ph:parseFloat(document.getElementById('reg-ph').value)||null,
+    o2:numOrNull(document.getElementById('reg-o2').value),
+    amonia:numOrNull(document.getElementById('reg-amonia').value),
+    ph:numOrNull(document.getElementById('reg-ph').value),
     mort:parseInt(document.getElementById('reg-mort').value)||0,
-    qty:parseInt(document.getElementById('reg-qty').value)||null,
-    bio:parseFloat(document.getElementById('reg-bio').value)||null,
+    qty:intOrNull(document.getElementById('reg-qty').value),
+    bio:numOrNull(document.getElementById('reg-bio').value),
     racao:document.getElementById('reg-racao').value,
     racaoIdealG:ideal,
     sobra:sobra,
@@ -3697,7 +3783,7 @@ function renderLancamentos(){
             step="0.001" inputmode="decimal" placeholder="Sobra (kg)"
             style="flex:1;min-width:0;"
             oninput="this.classList.toggle('filled',this.value!=='')" >
-          <button type="button" title="Confirmar alimentação zero (sem sobra)"
+          <button type="button" title="Confirmar alimentação 0"
             id="lanc-zero-${rowId}"
             onclick="toggleAlimZero('${rowId}')"
             style="flex-shrink:0;padding:6px 8px;font-size:11px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;transition:background 0.15s;">
@@ -4398,6 +4484,7 @@ function renderPainel(){
     {k:'mort',  label:'Mort.',  unit:'un',  lk:'mort'},
     {k:'qty',   label:'Peixes', unit:'un',  lk:null},
     {k:'bio',   label:'Biom.',  unit:'g',   lk:'bio'},
+    {k:'_racao_tipo',label:'Ração',unit:'tipo',lk:null},
     {k:'_ideal',label:'R.Ideal',unit:'kg',  lk:null},
     {k:'_real', label:'R.Real', unit:'kg',  lk:null},
     {k:'_pct',  label:'%Ração', unit:'%',   lk:'racaoPct'},
@@ -4431,6 +4518,10 @@ function renderPainel(){
     }
     if(isPrev)light='⬜';
     // Formata com casas decimais por campo
+    if(fieldKey==='_racao_tipo'){
+      const txt=v?String(v):'—';
+      return`<div style="padding:6px 2px;text-align:center;overflow:hidden;"><span style="font-size:10px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:90px;margin:0 auto;" title="${txt}">${txt}</span></div>`;
+    }
     let display='—';
     if(v!=null){
       if(fieldKey==='_ideal'||fieldKey==='_real')display=fNum(v,2)+' kg'; // v já em kg (dividido antes)
@@ -4523,6 +4614,7 @@ function renderPainel(){
       cVals._real =realSum!=null?realSum/1000:null;
       cVals._pct  =(idealSum&&realSum!=null)?Math.round(realSum/idealSum*100):null;
       cVals._tca  =tcaAcum(t)?parseFloat(tcaAcum(t)):null;
+      cVals._racao_tipo=hapaRecs.map(r=>r?.racao).find(v=>v&&v.trim())||null;
 
       const anyHapaData=hapaRecs.some(r=>r!=null);
       const rowBg=anyHapaData?'#fff':'#f8fafc';
@@ -4550,6 +4642,7 @@ function renderPainel(){
           Object.assign(hv,{o2:hr.o2,temp:hr.temp,amonia:hr.amonia,ph:hr.ph,mort:hr.mort||0,qty:hr.qty,bio:hr.bio,_ideal:hr.racaoIdealG});
           hv._real=hr.racaoLancada===true?(hr.racaoG??0):null;
           hv._pct=(hv._ideal&&hv._real!=null)?Math.round(hv._real/hv._ideal*100):null;
+          hv._racao_tipo=hr.racao||null;
         }
         // Fallback: qty e bio — busca último valor não-nulo no histórico (não só D-1)
         if(hv.qty==null){const v=lastValFor(t.id,'qty',h);if(v!=null){hv.qty=v;hv._qtyPrev=true;}}
@@ -4582,6 +4675,7 @@ function renderPainel(){
         // racaoG só válido se ração foi explicitamente lançada
         vals._real=rec.racaoLancada===true?(rec.racaoG??0):null;
         vals._pct=(vals._ideal&&vals._real!=null)?Math.round(vals._real/vals._ideal*100):null;
+        vals._racao_tipo=rec.racao||null;
       }
       // qty e bio independentes — busca último valor não-nulo campo a campo
       if(vals.qty==null){const v=lastValFor(t.id,'qty',null);if(v!=null){vals.qty=v;vals._qtyPrev=true;}}
@@ -6501,5 +6595,636 @@ async function saveNovaFase(){
 
 
 </script>
+<script>
+// ============================================================
+// MÓDULO PESSOAL — Metas & Ponto
+// ============================================================
+
+// ── Estrutura de metas por perfil ───────────────────────────
+const PERFIS_META = {
+  padrao: {
+    label: 'Colaborador Padrão',
+    salarioBase: 2000,
+    premioPeso: { quantidade: 0.5, qualidade: 0.5 },
+    premioMax: 400,
+    indicadores: [
+      {
+        id: 'producao_larvas',
+        label: 'Produção de Larvas',
+        categoria: 'quantidade',
+        fonte: 'auto',   // calculado do Supabase
+        faixas: [
+          { min: 1000000, pct: 1.0 },
+          { min: 800000,  pct: 0.8 },
+          { min: 600000,  pct: 0.6 },
+          { min: 400000,  pct: 0.4 },
+          { min: 200000,  pct: 0.2 },
+          { min: 0,       pct: 0.0 },
+        ],
+        unidade: 'larvas', formato: v => (v/1000).toFixed(0)+'k'
+      },
+      {
+        id: 'qtd_ovos',
+        label: 'Quantidade de Ovos',
+        categoria: 'quantidade',
+        fonte: 'auto',
+        faixas: [
+          { min: 500000, pct: 1.0 },
+          { min: 400000, pct: 0.8 },
+          { min: 300000, pct: 0.6 },
+          { min: 200000, pct: 0.4 },
+          { min: 100000, pct: 0.2 },
+          { min: 0,      pct: 0.0 },
+        ],
+        unidade: 'ovos', formato: v => (v/1000).toFixed(0)+'k'
+      },
+      {
+        id: 'taxa_eclosao',
+        label: 'Taxa de Eclosão',
+        categoria: 'qualidade',
+        fonte: 'auto',
+        faixas: [
+          { min: 90, pct: 1.0 },
+          { min: 80, pct: 0.8 },
+          { min: 70, pct: 0.6 },
+          { min: 60, pct: 0.4 },
+          { min: 50, pct: 0.2 },
+          { min: 0,  pct: 0.0 },
+        ],
+        unidade: '%', formato: v => v.toFixed(1)+'%'
+      },
+      {
+        id: 'troca_agua',
+        label: 'Troca de Água pelo Tambor',
+        categoria: 'qualidade',
+        fonte: 'manual',
+        faixas: [
+          { min: 26, pct: 1.0 },
+          { min: 24, pct: 0.8 },
+          { min: 18, pct: 0.6 },
+          { min: 0,  pct: 0.0 },
+        ],
+        unidade: 'dias', formato: v => v+' dias'
+      },
+      {
+        id: 'limpeza_racao',
+        label: 'Limpeza do Ambiente de Ração',
+        categoria: 'qualidade',
+        fonte: 'admin',   // só lucas e giovana
+        tipo: 'boolean',
+        faixas: [
+          { min: 1, pct: 1.0 },
+          { min: 0, pct: 0.0 },
+        ],
+        unidade: '', formato: v => Number(v) ? 'Realizado' : 'Não realizado'
+      },
+      {
+        id: 'pesar_racao',
+        label: 'Pesar Ração',
+        categoria: 'qualidade',
+        fonte: 'auto',
+        faixas: [
+          { min: 26, pct: 1.0 },
+          { min: 24, pct: 0.8 },
+          { min: 18, pct: 0.6 },
+          { min: 0,  pct: 0.0 },
+        ],
+        unidade: 'dias', formato: v => v+' dias'
+      },
+    ]
+  }
+};
+
+// Mapeamento usuário → perfil
+const USER_PERFIL = {
+  lucas:  'padrao',
+  giovana:'padrao',
+  kiko:   'padrao',
+  bili:   'padrao',
+};
+
+// Storage key para metas manuais: metaValues_{username}_{ano}_{mes}
+function metaKey(username, ano, mes) {
+  return `metaValues_${username}_${ano}_${String(mes).padStart(2,'0')}`;
+}
+
+// ── Buscar dados automáticos para as metas ─────────────────
+// Usa buildColetaByLote() (dados já em memória) + records para pesar ração
+async function fetchMetasAuto(ano, mes) {
+  const mesStr  = String(mes).padStart(2,'0');
+  const prefixo = `C${ano}${mesStr}`;  // ex: C202605
+  const dataInicio = `${ano}-${mesStr}-01`;
+  const dataFim    = `${ano}-${mesStr}-31`;
+
+  // 1. Coleta: soma todos os lotes do mês usando buildColetaByLote()
+  const byLote = buildColetaByLote();
+  let totalOvos = 0, totalLarvas = 0, lotesDoMes = 0;
+  Object.entries(byLote).forEach(([lote, info]) => {
+    if (!lote.startsWith(prefixo)) return;
+    lotesDoMes++;
+    totalOvos  += info.ovosTotal  || 0;
+    totalLarvas += info.ovosBons  || 0;
+  });
+  const taxaEclosao = totalOvos > 0
+    ? parseFloat(((totalLarvas / totalOvos) * 100).toFixed(1))
+    : null;
+
+  // 2. Pesar ração: dias distintos com racao_lancada = true no mês
+  //    Tenta via Supabase; se falhar usa records em memória
+  let diasRacao = 0;
+  try {
+    const { sbUrl, sbKey } = getSbConfig();
+    const racaoRes = await fetch(
+      `${sbUrl}/rest/v1/tank_records?select=date&racao_lancada=eq.true&date=gte.${dataInicio}&date=lte.${dataFim}&overridden=eq.false`,
+      { headers: { apikey: sbKey, Authorization: 'Bearer '+sbKey } }
+    );
+    if (racaoRes.ok) {
+      const racaoRows = await racaoRes.json();
+      diasRacao = new Set(racaoRows.map(r => r.date)).size;
+    }
+  } catch(e) {
+    // Fallback: conta pelos records em memória
+    const dias = new Set(
+      records.filter(r => r.racaoLancada && r.date >= dataInicio && r.date <= dataFim && !r.overridden)
+             .map(r => r.date)
+    );
+    diasRacao = dias.size;
+  }
+
+  return {
+    qtd_ovos:        totalOvos   > 0 ? Math.round(totalOvos)   : null,
+    producao_larvas: totalLarvas > 0 ? Math.round(totalLarvas) : null,
+    taxa_eclosao:    taxaEclosao,
+    pesar_racao:     diasRacao   > 0 ? diasRacao : null,
+  };
+}
+
+// ── Navegação aba pessoal ────────────────────────────────────
+function showPessoalView(v) {
+  document.querySelectorAll('.pview').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.pessoal-nav').forEach(el => {
+    el.style.color = 'var(--text2)';
+    el.style.borderBottom = 'none';
+    el.style.background = 'none';
+  });
+  const viewEl = document.getElementById('pview-'+v);
+  if (viewEl) viewEl.style.display = 'block';
+  const navEl = document.getElementById('pnav-'+v);
+  if (navEl) {
+    navEl.style.color = 'var(--accent)';
+    navEl.style.borderBottom = '2px solid var(--accent)';
+    navEl.style.marginBottom = '-2px';
+  }
+  if (v === 'metas') setTimeout(renderMetas, 0);
+  if (v === 'ponto') setTimeout(renderPonto, 0);
+}
+
+
+function getSbConfig() {
+  return { sbUrl: SB_URL, sbKey: SB_KEY };
+}
+
+
+
+function calcPctIndicador(indicador, valor) {
+  if (valor === null || valor === undefined) return null;
+  for (const f of indicador.faixas) {
+    if (valor >= f.min) return f.pct;
+  }
+  return 0;
+}
+
+
+// ── Render Metas ─────────────────────────────────────────────
+async function renderMetas() {
+  const mes  = parseInt(document.getElementById('meta-mes')?.value || (new Date().getMonth()+1));
+  const ano  = parseInt(document.getElementById('meta-ano')?.value || new Date().getFullYear());
+  const user = currentUser?.username || 'padrao';
+  const perfil = PERFIS_META[USER_PERFIL[user] || 'padrao'] || PERFIS_META['padrao'];
+  if (!perfil) return;
+
+  const wrap = document.getElementById('meta-tabela-wrap');
+  if (!wrap) { setTimeout(renderMetas, 100); return; }
+
+  // Label perfil
+  const plEl = document.getElementById('meta-perfil-label');
+  if (plEl) plEl.textContent = perfil.label;
+
+  // Mostrar loading
+  wrap.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px;">⏳ Carregando dados...</div>';
+
+  // Carregar valores manuais do localStorage
+  const storeKey = metaKey(user, ano, mes);
+  let valoresManuais = {};
+  try { valoresManuais = JSON.parse(localStorage.getItem(storeKey) || '{}'); } catch(e){}
+
+  // Buscar dados automáticos do Supabase
+  let autoData = {};
+  try { autoData = await fetchMetasAuto(ano, mes); } catch(e){ console.warn('fetchMetasAuto error:', e); }
+
+  // Mesclar: auto sobrescreve manual apenas nos campos automáticos
+  const valores = { ...valoresManuais };
+  if (autoData.producao_larvas !== null && autoData.producao_larvas !== undefined) valores.producao_larvas = autoData.producao_larvas;
+  if (autoData.qtd_ovos        !== null && autoData.qtd_ovos !== undefined)        valores.qtd_ovos       = autoData.qtd_ovos;
+  if (autoData.taxa_eclosao    !== null && autoData.taxa_eclosao !== undefined)    valores.taxa_eclosao   = autoData.taxa_eclosao;
+  if (autoData.pesar_racao     !== null && autoData.pesar_racao !== undefined)     valores.pesar_racao    = autoData.pesar_racao;
+
+  // Calcular pcts e prêmio
+  const indsQtd  = perfil.indicadores.filter(i => i.categoria === 'quantidade');
+  const indsQual = perfil.indicadores.filter(i => i.categoria === 'qualidade');
+  const pesoQtd  = perfil.premioPeso.quantidade;
+  const pesoQual = perfil.premioPeso.qualidade;
+  const premioQualPorInd = pesoQual * perfil.premioMax / indsQual.length;
+
+  const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let bonusTotal = 0;
+
+  let html = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="background:var(--bg);">
+          <th style="padding:12px 16px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Indicador</th>
+          <th style="padding:12px 10px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Fonte</th>
+          <th style="padding:12px 10px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Valor atual</th>
+          <th style="padding:12px 10px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Faixa atingida</th>
+          <th style="padding:12px 10px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">% prêmio</th>
+          <th style="padding:12px 16px;text-align:right;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Valor (R$)</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  perfil.indicadores.forEach((ind, idx) => {
+    const rawVal = valores[ind.id];
+    const val    = rawVal !== undefined && rawVal !== '' ? Number(rawVal) : null;
+    const pct    = calcPctIndicador(ind, val);
+
+    // Faixa descritiva
+    let faixaDesc = '—';
+    if (pct !== null && ind.faixas.length) {
+      const fIdx = ind.faixas.findIndex(f => f.pct === pct);
+      const f = ind.faixas[fIdx];
+      const fNext = fIdx > 0 ? ind.faixas[fIdx-1] : null;
+      if (f) faixaDesc = fNext
+        ? `≥ ${ind.formato(f.min)} e < ${ind.formato(fNext.min)}`
+        : `≥ ${ind.formato(f.min)}`;
+    }
+
+    // Valor do prêmio
+    let premioInd = 0;
+    if (ind.categoria === 'quantidade') {
+      premioInd = pct !== null ? (pct / indsQtd.length) * pesoQtd * perfil.premioMax : 0;
+    } else {
+      premioInd = pct !== null ? pct * premioQualPorInd : 0;
+    }
+    bonusTotal += premioInd;
+
+    const cor = pct === null ? '#94a3b8'
+      : pct >= 1.0 ? '#22c55e'
+      : pct >= 0.6 ? '#f59e0b'
+      : pct >  0   ? '#f97316'
+      : '#ef4444';
+
+    const maxFaixa = ind.faixas[0].min;
+    const progPct  = val !== null ? Math.min(100, (val / maxFaixa) * 100) : 0;
+    const bgRow = idx % 2 === 0 ? '' : 'background:var(--bg);';
+
+    // Badge da fonte
+    const fonteIcon = ind.fonte === 'auto'  ? '🤖 Auto'
+                    : ind.fonte === 'admin' ? '🔒 Admin'
+                    : '✏️ Manual';
+    const fonteCor  = ind.fonte === 'auto'  ? '#22c55e'
+                    : ind.fonte === 'admin' ? '#a855f7'
+                    : '#f59e0b';
+
+    html += `
+      <tr style="${bgRow}border-bottom:1px solid var(--border);">
+        <td style="padding:12px 16px;font-weight:700;color:var(--text);">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:4px;height:32px;background:${cor};border-radius:2px;flex-shrink:0;"></div>
+            <div>
+              <div>${ind.label}</div>
+              <div style="height:4px;width:100px;background:var(--border);border-radius:2px;margin-top:5px;overflow:hidden;">
+                <div style="height:100%;width:${progPct}%;background:${cor};border-radius:2px;"></div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td style="padding:12px 10px;text-align:center;">
+          <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--bg);border:1px solid ${fonteCor};color:${fonteCor};">${fonteIcon}</span>
+        </td>
+        <td style="padding:12px 10px;text-align:center;font-size:15px;font-weight:800;color:${cor};">
+          ${val !== null ? ind.formato(val) : '<span style="color:#94a3b8;font-size:12px;">Não disponível</span>'}
+        </td>
+        <td style="padding:12px 10px;font-size:12px;color:var(--text2);">${faixaDesc}</td>
+        <td style="padding:12px 10px;text-align:center;font-weight:800;color:${cor};">${pct !== null ? Math.round(pct*100)+'%' : '—'}</td>
+        <td style="padding:12px 16px;text-align:right;font-weight:800;color:var(--accent);">${premioInd > 0 ? '+R$ '+premioInd.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</td>
+      </tr>`;
+  });
+
+  html += `
+      </tbody>
+      <tfoot>
+        <tr style="background:linear-gradient(135deg,var(--accent),#0ea5e9);">
+          <td colspan="5" style="padding:14px 16px;font-size:14px;font-weight:800;color:#fff;">🎯 Bônus estimado — ${meses[mes]} ${ano}</td>
+          <td style="padding:14px 16px;text-align:right;font-size:18px;font-weight:900;color:#fff;">R$ ${bonusTotal.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        </tr>
+      </tfoot>
+    </table>`;
+
+  wrap.innerHTML = html;
+
+  // Painel admin para lançar valores manuais/admin
+  const adminPanel  = document.getElementById('meta-admin-panel');
+  const adminInputs = document.getElementById('meta-admin-inputs');
+  const adminMesAno = document.getElementById('meta-admin-mesano');
+  const podeAdmin   = isAdmin(); // lucas e giovana
+  if (adminPanel) {
+    adminPanel.style.display = podeAdmin ? 'block' : 'none';
+    if (podeAdmin && adminInputs) {
+      if (adminMesAno) adminMesAno.textContent = meses[mes]+' '+ano;
+      adminInputs.innerHTML = '';
+      // Só mostra campos manuais e admin (auto são calculados)
+      const indsEditaveis = perfil.indicadores.filter(i => i.fonte === 'manual' || i.fonte === 'admin');
+      indsEditaveis.forEach(ind => {
+        const curVal = valoresManuais[ind.id] !== undefined ? valoresManuais[ind.id] : '';
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex;flex-direction:column;gap:4px;min-width:180px;';
+        div.innerHTML = `
+          <label style="font-size:11px;font-weight:700;color:var(--text2);">${ind.label}${ind.unidade?' ('+ind.unidade+')':''}</label>
+          ${ind.tipo === 'boolean'
+            ? `<select id="meta-input-${ind.id}" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">
+                <option value="">— Não lançado —</option>
+                <option value="1" ${curVal===1||curVal==='1'?'selected':''}>Realizado</option>
+                <option value="0" ${curVal===0||curVal==='0'?'selected':''}>Não realizado</option>
+              </select>`
+            : `<input type="number" id="meta-input-${ind.id}" value="${curVal}" placeholder="Valor" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">`
+          }`;
+        adminInputs.appendChild(div);
+      });
+    }
+  }
+}
+
+
+function salvarMetas() {
+  const mes  = parseInt(document.getElementById('meta-mes')?.value);
+  const ano  = parseInt(document.getElementById('meta-ano')?.value);
+  const user = currentUser?.username || '';
+  const perfil = PERFIS_META[USER_PERFIL[user] || 'padrao'];
+  const valores = {};
+  perfil.indicadores.forEach(ind => {
+    const el = document.getElementById('meta-input-'+ind.id);
+    if (el && el.value !== '') valores[ind.id] = el.value;
+  });
+  localStorage.setItem(metaKey(user, ano, mes), JSON.stringify(valores));
+  showToast('Metas salvas!', 'success');
+  renderMetas();
+}
+
+// ── PONTO ────────────────────────────────────────────────────
+// pontoData: { [username]: { [YYYY-MM-DD]: { batidas: ['HH:MM',...] } } }
+let pontoData = {};
+
+function pontoStorageKey() { return 'kc_ponto_v1'; }
+
+function loadPonto() {
+  try { pontoData = JSON.parse(localStorage.getItem(pontoStorageKey()) || '{}'); } catch(e){ pontoData={}; }
+}
+
+function savePonto() {
+  localStorage.setItem(pontoStorageKey(), JSON.stringify(pontoData));
+}
+
+// Importar arquivo .dat do relógio de ponto
+// Tenta interpretar como AFD (Portaria 1510 MTE) ou como texto simples com linhas "CPF HH:MM:SS DD/MM/YYYY"
+async function importarPonto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+
+  // Tenta decodificar como texto latin-1 e UTF-8
+  let text = '';
+  try { text = new TextDecoder('latin1').decode(bytes); } catch(e){}
+
+  const linhas = text.split(/\r?\n/).filter(l => l.trim());
+  let importados = 0;
+
+  // Formato AFD (Portaria 1510): linhas de 58 chars
+  // Tipo 3 (marcação): pos 0=tipo(1), pos 1-9=NSR, pos 10-21=data AAAAMMDDHHII, pos 22=tipo ponto(1=entrada/saida), pos 23-33=PIS
+  let modoAFD = linhas.some(l => l.length >= 30 && /^[0-9]{9}/.test(l.substring(1,10)));
+
+  // Mapeamento PIS → usuário (precisaria de cadastro — por ora mapeia por ordem)
+  // Fallback: tenta interpretar como texto simples: NOME DD/MM/YYYY HH:MM
+  linhas.forEach(linha => {
+    // Tenta formato simples: "nome;DD/MM/YYYY;HH:MM" ou "nome DD/MM/YYYY HH:MM"
+    const m = linha.match(/^(\w+)[;\s]+(\d{2})\/(\d{2})\/(\d{4})[;\s]+(\d{2}):(\d{2})/i);
+    if (m) {
+      const uname = m[1].toLowerCase();
+      const date = `${m[4]}-${m[3]}-${m[2]}`; // YYYY-MM-DD
+      const hora = `${m[5]}:${m[6]}`;
+      if (!pontoData[uname]) pontoData[uname] = {};
+      if (!pontoData[uname][date]) pontoData[uname][date] = { batidas: [] };
+      if (!pontoData[uname][date].batidas.includes(hora)) {
+        pontoData[uname][date].batidas.push(hora);
+        pontoData[uname][date].batidas.sort();
+        importados++;
+      }
+    }
+  });
+
+  if (importados > 0) {
+    savePonto();
+    showToast(`${importados} registros importados`, 'success');
+    renderPonto();
+  } else {
+    showToast('Nenhum registro reconhecido. Verifique o formato do arquivo.', 'error');
+  }
+  input.value = '';
+}
+
+// Calcular horas trabalhadas e almoço de um dia
+function calcDia(batidas) {
+  if (!batidas || batidas.length < 2) return { trabalhado: null, almoco: null, ok: false };
+  const toMin = h => { const [hh,mm] = h.split(':').map(Number); return hh*60+mm; };
+  const mins = batidas.map(toMin).sort((a,b)=>a-b);
+  const entrada = mins[0];
+  const saida = mins[mins.length-1];
+  let trabalhado = saida - entrada;
+
+  // Almoço: intervalo entre 2ª batida se houver 4 batidas
+  let almoco = null;
+  if (mins.length >= 4) {
+    almoco = mins[2] - mins[1];
+    trabalhado = (mins[1] - mins[0]) + (mins[3] - mins[2]);
+  } else if (mins.length === 3) {
+    // Saiu para almoço mas não voltou de forma clara — usa diferença entre 1 e 2
+    almoco = mins[2] - mins[1];
+    trabalhado = mins[1] - mins[0];
+  }
+
+  return { trabalhado, almoco, ok: trabalhado !== null };
+}
+
+function fmtMin(min) {
+  if (min === null || min === undefined) return '—';
+  const neg = min < 0;
+  const abs = Math.abs(min);
+  const h = Math.floor(abs/60), m = abs%60;
+  return (neg?'-':'')+h+'h'+(m>0?m+'min':'');
+}
+
+function renderPonto() {
+  loadPonto();
+  const mes = parseInt(document.getElementById('ponto-mes')?.value);
+  const ano = parseInt(document.getElementById('ponto-ano')?.value);
+
+  // Botão upload só para admin
+  const uploadWrap = document.getElementById('ponto-upload-wrap');
+  if (uploadWrap) uploadWrap.style.display = isAdmin() ? 'flex' : 'none';
+
+  // Quais usuários mostrar
+  const usersToShow = isAdmin()
+    ? Object.keys(USERS)
+    : [currentUser?.username];
+
+  // Dias úteis do mês (seg-sáb) — mês 0-indexed internamente
+  const diasUteis = [];
+  const dt = new Date(ano, mes-1, 1);
+  while (dt.getMonth() === mes-1) {
+    const dow = dt.getDay(); // 0=dom
+    if (dow !== 0) diasUteis.push(new Date(dt)); // exclui domingo
+    dt.setDate(dt.getDate()+1);
+  }
+
+  // Calcular banco de horas por usuário
+  const resumoCards = document.getElementById('ponto-resumo-cards');
+  const detalheEl = document.getElementById('ponto-detalhe');
+  if (!resumoCards || !detalheEl) return;
+  resumoCards.innerHTML = '';
+
+  usersToShow.forEach(uname => {
+    const uInfo = USERS[uname] || { name: uname };
+    const uDados = pontoData[uname] || {};
+
+    let totalTrabMin = 0, totalEsperadoMin = 0, almocosCurtos = 0, diasRegistrados = 0;
+
+    diasUteis.forEach(d => {
+      const key = d.toISOString().split('T')[0];
+      const dow = d.getDay();
+      const ehSab = dow === 6;
+      const esperado = ehSab ? 0 : 8*60; // sábados só contam se tiver registro
+      const reg = uDados[key];
+      if (reg?.batidas?.length >= 2) {
+        const { trabalhado, almoco } = calcDia(reg.batidas);
+        if (trabalhado !== null) { totalTrabMin += trabalhado; diasRegistrados++; }
+        if (!ehSab) totalEsperadoMin += esperado;
+        if (almoco !== null && almoco < 60) almocosCurtos++;
+      } else {
+        if (!ehSab) totalEsperadoMin += esperado;
+      }
+    });
+
+    // Saldo banco
+    const saldo = totalTrabMin - totalEsperadoMin;
+    const corSaldo = saldo >= 0 ? '#22c55e' : '#ef4444';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:14px;cursor:pointer;';
+    card.onclick = () => renderPontoDetalhe(uname, ano, mes, diasUteis);
+    card.innerHTML = `
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;">👤 ${uInfo.name}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:18px;font-weight:800;color:${corSaldo};">${fmtMin(saldo)}</div>
+          <div style="font-size:10px;color:var(--text2);">Banco de horas</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
+          <div style="font-size:18px;font-weight:800;color:${almocosCurtos>0?'#f59e0b':'var(--text)'};">${almocosCurtos}</div>
+          <div style="font-size:10px;color:var(--text2);">Almoços < 1h</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--text2);text-align:center;">${diasRegistrados} dias registrados · clique p/ detalhe</div>`;
+    resumoCards.appendChild(card);
+  });
+
+  // Detalhe padrão: usuário atual
+  renderPontoDetalhe(currentUser?.username, ano, mes, diasUteis);
+}
+
+function renderPontoDetalhe(uname, ano, mes, diasUteis) {
+  const detalheEl = document.getElementById('ponto-detalhe');
+  if (!detalheEl) return;
+  const uInfo = USERS[uname] || { name: uname };
+  const uDados = pontoData[uname] || {};
+
+  const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  let html = `
+    <div style="padding:14px 16px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:14px;font-weight:700;color:var(--text);">📋 ${uInfo.name} — ${meses[mes]} ${ano}</div>
+    </div>
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:var(--bg);">
+          <th style="padding:10px 14px;text-align:left;font-weight:700;color:var(--text2);">Data</th>
+          <th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Batidas</th>
+          <th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Trabalhado</th>
+          <th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Almoço</th>
+          <th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Saldo dia</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  let saldoAcum = 0;
+
+  diasUteis.forEach(d => {
+    const key = d.toISOString().split('T')[0];
+    const dow = d.getDay();
+    const ehSab = dow === 6;
+    const esperado = ehSab ? 0 : 480;
+    const reg = uDados[key];
+    const batidas = reg?.batidas || [];
+    const { trabalhado, almoco } = batidas.length >= 2 ? calcDia(batidas) : { trabalhado: null, almoco: null };
+
+    const saldoDia = trabalhado !== null ? trabalhado - esperado : (ehSab ? 0 : -esperado);
+    if (trabalhado !== null || !ehSab) saldoAcum += saldoDia;
+
+    const corSaldo = saldoDia > 0 ? '#22c55e' : saldoDia < 0 ? '#ef4444' : 'var(--text2)';
+    const corAlmoco = almoco !== null && almoco < 60 ? '#f59e0b' : 'var(--text)';
+    const bgRow = ehSab ? 'background:var(--accent-dim);' : '';
+
+    const dia = d.getDate().toString().padStart(2,'0');
+    const mesStr = (d.getMonth()+1).toString().padStart(2,'0');
+
+    html += `
+      <tr style="${bgRow}border-bottom:1px solid var(--border);">
+        <td style="padding:8px 14px;color:var(--text);font-weight:600;">${dias[dow]} ${dia}/${mesStr}${ehSab?' 🟡':''}</td>
+        <td style="padding:8px;text-align:center;color:var(--text2);">${batidas.join(' · ')||'—'}</td>
+        <td style="padding:8px;text-align:center;font-weight:700;color:${trabalhado!==null?'var(--text)':'var(--text2)'};">${fmtMin(trabalhado)}</td>
+        <td style="padding:8px;text-align:center;font-weight:600;color:${corAlmoco};">${almoco!==null?fmtMin(almoco)+(almoco<60?' ⚠':''):'—'}</td>
+        <td style="padding:8px;text-align:center;font-weight:700;color:${corSaldo};">${saldoDia!==0?fmtMin(saldoDia):'—'}</td>
+      </tr>`;
+  });
+
+  const corAcum = saldoAcum >= 0 ? '#22c55e' : '#ef4444';
+  html += `
+      </tbody>
+      <tfoot>
+        <tr style="background:var(--bg);font-weight:800;">
+          <td colspan="4" style="padding:12px 14px;font-size:13px;color:var(--text);">Saldo acumulado do mês</td>
+          <td style="padding:12px;text-align:center;font-size:15px;color:${corAcum};">${fmtMin(saldoAcum)}</td>
+        </tr>
+      </tfoot>
+    </table></div>`;
+
+  detalheEl.innerHTML = html;
+}
+// ── Inicialização ────────────────────────────────────────────
+loadPonto();
+</script>
+
 </body>
 </html>
