@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.6</title>
+<title>KC System v4.7</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -392,7 +392,7 @@ input[type="number"]{-moz-appearance:textfield;}
         <div onclick="switchModule('coleta')" id="mod-btn-coleta" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-coleta-only">
           <span>🧬</span> Coleta
         </div>
-        <div onclick="switchModule('pessoal')" id="mod-btn-pessoal" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
+        <div onclick="switchModule('pessoal')" id="mod-btn-pessoal" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);">
           <span>👤</span> Pessoal
         </div>
         <div onclick="switchModule('config')" id="mod-btn-config" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.6</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.7</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1266,7 +1266,7 @@ function toggleModuleMenu(){
 }
 
 function switchModule(mod){
-  if((mod==='coleta'||mod==='config'||mod==='pessoal')&&!isAdmin()){
+  if((mod==='coleta'||mod==='config')&&!isAdmin()){
     showToast('Módulo restrito a administradores','error');
     document.getElementById('module-dropdown').style.display='none';
     return;
@@ -1308,8 +1308,9 @@ function switchModule(mod){
     showView('settings');
   } else if(mod==='pessoal'){
     pessoalEl.style.display='flex';
-    // Garante render após o DOM estar visível
-    requestAnimationFrame(() => showPessoalView('metas'));
+    const metasBtn=document.getElementById('pnav-metas');
+    if(metasBtn) metasBtn.style.display=isAdmin()?'':'none';
+    requestAnimationFrame(()=>showPessoalView(isAdmin()?'metas':'ponto'));
   }
 }
 
@@ -7002,6 +7003,9 @@ const PONTO_EXTRA_USERS = {
 
 // pontoData: { [username]: { [YYYY-MM-DD]: { batidas: ['HH:MM',...] } } }
 let pontoData = {};
+// pontoAtestados: { [username]: { [YYYY-MM-DD]: true } }
+let pontoAtestados = {};
+let _pontoDetalheUser = null; // usuário atualmente exibido no detalhe
 
 function pontoStorageKey() { return 'kc_ponto_v1'; }
 
@@ -7013,8 +7017,50 @@ function savePonto() {
   localStorage.setItem(pontoStorageKey(), JSON.stringify(pontoData));
 }
 
+function loadAtestados() {
+  try { pontoAtestados = JSON.parse(localStorage.getItem('kc_ponto_atestados_v1') || '{}'); } catch(e){ pontoAtestados={}; }
+}
+function saveAtestados() {
+  localStorage.setItem('kc_ponto_atestados_v1', JSON.stringify(pontoAtestados));
+}
+function toggleAtestado(uname, dateKey) {
+  if (!pontoAtestados[uname]) pontoAtestados[uname] = {};
+  if (pontoAtestados[uname][dateKey]) {
+    delete pontoAtestados[uname][dateKey];
+  } else {
+    pontoAtestados[uname][dateKey] = true;
+  }
+  saveAtestados();
+  renderPonto();
+}
+
 // Importar arquivo .dat do relógio de ponto
 // Tenta interpretar como AFD (Portaria 1510 MTE) ou como texto simples com linhas "CPF HH:MM:SS DD/MM/YYYY"
+function showImportPopup(periodo, resumoPorUser) {
+  document.getElementById('import-popup-overlay')?.remove();
+  const mesesNomes=['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const linhas = Object.entries(resumoPorUser).map(([u, count]) => {
+    const nome = (USERS[u] || PONTO_EXTRA_USERS[u] || {name:u}).name;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;color:var(--text);">👤 ${nome}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--accent);">${count} batida${count!==1?'s':''}</span>
+    </div>`;
+  }).join('');
+  const overlay = document.createElement('div');
+  overlay.id = 'import-popup-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:16px;padding:24px;max-width:340px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+      <div style="font-size:28px;text-align:center;margin-bottom:6px;">✅</div>
+      <div style="font-size:15px;font-weight:800;color:var(--text);text-align:center;margin-bottom:4px;">Arquivo importado com sucesso</div>
+      <div style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:16px;">${periodo}</div>
+      <div style="margin-bottom:18px;">${linhas}</div>
+      <button onclick="document.getElementById('import-popup-overlay').remove()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">Fechar</button>
+    </div>`;
+  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
 async function importarPontoXLS(file) {
   if (typeof XLSX === 'undefined') {
     showToast('Biblioteca XLS não carregada. Verifique a conexão.', 'error');
@@ -7043,6 +7089,7 @@ async function importarPontoXLS(file) {
   });
 
   let importados = 0;
+  const resumoPorUser = {};
   let i = 4; // começa na linha 5 (índice 4)
 
   while (i + 1 < data.length) {
@@ -7083,6 +7130,7 @@ async function importarPontoXLS(file) {
       horarios.forEach(h => {
         if (!pontoData[username][dateKey].batidas.includes(h)) {
           pontoData[username][dateKey].batidas.push(h);
+          resumoPorUser[username] = (resumoPorUser[username] || 0) + 1;
           importados++;
         }
       });
@@ -7092,10 +7140,11 @@ async function importarPontoXLS(file) {
     i += 2;
   }
 
+  const mesesNomes = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   if (importados > 0) {
     savePonto();
-    showToast(`${importados} batidas importadas do relógio`, 'ok');
     renderPonto();
+    showImportPopup(`${mesesNomes[mes]} ${ano}`, resumoPorUser);
   } else {
     showToast('Nenhuma batida encontrada no arquivo.', 'error');
   }
@@ -7187,6 +7236,7 @@ function fmtMin(min) {
 
 function renderPonto() {
   loadPonto();
+  loadAtestados();
   const mes = parseInt(document.getElementById('ponto-mes')?.value);
   const ano = parseInt(document.getElementById('ponto-ano')?.value);
 
@@ -7194,9 +7244,10 @@ function renderPonto() {
   const uploadWrap = document.getElementById('ponto-upload-wrap');
   if (uploadWrap) uploadWrap.style.display = isAdmin() ? 'flex' : 'none';
 
-  // Quais usuários mostrar (lucas não aparece no banco de horas)
+  // Quais usuários mostrar (lucas não aparece; PONTO_EXTRA só adiciona quem não está em USERS)
+  const extraPontoKeys = Object.keys(PONTO_EXTRA_USERS).filter(u => !USERS[u]);
   const usersToShow = isAdmin()
-    ? [...Object.keys(USERS).filter(u => u !== 'lucas'), ...Object.keys(PONTO_EXTRA_USERS)]
+    ? [...Object.keys(USERS).filter(u => u !== 'lucas'), ...extraPontoKeys]
     : [currentUser?.username];
 
   // Dias úteis do mês (seg-sáb) — mês 0-indexed internamente
@@ -7220,6 +7271,7 @@ function renderPonto() {
 
     let totalTrabMin = 0, totalEsperadoMin = 0, almocosCurtos = 0, diasRegistrados = 0;
     const todayStr = new Date().toISOString().split('T')[0];
+    const atestadosUser = pontoAtestados[uname] || {};
 
     diasUteis.forEach(d => {
       const key = d.toISOString().split('T')[0];
@@ -7228,6 +7280,10 @@ function renderPonto() {
       const ehSab = dow === 6;
       const esperado = ehSab ? 4*60 : 8*60; // sáb=4h, seg-sex=8h
       const reg = uDados[key];
+      if (atestadosUser[key]) { // dia abonado → não impacta banco
+        if (reg?.batidas?.length >= 2) diasRegistrados++;
+        return;
+      }
       if (reg?.batidas?.length >= 2) {
         const { trabalhado, almoco } = calcDia(reg.batidas);
         if (trabalhado !== null) { totalTrabMin += trabalhado; diasRegistrados++; }
@@ -7261,20 +7317,25 @@ function renderPonto() {
     resumoCards.appendChild(card);
   });
 
-  // Detalhe padrão: usuário atual
-  renderPontoDetalhe(currentUser?.username, ano, mes, diasUteis);
+  // Detalhe: mantém o usuário que estava sendo visualizado, ou cai no atual
+  renderPontoDetalhe(_pontoDetalheUser || currentUser?.username, ano, mes, diasUteis);
 }
 
 function renderPontoDetalhe(uname, ano, mes, diasUteis) {
+  _pontoDetalheUser = uname;
   const detalheEl = document.getElementById('ponto-detalhe');
   if (!detalheEl) return;
   const uInfo = USERS[uname] || PONTO_EXTRA_USERS[uname] || { name: uname };
   const uDados = pontoData[uname] || {};
+  const atestadosUser = pontoAtestados[uname] || {};
+  const admin = isAdmin();
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const thAbonar = admin ? `<th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Abonar</th>` : '';
 
   let html = `
-    <div style="padding:14px 16px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <div style="padding:14px 16px;border-bottom:1.5px solid var(--border);">
       <div style="font-size:14px;font-weight:700;color:var(--text);">📋 ${uInfo.name} — ${meses[mes]} ${ano}</div>
     </div>
     <div style="overflow-x:auto;">
@@ -7286,6 +7347,7 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
           <th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Trabalhado</th>
           <th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Almoço</th>
           <th style="padding:10px 8px;text-align:center;font-weight:700;color:var(--text2);">Saldo dia</th>
+          ${thAbonar}
         </tr>
       </thead>
       <tbody>`;
@@ -7295,22 +7357,43 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
 
   diasUteis.forEach(d => {
     const key = d.toISOString().split('T')[0];
+    if (key > todayStr) return; // dias futuros não exibidos
     const dow = d.getDay();
     const ehSab = dow === 6;
-    const esperado = ehSab ? 0 : 480;
+    const esperado = ehSab ? 240 : 480; // sáb=4h, seg-sex=8h
     const reg = uDados[key];
     const batidas = reg?.batidas || [];
     const { trabalhado, almoco } = batidas.length >= 2 ? calcDia(batidas) : { trabalhado: null, almoco: null };
+    const atestado = !!atestadosUser[key];
 
-    const saldoDia = trabalhado !== null ? trabalhado - esperado : (ehSab ? 0 : -esperado);
-    if (trabalhado !== null || !ehSab) saldoAcum += saldoDia;
+    let saldoDia;
+    if (atestado) {
+      saldoDia = 0;
+    } else if (trabalhado !== null) {
+      saldoDia = trabalhado - esperado;
+    } else {
+      saldoDia = -esperado;
+    }
+    saldoAcum += saldoDia;
 
     const corSaldo = saldoDia > 0 ? '#22c55e' : saldoDia < 0 ? '#ef4444' : 'var(--text2)';
-    const corAlmoco = almoco !== null && almoco < 60 ? '#f59e0b' : 'var(--text)';
-    const bgRow = ehSab ? 'background:var(--accent-dim);' : '';
+    const corAlmoco = almoco !== null && almoco < 60 ? '#ef4444' : 'var(--text)';
+    const bgRow = atestado ? 'background:#f0fdf4;' : ehSab ? 'background:var(--accent-dim);' : '';
 
     const dia = d.getDate().toString().padStart(2,'0');
     const mesStr = (d.getMonth()+1).toString().padStart(2,'0');
+
+    const saldoDisplay = atestado
+      ? '<span style="font-size:10px;font-weight:700;color:#22c55e;">Abonado</span>'
+      : (saldoDia !== 0 ? fmtMin(saldoDia) : '—');
+
+    const abonarCell = admin ? `
+      <td style="padding:8px;text-align:center;">
+        <button onclick="toggleAtestado('${uname}','${key}')"
+          style="padding:3px 10px;border-radius:6px;border:none;cursor:pointer;font-size:10px;font-weight:700;${atestado?'background:#22c55e;color:#fff;':'background:#e2e8f0;color:#64748b;'}">
+          ${atestado ? 'Atestado' : 'Abonar'}
+        </button>
+      </td>` : '';
 
     html += `
       <tr style="${bgRow}border-bottom:1px solid var(--border);">
@@ -7318,16 +7401,18 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
         <td style="padding:8px;text-align:center;color:var(--text2);">${batidas.join(' · ')||'—'}</td>
         <td style="padding:8px;text-align:center;font-weight:700;color:${trabalhado!==null?'var(--text)':'var(--text2)'};">${fmtMin(trabalhado)}</td>
         <td style="padding:8px;text-align:center;font-weight:600;color:${corAlmoco};">${almoco!==null?fmtMin(almoco)+(almoco<60?' ⚠':''):'—'}</td>
-        <td style="padding:8px;text-align:center;font-weight:700;color:${corSaldo};">${saldoDia!==0?fmtMin(saldoDia):'—'}</td>
+        <td style="padding:8px;text-align:center;font-weight:700;color:${corSaldo};">${saldoDisplay}</td>
+        ${abonarCell}
       </tr>`;
   });
 
   const corAcum = saldoAcum >= 0 ? '#22c55e' : '#ef4444';
+  const colspanTotal = admin ? 5 : 4;
   html += `
       </tbody>
       <tfoot>
         <tr style="background:var(--bg);font-weight:800;">
-          <td colspan="4" style="padding:12px 14px;font-size:13px;color:var(--text);">Saldo acumulado do mês</td>
+          <td colspan="${colspanTotal}" style="padding:12px 14px;font-size:13px;color:var(--text);">Saldo acumulado do mês</td>
           <td style="padding:12px;text-align:center;font-size:15px;color:${corAcum};">${fmtMin(saldoAcum)}</td>
         </tr>
       </tfoot>
