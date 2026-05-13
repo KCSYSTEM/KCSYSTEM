@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.14</title>
+<title>KC System v4.15</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.14</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.15</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -7207,23 +7207,30 @@ function showImportPopup(periodo, resumoPorUser) {
 
 async function importarPontoXLS(file) {
   try {
+  alert('PASSO 1 — Arquivo: ' + file.name + ' (' + file.size + ' bytes)');
+
   if (typeof XLSX === 'undefined') {
-    showToast('❌ SheetJS não carregado. Verifique conexão.', 'error');
+    alert('ERRO — SheetJS não carregado. Verifique conexão com internet.');
     return;
   }
+  alert('PASSO 2 — SheetJS OK. Lendo buffer...');
 
   const buf = await file.arrayBuffer();
+  alert('PASSO 3 — Buffer: ' + buf.byteLength + ' bytes');
+
   const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+  alert('PASSO 4 — Abas: ' + wb.SheetNames.join(', '));
 
   const wsName = wb.SheetNames.find(n => n.toLowerCase() === 'registros');
   const ws = wsName ? wb.Sheets[wsName] : null;
-  if (!ws) { showToast(`❌ Aba "registros" não encontrada. Abas: ${wb.SheetNames.join(', ')}`, 'error'); return; }
+  if (!ws) { alert('ERRO — Aba "registros" não encontrada. Abas: ' + wb.SheetNames.join(', ')); return; }
 
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+  alert('PASSO 5 — Linhas: ' + data.length + ' | Linha 4 (dias): ' + JSON.stringify((data[3]||[]).slice(0,15)));
 
   // Linha 3 (índice 2): período → extrai ano e mês
   const periodoStr = (data[2] || []).join(' ');
-  alert('PASSO 6 — Período detectado: "' + periodoStr + '"');
+  alert('PASSO 6 — Período: "' + periodoStr + '"');
   const periodoMatch = periodoStr.match(/(\d{4})\/(\d{2})/);
   const ano  = periodoMatch ? parseInt(periodoMatch[1]) : new Date().getFullYear();
   const mes  = periodoMatch ? parseInt(periodoMatch[2]) : new Date().getMonth() + 1;
@@ -7289,6 +7296,8 @@ async function importarPontoXLS(file) {
     i += 2;
   }
 
+  alert('PASSO 7 — Total importado: ' + importados + ' batidas. Usuários: ' + JSON.stringify(Object.keys(resumoPorUser)));
+
   const mesesNomes = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   if (importados > 0) {
     savePonto();
@@ -7296,9 +7305,11 @@ async function importarPontoXLS(file) {
     showImportPopup(`${mesesNomes[mes]} ${ano}`, resumoPorUser);
     savePontoToSupabase();
   } else {
+    alert('RESULTADO — Nenhuma batida encontrada. Verifique se o mapeamento de nomes está correto.');
     showToast('⚠️ Nenhuma batida encontrada no arquivo.', 'error');
   }
   } catch(err) {
+    alert('EXCEÇÃO — ' + err.message + '\n' + err.stack);
     showToast(`❌ Erro: ${err.message}`, 'error');
     console.error('importarPontoXLS error:', err);
   }
