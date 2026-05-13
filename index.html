@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.12</title>
+<title>KC System v4.14</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.12</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.14</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -706,6 +706,9 @@ input[type="number"]{-moz-appearance:textfield;}
           📂 Importar ponto
           <input type="file" accept=".dat,.txt,.AFD,.afd,.xls,.xlsx" id="ponto-file-input" style="display:none;" onchange="importarPonto(this)">
         </label>
+        <button id="ponto-save-btn" onclick="savePontoToSupabase()" style="display:none;padding:8px 14px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">
+          💾 Salvar
+        </button>
       </div>
     </div>
 
@@ -1529,6 +1532,92 @@ function renderColetaGraficos(){
 
     card.querySelector(`#${gd.id}`).appendChild(wrapper);
   });
+
+  // ── Gráfico 5: Fêmeas — Alocação vs Desova (21 dias) ──
+  const _matrizIds=new Set(tanks.filter(t=>t.matrizes&&!t.empty).map(t=>t.id));
+  const _matrizRecsG5=records.filter(r=>_matrizIds.has(r.tankId)&&r.femeas!=null&&!r.overridden)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  const _allDesovaG5=[...coletaRecords.filter(r=>!r.overridden&&r.desovaFemeas!=null),
+    ...records.filter(r=>!r.overridden&&r.desovaFemeas!=null&&!coletaRecords.some(c=>c.id===r.id))];
+  const _dG5Set=new Set();
+  _matrizRecsG5.filter(r=>(!grafFrom||r.date>=grafFrom)&&(!grafTo||r.date<=grafTo)).forEach(r=>_dG5Set.add(r.date));
+  _allDesovaG5.filter(r=>(!grafFrom||r.date>=grafFrom)&&(!grafTo||r.date<=grafTo)).forEach(r=>_dG5Set.add(r.date));
+  const _dG5=[..._dG5Set].sort();
+  if(_dG5.length){
+    const _g5Aloc=_dG5.map(ds=>{
+      const rr=_matrizRecsG5.filter(r=>r.date<=ds);
+      const seen=new Set();let tot=0;
+      [...rr].reverse().forEach(r=>{const k=`${r.tankId}_${r.hapa??'x'}`;if(!seen.has(k)){seen.add(k);tot+=r.femeas||0;}});
+      return tot||null;
+    });
+    const _g5D21=_dG5.map(ds=>{
+      const cut=new Date(ds);cut.setDate(cut.getDate()-20);
+      const cs=cut.toISOString().split('T')[0];
+      const s=_allDesovaG5.filter(r=>r.date>=cs&&r.date<=ds).reduce((a,r)=>a+(r.desovaFemeas||0),0);
+      return s||null;
+    });
+    const _gd5={id:'gcol-5',title:'Fêmeas — Alocação vs Desova (últimos 21 dias)',unit:'un',series:[
+      {label:'Alocadas nos tanques',color:'#0ea5e9',vals:_g5Aloc},
+      {label:'Desovadas (soma 21 dias)',color:'#f97316',vals:_g5D21},
+    ]};
+    const _card5=document.createElement('div');
+    _card5.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;';
+    _card5.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${_gd5.title}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Azul: fêmeas nos tanques de matrizes no dia (último registro conhecido). Laranja: soma das fêmeas que desovaram nos 21 dias anteriores.</div>
+      <div id="${_gd5.id}"></div>`;
+    cont.appendChild(_card5);
+    const W5=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),H5=160;
+    const n5=_dG5.length,rot5=n5>20;
+    const pad5={t:10,b:rot5?62:30,l:50,r:10};
+    const iW5=W5-pad5.l-pad5.r,iH5=H5-pad5.t-pad5.b;
+    const aV5=_gd5.series.flatMap(s=>s.vals).filter(v=>v!=null);
+    const mxV5=aV5.length?Math.max(...aV5)*1.1:1;
+    const sY5=v=>pad5.t+iH5-(v)/(mxV5||1)*iH5;
+    const sX5=i=>pad5.l+(n5===1?iW5/2:i/(n5-1)*iW5);
+    let p5='';
+    [0,0.25,0.5,0.75,1].forEach(f=>{
+      const y=pad5.t+iH5*(1-f);const val=mxV5*f;
+      p5+=`<line x1="${pad5.l}" y1="${y}" x2="${W5-pad5.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+      p5+=`<text x="${pad5.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${fNum(Math.round(val))}</text>`;
+    });
+    const ml5=Math.min(8,n5),st5=Math.max(1,Math.ceil(n5/ml5));
+    _dG5.forEach((d,i)=>{
+      if(i%st5!==0&&i!==n5-1)return;const x=sX5(i);
+      if(rot5){p5+=`<text transform="rotate(-45,${x},${H5-pad5.b+12})" x="${x}" y="${H5-pad5.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${d}</text>`;}
+      else{p5+=`<text x="${x}" y="${H5-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d}</text>`;}
+    });
+    _gd5.series.forEach(s=>{
+      const pts=s.vals.map((v,i)=>v!=null?`${sX5(i)},${sY5(v)}`:null);
+      let d2='';let fr=true;
+      pts.forEach(p=>{if(p){d2+=(fr?`M${p}`:`L${p}`);fr=false;}else{fr=true;}});
+      if(!d2)return;
+      p5+=`<path d="${d2}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+      pts.forEach((p,i)=>{
+        if(!p||s.vals[i]==null)return;
+        const cx=sX5(i),cy=sY5(s.vals[i]);
+        p5+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="transparent" data-i="${i}" data-v="${s.vals[i]}" data-color="${s.color}" class="gcol-dot"/>`;
+        p5+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${s.color}" pointer-events="none"/>`;
+      });
+    });
+    const leg5=_gd5.series.map(s=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:${s.color};"></span>${s.label}</span>`).join('');
+    const wr5=document.createElement('div');wr5.style.cssText='position:relative;';
+    wr5.innerHTML=`<div style="margin-bottom:6px;">${leg5}</div><svg viewBox="0 0 ${W5} ${H5}" style="width:100%;display:block;">${p5}</svg>`;
+    const tip5=document.createElement('div');
+    tip5.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+    wr5.appendChild(tip5);
+    wr5.addEventListener('mouseover',function(e){
+      const dot=e.target.closest('.gcol-dot');if(!dot)return;
+      const i=parseInt(dot.getAttribute('data-i')),v=parseFloat(dot.getAttribute('data-v')),color=dot.getAttribute('data-color');
+      tip5.style.display='block';tip5.style.borderLeft=`3px solid ${color}`;
+      tip5.textContent=`${_dG5[i]} · ${fNum(v)} un`;
+      const rect=wr5.querySelector('svg').getBoundingClientRect(),dotRect=dot.getBoundingClientRect();
+      tip5.style.left=`${Math.min(dotRect.left-rect.left+dotRect.width/2,rect.width-120)}px`;
+      tip5.style.top=`${dotRect.top-rect.top-36}px`;
+    });
+    wr5.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot'))return;tip5.style.display='none';});
+    wr5.addEventListener('mouseleave',()=>tip5.style.display='none');
+    _card5.querySelector(`#${_gd5.id}`).appendChild(wr5);
+  }
 }
 
 async function deleteColetaLote(lote){
@@ -1602,6 +1691,16 @@ function renderColetaHistorico(){
   </div>`;
 }
 
+function femeasAlocadasEm(dateStr){
+  if(!dateStr)return null;
+  const ids=new Set(tanks.filter(t=>t.matrizes&&!t.empty).map(t=>t.id));
+  const recs=records.filter(r=>ids.has(r.tankId)&&r.femeas!=null&&!r.overridden&&r.date<=dateStr)
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  const seen=new Set();let total=0;
+  recs.forEach(r=>{const k=`${r.tankId}_${r.hapa??'x'}`;if(!seen.has(k)){seen.add(k);total+=r.femeas||0;}});
+  return total||null;
+}
+
 function renderColetaPainel(){
   const cont=document.getElementById('coleta-painel-container');
   if(!cont)return;
@@ -1656,10 +1755,11 @@ function renderColetaPainel(){
   wrapper.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;';
 
   wrapper.innerHTML=`
-    <div style="display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px 36px;gap:0;border-bottom:2px solid var(--border);background:var(--bg);overflow-x:auto;">
+    <div style="display:grid;grid-template-columns:32px 1fr 70px 80px 80px 80px 90px 80px 90px 36px;gap:0;border-bottom:2px solid var(--border);background:var(--bg);overflow-x:auto;">
       <div></div>
       <div style="padding:8px 6px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;">Lote</div>
-      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">♀ Fêmeas</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:#0ea5e9;text-align:center;">♀ Aloc.</div>
+      <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">♀ Desov.</div>
       <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">💧 Vol (mL)</div>
       <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">🔬 Ovos/mL</div>
       <div style="padding:8px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">🥚 Ovos Total</div>
@@ -1676,9 +1776,13 @@ function renderColetaPainel(){
     const cell=(val,color='')=>
       `<div style="padding:10px 4px;text-align:center;font-size:13px;font-weight:700;color:${color||'var(--text)'};">${val!=null?val:'—'}</div>`;
 
+    const _sortedDates=[...l.dates].sort();
+    const _loteDate=_sortedDates[_sortedDates.length-1]||'';
+    const _alocadas=femeasAlocadasEm(_loteDate);
+
     const row=document.createElement('div');
     row.id=rowId;
-    row.style.cssText=`display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px 36px;gap:0;cursor:pointer;${!isLast?'border-bottom:1px solid var(--border);':''}background:var(--bg);transition:background 0.1s;overflow-x:auto;`;
+    row.style.cssText=`display:grid;grid-template-columns:32px 1fr 70px 80px 80px 80px 90px 80px 90px 36px;gap:0;cursor:pointer;${!isLast?'border-bottom:1px solid var(--border);':''}background:var(--bg);transition:background 0.1s;overflow-x:auto;`;
     row.onclick=()=>toggleColetaDetail(detailId,rowId);
     row.innerHTML=`
       <div style="padding:10px 6px;display:flex;align-items:center;justify-content:center;">
@@ -1688,6 +1792,7 @@ function renderColetaPainel(){
         <div style="font-size:13px;font-weight:700;color:var(--text);">${l.lote}</div>
         <div style="font-size:10px;color:var(--text3);">${[...l.dates].sort().map(d=>formatDate(d)).join(', ')}</div>
       </div>
+      ${cell(fNum(_alocadas),'#0ea5e9')}
       ${cell(fNum(l.femeas))}
       ${cell(fNum(l.ml,1))}
       ${cell(l.ovosPorMl!=null?fNum(l.ovosPorMl):null)}
@@ -1706,11 +1811,12 @@ function renderColetaPainel(){
     detail.id=detailId;
     detail.style.cssText=`display:none;background:rgba(34,81,160,0.04);${!isLast?'border-bottom:1px solid var(--border);':''}`;
 
-    detail.innerHTML=`<div style="display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+    detail.innerHTML=`<div style="display:grid;grid-template-columns:32px 1fr 70px 80px 80px 80px 90px 80px 90px;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
       <div></div><div style="padding:6px 8px;font-size:10px;font-weight:700;color:var(--text3);">Tanque / Hapa</div>
-      <div style="padding:6px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">♀ Fêmeas</div>
+      <div></div>
+      <div style="padding:6px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">♀ Desov.</div>
       <div style="padding:6px 4px;font-size:10px;font-weight:700;color:var(--text3);text-align:center;">💧 mL</div>
-      <div colspan="4"></div>
+      <div colspan="5"></div>
     </div>`;
 
     const byTankHapa={};
@@ -1725,14 +1831,15 @@ function renderColetaPainel(){
       const tank=tanks.find(t=>t.name===th.name);
       const hapaName=tank?.hapaNames?.[th.hapa-1]||`Hapa ${th.hapa}`;
       const sub=document.createElement('div');
-      sub.style.cssText='display:grid;grid-template-columns:32px 1fr 80px 80px 80px 90px 80px 90px;gap:0;border-bottom:1px solid rgba(0,0,0,0.04);';
+      sub.style.cssText='display:grid;grid-template-columns:32px 1fr 70px 80px 80px 80px 90px 80px 90px;gap:0;border-bottom:1px solid rgba(0,0,0,0.04);';
       sub.innerHTML=`<div></div>
         <div style="padding:7px 8px 7px 18px;">
           <div style="font-size:12px;font-weight:600;color:var(--text);">${th.name}</div>
           <div style="font-size:11px;color:#7c3aed;">🪣 ${hapaName}</div>
         </div>
-        <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${th.femeas}</div>
-        <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${parseFloat(th.ml.toFixed(1))}</div>
+        <div></div>
+        <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${fNum(th.femeas)}</div>
+        <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${fNum(th.ml,1)}</div>
         <div></div><div></div><div></div><div></div>`;
       detail.appendChild(sub);
     });
@@ -1919,10 +2026,10 @@ async function saveColeta(){
     inputs.forEach(inp=>{
       const key=`${inp.dataset.tank}_${inp.dataset.hapa}`;
       if(!byRow[key])byRow[key]={tankId:inp.dataset.tank,hapaNum:parseInt(inp.dataset.hapa)};
-      if(inp.dataset.field==='femeas')byRow[key].femeas=parseFloat(inp.value)||null;
-      if(inp.dataset.field==='ml')byRow[key].ml=parseFloat(inp.value)||null;
-      if(inp.dataset.field==='ovosGorados')byRow[key].ovosGorados=parseFloat(inp.value)||null;
-      if(inp.dataset.field==='ovosPorMl')byRow[key].ovosPorMl=parseFloat(inp.value)||null;
+      if(inp.dataset.field==='femeas')byRow[key].femeas=numOrNull(inp.value);
+      if(inp.dataset.field==='ml')byRow[key].ml=numOrNull(inp.value);
+      if(inp.dataset.field==='ovosGorados')byRow[key].ovosGorados=numOrNull(inp.value);
+      if(inp.dataset.field==='ovosPorMl')byRow[key].ovosPorMl=numOrNull(inp.value);
     });
     const toSave=Object.values(byRow).filter(r=>r.femeas!=null||r.ml!=null||r.ovosGorados!=null||r.ovosPorMl!=null);
     if(!toSave.length){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
@@ -1963,8 +2070,8 @@ async function saveColeta(){
         user:currentUser.name,username:currentUser.username,
         timestamp:new Date(baseTs+saved).toISOString(),
         desovaFemeas:null,desovaML:null,
-        ovosPorMl:field==='ovosPorMl'?parseFloat(inp.value):null,
-        ovosGorados:field==='ovosGorados'?parseFloat(inp.value):null,
+        ovosPorMl:field==='ovosPorMl'?numOrNull(inp.value):null,
+        ovosGorados:field==='ovosGorados'?numOrNull(inp.value):null,
         overridden:false};
       coletaRecords.push(rec);
       await saveColetaRecord_sb(rec);
@@ -2398,7 +2505,10 @@ async function load(){
     if(sbMan&&sbMan.length) manejos=sbMan.map(r=>r.data).filter(Boolean);
   }catch(e){console.warn('load manejos error',e);}
 
-  // ── 6. Garante estrutura de tanques ───────────────────────
+  // ── 6. Ponto (batidas + atestados) ────────────────────────
+  await loadPontoFromSupabase();
+
+  // ── 7. Garante estrutura de tanques ───────────────────────
   const validIds=new Set();
   GROUPS.forEach(g=>g.tanks.forEach(td=>validIds.add('tank_'+g.id+'_'+td.num)));
   tanks=tanks.filter(t=>validIds.has(t.id)||!t.id.startsWith('tank_'));
@@ -7025,6 +7135,38 @@ function loadAtestados() {
 function saveAtestados() {
   localStorage.setItem('kc_ponto_atestados_v1', JSON.stringify(pontoAtestados));
 }
+
+async function loadPontoFromSupabase() {
+  try {
+    const rows = await sbGet('ponto', 'select=id,data');
+    if (!rows) return;
+    const bat = rows.find(r => r.id === 'batidas');
+    const ates = rows.find(r => r.id === 'atestados');
+    if (bat?.data && Object.keys(bat.data).length) {
+      pontoData = bat.data;
+      savePonto();
+    }
+    if (ates?.data && Object.keys(ates.data).length) {
+      pontoAtestados = ates.data;
+      saveAtestados();
+    }
+  } catch(e) { console.warn('loadPontoFromSupabase error', e); }
+}
+
+async function savePontoToSupabase() {
+  const btn = document.getElementById('ponto-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '💾 Salvando...'; }
+  try {
+    const ok1 = await sbUpsert('ponto', [{id: 'batidas',   data: pontoData}]);
+    const ok2 = await sbUpsert('ponto', [{id: 'atestados', data: pontoAtestados}]);
+    if (ok1 && ok2) showToast('✅ Ponto salvo no servidor', 'ok');
+    else showToast('⚠️ Erro ao salvar no servidor', 'error');
+  } catch(e) {
+    showToast('❌ Erro: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar'; }
+  }
+}
 function toggleAtestado(uname, dateKey) {
   if (!pontoAtestados[uname]) pontoAtestados[uname] = {};
   if (pontoAtestados[uname][dateKey]) {
@@ -7152,6 +7294,7 @@ async function importarPontoXLS(file) {
     savePonto();
     renderPonto();
     showImportPopup(`${mesesNomes[mes]} ${ano}`, resumoPorUser);
+    savePontoToSupabase();
   } else {
     showToast('⚠️ Nenhuma batida encontrada no arquivo.', 'error');
   }
@@ -7251,9 +7394,11 @@ function renderPonto() {
   const mes = parseInt(document.getElementById('ponto-mes')?.value);
   const ano = parseInt(document.getElementById('ponto-ano')?.value);
 
-  // Botão upload só para admin
+  // Botões admin-only
   const uploadWrap = document.getElementById('ponto-upload-wrap');
   if (uploadWrap) uploadWrap.style.display = isAdmin() ? 'flex' : 'none';
+  const saveBtn = document.getElementById('ponto-save-btn');
+  if (saveBtn) saveBtn.style.display = isAdmin() ? 'inline-block' : 'none';
 
   // Quais usuários mostrar — Map(lowercase → uname) garante unicidade; lucas excluído
   const _pontoMap = new Map();
