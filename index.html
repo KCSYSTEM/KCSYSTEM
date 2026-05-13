@@ -7078,7 +7078,8 @@ async function importarPontoXLS(file) {
   const abas = wb.SheetNames.join(', ');
   alert('PASSO 4 — Abas encontradas: ' + abas);
 
-  const ws = wb.Sheets['registros'];
+  const wsName = wb.SheetNames.find(n => n.toLowerCase() === 'registros');
+  const ws = wsName ? wb.Sheets[wsName] : null;
   if (!ws) { alert('ERRO — Aba "registros" não encontrada. Abas: ' + abas); return; }
 
   const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
