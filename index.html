@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.5</title>
+<title>KC System v4.6</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -353,6 +353,7 @@ input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0
 input[type="number"]{-moz-appearance:textfield;}
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -404,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.5</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.6</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -702,8 +703,8 @@ input[type="number"]{-moz-appearance:textfield;}
           <option value="2026" selected>2026</option><option value="2027">2027</option>
         </select>
         <label id="ponto-upload-wrap" style="display:none;padding:8px 14px;background:var(--accent);color:#fff;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">
-          📂 Importar .dat
-          <input type="file" accept=".dat,.txt,.AFD,.afd" id="ponto-file-input" style="display:none;" onchange="importarPonto(this)">
+          📂 Importar ponto
+          <input type="file" accept=".dat,.txt,.AFD,.afd,.xls,.xlsx" id="ponto-file-input" style="display:none;" onchange="importarPonto(this)">
         </label>
       </div>
     </div>
@@ -6982,6 +6983,23 @@ function salvarMetas() {
 }
 
 // ── PONTO ────────────────────────────────────────────────────
+// Mapeamento nome do relógio → username KC System
+const PONTO_NAME_MAP = {
+  'everson g':  'bili',
+  'everson':    'bili',
+  'giovana':    'giovana',
+  'jhonatan':   'jhonathan',
+  'jhonathan':  'jhonathan',
+  'nilson':     'rodrigo',
+  'nilsom':     'rodrigo',
+};
+
+// Colaboradores que aparecem só no ponto (sem login no sistema)
+const PONTO_EXTRA_USERS = {
+  'jhonathan': { name: 'Jhonathan' },
+  'rodrigo':   { name: 'Rodrigo' },
+};
+
 // pontoData: { [username]: { [YYYY-MM-DD]: { batidas: ['HH:MM',...] } } }
 let pontoData = {};
 
@@ -6997,9 +7015,102 @@ function savePonto() {
 
 // Importar arquivo .dat do relógio de ponto
 // Tenta interpretar como AFD (Portaria 1510 MTE) ou como texto simples com linhas "CPF HH:MM:SS DD/MM/YYYY"
+async function importarPontoXLS(file) {
+  if (typeof XLSX === 'undefined') {
+    showToast('Biblioteca XLS não carregada. Verifique a conexão.', 'error');
+    return;
+  }
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array', cellText: true, raw: false });
+  const ws = wb.Sheets['registros'];
+  if (!ws) { showToast('Aba "registros" não encontrada no arquivo.', 'error'); return; }
+
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+
+  // Linha 3 (índice 2): período → extrai ano e mês
+  const periodoStr = (data[2] || []).join(' ');
+  const periodoMatch = periodoStr.match(/(\d{4})\/(\d{2})/);
+  const ano  = periodoMatch ? parseInt(periodoMatch[1]) : new Date().getFullYear();
+  const mes  = periodoMatch ? parseInt(periodoMatch[2]) : new Date().getMonth() + 1;
+  const mesStr = String(mes).padStart(2, '0');
+
+  // Linha 4 (índice 3): coluna → número do dia
+  const dayRow = data[3] || [];
+  const colToDay = {};
+  dayRow.forEach((val, ci) => {
+    const d = parseInt(val);
+    if (!isNaN(d) && d >= 1 && d <= 31) colToDay[ci] = d;
+  });
+
+  let importados = 0;
+  let i = 4; // começa na linha 5 (índice 4)
+
+  while (i + 1 < data.length) {
+    const headerRow = data[i];
+    const batidasRow = data[i + 1];
+
+    // Detecta linha de funcionário: tem "Nome:" em alguma célula
+    const temNome = headerRow.some(v => String(v).trim() === 'Nome:');
+    if (!temNome) { i++; continue; }
+
+    // Extrai nome: célula não-vazia após "Nome:"
+    let nomeExcel = '';
+    for (let ci = 0; ci < headerRow.length; ci++) {
+      if (String(headerRow[ci]).trim() === 'Nome:') {
+        for (let ni = ci + 1; ni < headerRow.length; ni++) {
+          if (String(headerRow[ni]).trim()) {
+            nomeExcel = String(headerRow[ni]).trim().toLowerCase();
+            break;
+          }
+        }
+        break;
+      }
+    }
+    if (!nomeExcel) { i += 2; continue; }
+
+    const username = PONTO_NAME_MAP[nomeExcel] || nomeExcel.replace(/\s+/g, '');
+
+    // Importa batidas de cada coluna-dia
+    Object.entries(colToDay).forEach(([ci, dia]) => {
+      const cellVal = String(batidasRow[ci] || '').trim();
+      if (!cellVal) return;
+      const horarios = cellVal.split(/[\n\r]+/).map(h => h.trim()).filter(h => /^\d{2}:\d{2}$/.test(h));
+      if (!horarios.length) return;
+
+      const dateKey = `${ano}-${mesStr}-${String(dia).padStart(2, '0')}`;
+      if (!pontoData[username]) pontoData[username] = {};
+      if (!pontoData[username][dateKey]) pontoData[username][dateKey] = { batidas: [] };
+      horarios.forEach(h => {
+        if (!pontoData[username][dateKey].batidas.includes(h)) {
+          pontoData[username][dateKey].batidas.push(h);
+          importados++;
+        }
+      });
+      pontoData[username][dateKey].batidas.sort();
+    });
+
+    i += 2;
+  }
+
+  if (importados > 0) {
+    savePonto();
+    showToast(`${importados} batidas importadas do relógio`, 'ok');
+    renderPonto();
+  } else {
+    showToast('Nenhuma batida encontrada no arquivo.', 'error');
+  }
+}
+
 async function importarPonto(input) {
   const file = input.files[0];
   if (!file) return;
+
+  // Roteia XLS/XLSX para o parser específico do relógio
+  if (/\.xlsx?$/i.test(file.name)) {
+    await importarPontoXLS(file);
+    input.value = '';
+    return;
+  }
   const buf = await file.arrayBuffer();
   const bytes = new Uint8Array(buf);
 
@@ -7083,9 +7194,9 @@ function renderPonto() {
   const uploadWrap = document.getElementById('ponto-upload-wrap');
   if (uploadWrap) uploadWrap.style.display = isAdmin() ? 'flex' : 'none';
 
-  // Quais usuários mostrar
+  // Quais usuários mostrar (lucas não aparece no banco de horas)
   const usersToShow = isAdmin()
-    ? Object.keys(USERS)
+    ? [...Object.keys(USERS).filter(u => u !== 'lucas'), ...Object.keys(PONTO_EXTRA_USERS)]
     : [currentUser?.username];
 
   // Dias úteis do mês (seg-sáb) — mês 0-indexed internamente
@@ -7104,24 +7215,26 @@ function renderPonto() {
   resumoCards.innerHTML = '';
 
   usersToShow.forEach(uname => {
-    const uInfo = USERS[uname] || { name: uname };
+    const uInfo = USERS[uname] || PONTO_EXTRA_USERS[uname] || { name: uname };
     const uDados = pontoData[uname] || {};
 
     let totalTrabMin = 0, totalEsperadoMin = 0, almocosCurtos = 0, diasRegistrados = 0;
+    const todayStr = new Date().toISOString().split('T')[0];
 
     diasUteis.forEach(d => {
       const key = d.toISOString().split('T')[0];
+      if (key > todayStr) return; // dias futuros não entram no banco
       const dow = d.getDay();
       const ehSab = dow === 6;
-      const esperado = ehSab ? 0 : 8*60; // sábados só contam se tiver registro
+      const esperado = ehSab ? 4*60 : 8*60; // sáb=4h, seg-sex=8h
       const reg = uDados[key];
       if (reg?.batidas?.length >= 2) {
         const { trabalhado, almoco } = calcDia(reg.batidas);
         if (trabalhado !== null) { totalTrabMin += trabalhado; diasRegistrados++; }
-        if (!ehSab) totalEsperadoMin += esperado;
+        totalEsperadoMin += esperado;
         if (almoco !== null && almoco < 60) almocosCurtos++;
       } else {
-        if (!ehSab) totalEsperadoMin += esperado;
+        totalEsperadoMin += esperado; // falta = débito no banco
       }
     });
 
@@ -7140,7 +7253,7 @@ function renderPonto() {
           <div style="font-size:10px;color:var(--text2);">Banco de horas</div>
         </div>
         <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
-          <div style="font-size:18px;font-weight:800;color:${almocosCurtos>0?'#f59e0b':'var(--text)'};">${almocosCurtos}</div>
+          <div style="font-size:18px;font-weight:800;color:${almocosCurtos>0?'#ef4444':'#22c55e'};">${almocosCurtos}</div>
           <div style="font-size:10px;color:var(--text2);">Almoços < 1h</div>
         </div>
       </div>
@@ -7155,7 +7268,7 @@ function renderPonto() {
 function renderPontoDetalhe(uname, ano, mes, diasUteis) {
   const detalheEl = document.getElementById('ponto-detalhe');
   if (!detalheEl) return;
-  const uInfo = USERS[uname] || { name: uname };
+  const uInfo = USERS[uname] || PONTO_EXTRA_USERS[uname] || { name: uname };
   const uDados = pontoData[uname] || {};
 
   const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
