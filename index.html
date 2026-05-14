@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.15</title>
+<title>KC System v4.16</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.15</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.16</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -667,7 +667,10 @@ input[type="number"]{-moz-appearance:textfield;}
         <select id="meta-ano" onchange="renderMetas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
           <option value="2026" selected>2026</option><option value="2027">2027</option>
         </select>
-        <span id="meta-perfil-label" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:var(--accent-dim);color:var(--accent);"></span>
+        <select id="meta-perfil-select" onchange="renderMetas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
+          <option value="padrao">👷 Colaborador Padrão</option>
+          <option value="arracador">🌾 Arraçoador</option>
+        </select>
       </div>
     </div>
 
@@ -6715,161 +6718,68 @@ async function saveNovaFase(){
 // ============================================================
 
 // ── Estrutura de metas por perfil ───────────────────────────
+const _fmtProd = v => v >= 1e6 ? (v/1e6).toFixed(1).replace(/\.0$/,'')+'M' : (v/1000).toFixed(0)+'k';
+
 const PERFIS_META = {
   padrao: {
     label: 'Colaborador Padrão',
-    salarioBase: 2000,
-    premioPeso: { quantidade: 0.5, qualidade: 0.5 },
-    premioMax: 400,
     indicadores: [
-      {
-        id: 'producao_larvas',
-        label: 'Produção de Larvas',
-        categoria: 'quantidade',
-        fonte: 'auto',   // calculado do Supabase
-        faixas: [
-          { min: 1000000, pct: 1.0 },
-          { min: 800000,  pct: 0.8 },
-          { min: 600000,  pct: 0.6 },
-          { min: 400000,  pct: 0.4 },
-          { min: 200000,  pct: 0.2 },
-          { min: 0,       pct: 0.0 },
-        ],
-        unidade: 'larvas', formato: v => (v/1000).toFixed(0)+'k'
-      },
-      {
-        id: 'qtd_ovos',
-        label: 'Quantidade de Ovos',
-        categoria: 'quantidade',
-        fonte: 'auto',
-        faixas: [
-          { min: 500000, pct: 1.0 },
-          { min: 400000, pct: 0.8 },
-          { min: 300000, pct: 0.6 },
-          { min: 200000, pct: 0.4 },
-          { min: 100000, pct: 0.2 },
-          { min: 0,      pct: 0.0 },
-        ],
-        unidade: 'ovos', formato: v => (v/1000).toFixed(0)+'k'
-      },
-      {
-        id: 'taxa_eclosao',
-        label: 'Taxa de Eclosão',
-        categoria: 'qualidade',
-        fonte: 'auto',
-        faixas: [
-          { min: 90, pct: 1.0 },
-          { min: 80, pct: 0.8 },
-          { min: 70, pct: 0.6 },
-          { min: 60, pct: 0.4 },
-          { min: 50, pct: 0.2 },
-          { min: 0,  pct: 0.0 },
-        ],
-        unidade: '%', formato: v => v.toFixed(1)+'%'
-      },
-      {
-        id: 'troca_agua',
-        label: 'Troca de Água pelo Tambor',
-        categoria: 'qualidade',
-        fonte: 'manual',
-        faixas: [
-          { min: 26, pct: 1.0 },
-          { min: 24, pct: 0.8 },
-          { min: 18, pct: 0.6 },
-          { min: 0,  pct: 0.0 },
-        ],
-        unidade: 'dias', formato: v => v+' dias'
-      },
-      {
-        id: 'limpeza_racao',
-        label: 'Limpeza do Ambiente de Ração',
-        categoria: 'qualidade',
-        fonte: 'admin',   // só lucas e giovana
-        tipo: 'boolean',
-        faixas: [
-          { min: 1, pct: 1.0 },
-          { min: 0, pct: 0.0 },
-        ],
-        unidade: '', formato: v => Number(v) ? 'Realizado' : 'Não realizado'
-      },
-      {
-        id: 'pesar_racao',
-        label: 'Pesar Ração',
-        categoria: 'qualidade',
-        fonte: 'auto',
-        faixas: [
-          { min: 26, pct: 1.0 },
-          { min: 24, pct: 0.8 },
-          { min: 18, pct: 0.6 },
-          { min: 0,  pct: 0.0 },
-        ],
-        unidade: 'dias', formato: v => v+' dias'
-      },
+      { id:'qtd_ovos',           label:'Quantidade de Ovos',      fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
+        faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
+      { id:'producao_larvas',   label:'Quantidade de Larvas',    fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
+        faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
+      { id:'qtd_alevinos',      label:'Quantidade de Alevinos',  fonte:'manual', unidade:'alevinos',formato:_fmtProd,
+        faixas:[{min:800000,valor:100},{min:600000,valor:80},{min:400000,valor:60},{min:300000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
+      { id:'escape_matrizes',   label:'Escape de Matrizes',      fonte:'manual', unidade:'%', formato:v=>v.toFixed(1)+'%', invertido:true,
+        faixas:[{max:0,valor:50},{max:5,valor:40},{max:7.5,valor:30},{max:10,valor:20}] },
+      { id:'limpeza_piscicultura', label:'Limpeza da Piscicultura', fonte:'manual', unidade:'% dias', formato:v=>v+'%',
+        faixas:[{min:100,valor:50},{min:90,valor:40},{min:0,valor:0}] },
+      { id:'mortalidade_manejo',label:'Mortalidade Pós Manejo',  fonte:'manual', unidade:'%', formato:v=>v.toFixed(1)+'%', invertido:true,
+        faixas:[{max:2.5,valor:50},{max:5,valor:40},{max:7.5,valor:30},{max:10,valor:20}] },
+      { id:'sabados',           label:'Sábados — Ração, Lab. e Água', fonte:'manual', unidade:'% sáb.', formato:v=>v+'%',
+        faixas:[{min:100,valor:50},{min:0,valor:0}] },
+    ]
+  },
+  arracador: {
+    label: 'Arraçoador',
+    indicadores: [
+      { id:'qtd_ovos',          label:'Quantidade de Ovos',          fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
+        faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
+      { id:'producao_larvas',   label:'Quantidade de Larvas',        fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
+        faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
+      { id:'qtd_alevinos',      label:'Quantidade de Alevinos',      fonte:'manual', unidade:'alevinos',formato:_fmtProd,
+        faixas:[{min:800000,valor:100},{min:600000,valor:80},{min:400000,valor:60},{min:300000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
+      { id:'renovacao_agua',    label:'Renovação de Água',           fonte:'manual', unidade:'% dias',  formato:v=>v+'%',
+        faixas:[{min:100,valor:50},{min:90,valor:40},{min:80,valor:30},{min:70,valor:20},{min:0,valor:0}] },
+      { id:'limpeza_racao_lab', label:'Limpeza — Ração e Laboratório', fonte:'manual', unidade:'% dias', formato:v=>v+'%',
+        faixas:[{min:100,valor:50},{min:90,valor:40},{min:0,valor:0}] },
+      { id:'pesar_racao',       label:'Pesar Ração',                 fonte:'manual', unidade:'% dias',  formato:v=>v+'%',
+        faixas:[{min:100,valor:50},{min:90,valor:40},{min:80,valor:30},{min:0,valor:0}] },
+      { id:'sabados',           label:'Sábados — Ração, Lab. e Água', fonte:'manual', unidade:'% sáb.', formato:v=>v+'%',
+        faixas:[{min:100,valor:50},{min:0,valor:0}] },
     ]
   }
 };
 
-// Mapeamento usuário → perfil
-const USER_PERFIL = {
-  lucas:  'padrao',
-  giovana:'padrao',
-  kiko:   'padrao',
-  bili:   'padrao',
-};
-
-// Storage key para metas manuais: metaValues_{username}_{ano}_{mes}
-function metaKey(username, ano, mes) {
-  return `metaValues_${username}_${ano}_${String(mes).padStart(2,'0')}`;
+// Storage key: metaValues_{perfilId}_{ano}_{mes}
+function metaKey(perfilId, ano, mes) {
+  return `metaValues_${perfilId}_${ano}_${String(mes).padStart(2,'0')}`;
 }
 
 // ── Buscar dados automáticos para as metas ─────────────────
-// Usa buildColetaByLote() (dados já em memória) + records para pesar ração
 async function fetchMetasAuto(ano, mes) {
   const mesStr  = String(mes).padStart(2,'0');
-  const prefixo = `C${ano}${mesStr}`;  // ex: C202605
-  const dataInicio = `${ano}-${mesStr}-01`;
-  const dataFim    = `${ano}-${mesStr}-31`;
-
-  // 1. Coleta: soma todos os lotes do mês usando buildColetaByLote()
-  const byLote = buildColetaByLote();
-  let totalOvos = 0, totalLarvas = 0, lotesDoMes = 0;
+  const prefixo = `C${ano}${mesStr}`;
+  const byLote  = buildColetaByLote();
+  let totalOvos = 0, totalLarvas = 0;
   Object.entries(byLote).forEach(([lote, info]) => {
     if (!lote.startsWith(prefixo)) return;
-    lotesDoMes++;
-    totalOvos  += info.ovosTotal  || 0;
+    totalOvos   += info.ovosTotal || 0;
     totalLarvas += info.ovosBons  || 0;
   });
-  const taxaEclosao = totalOvos > 0
-    ? parseFloat(((totalLarvas / totalOvos) * 100).toFixed(1))
-    : null;
-
-  // 2. Pesar ração: dias distintos com racao_lancada = true no mês
-  //    Tenta via Supabase; se falhar usa records em memória
-  let diasRacao = 0;
-  try {
-    const { sbUrl, sbKey } = getSbConfig();
-    const racaoRes = await fetch(
-      `${sbUrl}/rest/v1/tank_records?select=date&racao_lancada=eq.true&date=gte.${dataInicio}&date=lte.${dataFim}&overridden=eq.false`,
-      { headers: { apikey: sbKey, Authorization: 'Bearer '+sbKey } }
-    );
-    if (racaoRes.ok) {
-      const racaoRows = await racaoRes.json();
-      diasRacao = new Set(racaoRows.map(r => r.date)).size;
-    }
-  } catch(e) {
-    // Fallback: conta pelos records em memória
-    const dias = new Set(
-      records.filter(r => r.racaoLancada && r.date >= dataInicio && r.date <= dataFim && !r.overridden)
-             .map(r => r.date)
-    );
-    diasRacao = dias.size;
-  }
-
   return {
     qtd_ovos:        totalOvos   > 0 ? Math.round(totalOvos)   : null,
     producao_larvas: totalLarvas > 0 ? Math.round(totalLarvas) : null,
-    taxa_eclosao:    taxaEclosao,
-    pesar_racao:     diasRacao   > 0 ? diasRacao : null,
   };
 }
 
@@ -6900,10 +6810,12 @@ function getSbConfig() {
 
 
 
-function calcPctIndicador(indicador, valor) {
+function calcValorIndicador(ind, valor) {
   if (valor === null || valor === undefined) return null;
-  for (const f of indicador.faixas) {
-    if (valor >= f.min) return f.pct;
+  if (ind.invertido) {
+    for (const f of ind.faixas) { if (valor <= f.max) return f.valor; }
+  } else {
+    for (const f of ind.faixas) { if (valor >= f.min) return f.valor; }
   }
   return 0;
 }
@@ -6911,44 +6823,27 @@ function calcPctIndicador(indicador, valor) {
 
 // ── Render Metas ─────────────────────────────────────────────
 async function renderMetas() {
-  const mes  = parseInt(document.getElementById('meta-mes')?.value || (new Date().getMonth()+1));
-  const ano  = parseInt(document.getElementById('meta-ano')?.value || new Date().getFullYear());
-  const user = currentUser?.username || 'padrao';
-  const perfil = PERFIS_META[USER_PERFIL[user] || 'padrao'] || PERFIS_META['padrao'];
+  const mes      = parseInt(document.getElementById('meta-mes')?.value || (new Date().getMonth()+1));
+  const ano      = parseInt(document.getElementById('meta-ano')?.value || new Date().getFullYear());
+  const perfilId = document.getElementById('meta-perfil-select')?.value || 'padrao';
+  const perfil   = PERFIS_META[perfilId] || PERFIS_META['padrao'];
   if (!perfil) return;
 
   const wrap = document.getElementById('meta-tabela-wrap');
   if (!wrap) { setTimeout(renderMetas, 100); return; }
 
-  // Label perfil
-  const plEl = document.getElementById('meta-perfil-label');
-  if (plEl) plEl.textContent = perfil.label;
-
-  // Mostrar loading
   wrap.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px;">⏳ Carregando dados...</div>';
 
-  // Carregar valores manuais do localStorage
-  const storeKey = metaKey(user, ano, mes);
+  const storeKey = metaKey(perfilId, ano, mes);
   let valoresManuais = {};
   try { valoresManuais = JSON.parse(localStorage.getItem(storeKey) || '{}'); } catch(e){}
 
-  // Buscar dados automáticos do Supabase
   let autoData = {};
   try { autoData = await fetchMetasAuto(ano, mes); } catch(e){ console.warn('fetchMetasAuto error:', e); }
 
-  // Mesclar: auto sobrescreve manual apenas nos campos automáticos
   const valores = { ...valoresManuais };
-  if (autoData.producao_larvas !== null && autoData.producao_larvas !== undefined) valores.producao_larvas = autoData.producao_larvas;
-  if (autoData.qtd_ovos        !== null && autoData.qtd_ovos !== undefined)        valores.qtd_ovos       = autoData.qtd_ovos;
-  if (autoData.taxa_eclosao    !== null && autoData.taxa_eclosao !== undefined)    valores.taxa_eclosao   = autoData.taxa_eclosao;
-  if (autoData.pesar_racao     !== null && autoData.pesar_racao !== undefined)     valores.pesar_racao    = autoData.pesar_racao;
-
-  // Calcular pcts e prêmio
-  const indsQtd  = perfil.indicadores.filter(i => i.categoria === 'quantidade');
-  const indsQual = perfil.indicadores.filter(i => i.categoria === 'qualidade');
-  const pesoQtd  = perfil.premioPeso.quantidade;
-  const pesoQual = perfil.premioPeso.qualidade;
-  const premioQualPorInd = pesoQual * perfil.premioMax / indsQual.length;
+  if (autoData.qtd_ovos        != null) valores.qtd_ovos        = autoData.qtd_ovos;
+  if (autoData.producao_larvas != null) valores.producao_larvas = autoData.producao_larvas;
 
   const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   let bonusTotal = 0;
@@ -6961,7 +6856,6 @@ async function renderMetas() {
           <th style="padding:12px 10px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Fonte</th>
           <th style="padding:12px 10px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Valor atual</th>
           <th style="padding:12px 10px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Faixa atingida</th>
-          <th style="padding:12px 10px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">% prêmio</th>
           <th style="padding:12px 16px;text-align:right;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Valor (R$)</th>
         </tr>
       </thead>
@@ -6970,39 +6864,42 @@ async function renderMetas() {
   perfil.indicadores.forEach((ind, idx) => {
     const rawVal = valores[ind.id];
     const val    = rawVal !== undefined && rawVal !== '' ? Number(rawVal) : null;
-    const pct    = calcPctIndicador(ind, val);
+    const valorR = calcValorIndicador(ind, val);
 
     // Faixa descritiva
     let faixaDesc = '—';
-    if (pct !== null && ind.faixas.length) {
-      const fIdx = ind.faixas.findIndex(f => f.pct === pct);
-      const f = ind.faixas[fIdx];
-      const fNext = fIdx > 0 ? ind.faixas[fIdx-1] : null;
-      if (f) faixaDesc = fNext
-        ? `≥ ${ind.formato(f.min)} e < ${ind.formato(fNext.min)}`
-        : `≥ ${ind.formato(f.min)}`;
+    if (valorR !== null && ind.faixas.length) {
+      const fIdx = ind.invertido
+        ? ind.faixas.findIndex(f => val <= f.max)
+        : ind.faixas.findIndex(f => val >= f.min);
+      if (fIdx >= 0) {
+        const f     = ind.faixas[fIdx];
+        const fPrev = fIdx > 0 ? ind.faixas[fIdx-1] : null;
+        if (ind.invertido) {
+          faixaDesc = fPrev
+            ? `> ${ind.formato(fPrev.max)} e ≤ ${ind.formato(f.max)}`
+            : `≤ ${ind.formato(f.max)}`;
+        } else {
+          faixaDesc = fPrev
+            ? `≥ ${ind.formato(f.min)} e < ${ind.formato(fPrev.min)}`
+            : `≥ ${ind.formato(f.min)}`;
+        }
+      }
     }
 
-    // Valor do prêmio
-    let premioInd = 0;
-    if (ind.categoria === 'quantidade') {
-      premioInd = pct !== null ? (pct / indsQtd.length) * pesoQtd * perfil.premioMax : 0;
-    } else {
-      premioInd = pct !== null ? pct * premioQualPorInd : 0;
-    }
-    bonusTotal += premioInd;
+    // Progress bar: proporção do valor máximo da faixa
+    const maxValor = ind.faixas[0]?.valor || 1;
+    const progPct  = valorR !== null ? Math.min(100, (valorR / maxValor) * 100) : 0;
 
-    const cor = pct === null ? '#94a3b8'
-      : pct >= 1.0 ? '#22c55e'
-      : pct >= 0.6 ? '#f59e0b'
-      : pct >  0   ? '#f97316'
-      : '#ef4444';
+    bonusTotal += valorR || 0;
 
-    const maxFaixa = ind.faixas[0].min;
-    const progPct  = val !== null ? Math.min(100, (val / maxFaixa) * 100) : 0;
+    const cor = valorR === null        ? '#94a3b8'
+              : valorR >= maxValor     ? '#22c55e'
+              : valorR > 0            ? '#f59e0b'
+              : '#ef4444';
+
     const bgRow = idx % 2 === 0 ? '' : 'background:var(--bg);';
 
-    // Badge da fonte
     const fonteIcon = ind.fonte === 'auto'  ? '🤖 Auto'
                     : ind.fonte === 'admin' ? '🔒 Admin'
                     : '✏️ Manual';
@@ -7030,8 +6927,7 @@ async function renderMetas() {
           ${val !== null ? ind.formato(val) : '<span style="color:#94a3b8;font-size:12px;">Não disponível</span>'}
         </td>
         <td style="padding:12px 10px;font-size:12px;color:var(--text2);">${faixaDesc}</td>
-        <td style="padding:12px 10px;text-align:center;font-weight:800;color:${cor};">${pct !== null ? Math.round(pct*100)+'%' : '—'}</td>
-        <td style="padding:12px 16px;text-align:right;font-weight:800;color:var(--accent);">${premioInd > 0 ? '+R$ '+premioInd.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</td>
+        <td style="padding:12px 16px;text-align:right;font-weight:800;color:var(--accent);">${valorR !== null && valorR > 0 ? '+R$ '+valorR.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : valorR === 0 ? 'R$ 0,00' : '—'}</td>
       </tr>`;
   });
 
@@ -7039,7 +6935,7 @@ async function renderMetas() {
       </tbody>
       <tfoot>
         <tr style="background:linear-gradient(135deg,var(--accent),#0ea5e9);">
-          <td colspan="5" style="padding:14px 16px;font-size:14px;font-weight:800;color:#fff;">🎯 Bônus estimado — ${meses[mes]} ${ano}</td>
+          <td colspan="4" style="padding:14px 16px;font-size:14px;font-weight:800;color:#fff;">🎯 Bônus estimado — ${meses[mes]} ${ano}</td>
           <td style="padding:14px 16px;text-align:right;font-size:18px;font-weight:900;color:#fff;">R$ ${bonusTotal.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
         </tr>
       </tfoot>
@@ -7047,17 +6943,16 @@ async function renderMetas() {
 
   wrap.innerHTML = html;
 
-  // Painel admin para lançar valores manuais/admin
+  // Painel admin para lançar valores manuais
   const adminPanel  = document.getElementById('meta-admin-panel');
   const adminInputs = document.getElementById('meta-admin-inputs');
   const adminMesAno = document.getElementById('meta-admin-mesano');
-  const podeAdmin   = isAdmin(); // lucas e giovana
+  const podeAdmin   = isAdmin();
   if (adminPanel) {
     adminPanel.style.display = podeAdmin ? 'block' : 'none';
     if (podeAdmin && adminInputs) {
       if (adminMesAno) adminMesAno.textContent = meses[mes]+' '+ano;
       adminInputs.innerHTML = '';
-      // Só mostra campos manuais e admin (auto são calculados)
       const indsEditaveis = perfil.indicadores.filter(i => i.fonte === 'manual' || i.fonte === 'admin');
       indsEditaveis.forEach(ind => {
         const curVal = valoresManuais[ind.id] !== undefined ? valoresManuais[ind.id] : '';
@@ -7065,14 +6960,7 @@ async function renderMetas() {
         div.style.cssText = 'display:flex;flex-direction:column;gap:4px;min-width:180px;';
         div.innerHTML = `
           <label style="font-size:11px;font-weight:700;color:var(--text2);">${ind.label}${ind.unidade?' ('+ind.unidade+')':''}</label>
-          ${ind.tipo === 'boolean'
-            ? `<select id="meta-input-${ind.id}" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">
-                <option value="">— Não lançado —</option>
-                <option value="1" ${curVal===1||curVal==='1'?'selected':''}>Realizado</option>
-                <option value="0" ${curVal===0||curVal==='0'?'selected':''}>Não realizado</option>
-              </select>`
-            : `<input type="number" id="meta-input-${ind.id}" value="${curVal}" placeholder="Valor" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">`
-          }`;
+          <input type="number" id="meta-input-${ind.id}" value="${curVal}" placeholder="Valor" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">`;
         adminInputs.appendChild(div);
       });
     }
@@ -7081,16 +6969,16 @@ async function renderMetas() {
 
 
 function salvarMetas() {
-  const mes  = parseInt(document.getElementById('meta-mes')?.value);
-  const ano  = parseInt(document.getElementById('meta-ano')?.value);
-  const user = currentUser?.username || '';
-  const perfil = PERFIS_META[USER_PERFIL[user] || 'padrao'];
-  const valores = {};
+  const mes      = parseInt(document.getElementById('meta-mes')?.value);
+  const ano      = parseInt(document.getElementById('meta-ano')?.value);
+  const perfilId = document.getElementById('meta-perfil-select')?.value || 'padrao';
+  const perfil   = PERFIS_META[perfilId] || PERFIS_META['padrao'];
+  const valores  = {};
   perfil.indicadores.forEach(ind => {
     const el = document.getElementById('meta-input-'+ind.id);
     if (el && el.value !== '') valores[ind.id] = el.value;
   });
-  localStorage.setItem(metaKey(user, ano, mes), JSON.stringify(valores));
+  localStorage.setItem(metaKey(perfilId, ano, mes), JSON.stringify(valores));
   showToast('Metas salvas!', 'success');
   renderMetas();
 }
