@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.16</title>
+<title>KC System v4.18</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.16</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.18</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -6984,6 +6984,12 @@ function salvarMetas() {
 }
 
 // ── PONTO ────────────────────────────────────────────────────
+// Data mínima válida de batidas (dia de instalação do relógio)
+const PONTO_DATA_INICIO = '2026-05-12';
+
+// Lista canônica de usuários do ponto (minúsculas, ordem dos cards, sem lucas)
+const PONTO_USERS = ['giovana', 'kiko', 'bili', 'jhonathan', 'rodrigo'];
+
 // Mapeamento nome do relógio → username KC System
 const PONTO_NAME_MAP = {
   'everson g':  'bili',
@@ -7009,8 +7015,23 @@ let _pontoDetalheUser = null; // usuário atualmente exibido no detalhe
 
 function pontoStorageKey() { return 'kc_ponto_v1'; }
 
+function normalizePontoKeys() {
+  const norm = {};
+  Object.entries(pontoData).forEach(([k, v]) => {
+    const l = k.toLowerCase();
+    if (norm[l]) {
+      // mescla datas se houver chave duplicada com capitalização diferente
+      Object.assign(norm[l], v);
+    } else {
+      norm[l] = v;
+    }
+  });
+  pontoData = norm;
+}
+
 function loadPonto() {
   try { pontoData = JSON.parse(localStorage.getItem(pontoStorageKey()) || '{}'); } catch(e){ pontoData={}; }
+  normalizePontoKeys();
 }
 
 function savePonto() {
@@ -7027,18 +7048,25 @@ function saveAtestados() {
 async function loadPontoFromSupabase() {
   try {
     const rows = await sbGet('ponto', 'select=id,data');
-    if (!rows) return;
-    const bat = rows.find(r => r.id === 'batidas');
+    if (!rows) {
+      if (isAdmin()) showToast('⚠️ Ponto: tabela não encontrada no servidor. Verifique o Supabase.', 'error');
+      return;
+    }
+    const bat  = rows.find(r => r.id === 'batidas');
     const ates = rows.find(r => r.id === 'atestados');
     if (bat?.data && Object.keys(bat.data).length) {
       pontoData = bat.data;
+      normalizePontoKeys();
       savePonto();
     }
     if (ates?.data && Object.keys(ates.data).length) {
       pontoAtestados = ates.data;
       saveAtestados();
     }
-  } catch(e) { console.warn('loadPontoFromSupabase error', e); }
+  } catch(e) {
+    console.warn('loadPontoFromSupabase error', e);
+    if (isAdmin()) showToast('⚠️ Ponto: erro ao carregar do servidor', 'error');
+  }
 }
 
 async function savePontoToSupabase() {
@@ -7055,6 +7083,15 @@ async function savePontoToSupabase() {
     if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar'; }
   }
 }
+function deleteBatida(uname, dateKey, hora) {
+  const target = pontoData[uname] || pontoData[uname.toLowerCase()];
+  if (!target || !target[dateKey]) return;
+  target[dateKey].batidas = target[dateKey].batidas.filter(h => h !== hora);
+  if (!target[dateKey].batidas.length) delete target[dateKey];
+  savePonto();
+  renderPonto();
+}
+
 function toggleAtestado(uname, dateKey) {
   if (!pontoAtestados[uname]) pontoAtestados[uname] = {};
   if (pontoAtestados[uname][dateKey]) {
@@ -7169,6 +7206,7 @@ async function importarPontoXLS(file) {
       if (!horarios.length) return;
 
       const dateKey = `${ano}-${mesStr}-${String(dia).padStart(2, '0')}`;
+      if (dateKey < PONTO_DATA_INICIO) return; // antes da instalação do relógio
       if (!pontoData[username]) pontoData[username] = {};
       if (!pontoData[username][dateKey]) pontoData[username][dateKey] = { batidas: [] };
       horarios.forEach(h => {
@@ -7191,7 +7229,7 @@ async function importarPontoXLS(file) {
     savePonto();
     renderPonto();
     showImportPopup(`${mesesNomes[mes]} ${ano}`, resumoPorUser);
-    savePontoToSupabase();
+    await savePontoToSupabase();
   } else {
     alert('RESULTADO — Nenhuma batida encontrada. Verifique se o mapeamento de nomes está correto.');
     showToast('⚠️ Nenhuma batida encontrada no arquivo.', 'error');
@@ -7299,11 +7337,8 @@ function renderPonto() {
   const saveBtn = document.getElementById('ponto-save-btn');
   if (saveBtn) saveBtn.style.display = isAdmin() ? 'inline-block' : 'none';
 
-  // Quais usuários mostrar — Map(lowercase → uname) garante unicidade; lucas excluído
-  const _pontoMap = new Map();
-  Object.keys(USERS).forEach(u => { const l = u.toLowerCase(); if (l !== 'lucas' && !_pontoMap.has(l)) _pontoMap.set(l, u); });
-  Object.keys(PONTO_EXTRA_USERS).forEach(u => { const l = u.toLowerCase(); if (!_pontoMap.has(l)) _pontoMap.set(l, u); });
-  const usersToShow = isAdmin() ? [..._pontoMap.values()] : [currentUser?.username];
+  // Quais usuários mostrar — lista canônica PONTO_USERS (minúsculas, sem lucas)
+  const usersToShow = isAdmin() ? PONTO_USERS : [currentUser?.username?.toLowerCase()].filter(Boolean);
 
   // Dias úteis do mês (seg-sáb) — mês 0-indexed internamente
   const diasUteis = [];
@@ -7455,7 +7490,11 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
     html += `
       <tr style="${bgRow}border-bottom:1px solid var(--border);">
         <td style="padding:8px 14px;color:var(--text);font-weight:600;">${dias[dow]} ${dia}/${mesStr}${ehSab?' 🟡':''}</td>
-        <td style="padding:8px;text-align:center;color:var(--text2);">${batidas.join(' · ')||'—'}</td>
+        <td style="padding:8px;text-align:center;color:var(--text2);">${
+          batidas.length
+            ? batidas.map(h => `<span style="white-space:nowrap;margin:0 2px;">${h}${admin?`<button onclick="deleteBatida('${uname}','${key}','${h}')" title="Remover batida" style="margin-left:3px;padding:0 4px;border:none;border-radius:4px;background:#fee2e2;color:#ef4444;font-size:10px;cursor:pointer;font-weight:700;">✕</button>`:''}</span>`).join(' ')
+            : '—'
+        }</td>
         <td style="padding:8px;text-align:center;font-weight:700;color:${trabalhado!==null?'var(--text)':'var(--text2)'};">${fmtMin(trabalhado)}</td>
         <td style="padding:8px;text-align:center;font-weight:600;color:${corAlmoco};">${almoco!==null?fmtMin(almoco)+(almoco<60?' ⚠':''):'—'}</td>
         <td style="padding:8px;text-align:center;font-weight:700;color:${corSaldo};">${saldoDisplay}</td>
