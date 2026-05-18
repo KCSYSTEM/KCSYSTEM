@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.25</title>
+<title>KC System v4.26</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.25</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.26</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2513,7 +2513,10 @@ async function load(){
   // ── 6. Ponto (batidas + atestados) ────────────────────────
   await loadPontoFromSupabase();
 
-  // ── 7. Garante estrutura de tanques ───────────────────────
+  // ── 7. Metas (valores admin) ───────────────────────────────
+  await loadMetasFromSupabase();
+
+  // ── 8. Garante estrutura de tanques ───────────────────────
   const validIds=new Set();
   GROUPS.forEach(g=>g.tanks.forEach(td=>validIds.add('tank_'+g.id+'_'+td.num)));
   tanks=tanks.filter(t=>validIds.has(t.id)||!t.id.startsWith('tank_'));
@@ -4729,11 +4732,8 @@ function renderPainel(){
         if(prevBios.length){cVals.bio=avg(prevBios);cVals._bioPrev=true;}
       }
 
-      // racaoIdealG: usa do dia se disponível, senão último valor (persiste como qty/bio)
-      const idealVals=hapaNames.map((_,i)=>{
-        const fromDay=hapaRecs[i]?.racaoIdealG;
-        return fromDay??lvf(t.id,'racaoIdealG',i+1);
-      });
+      // racaoIdealG: só exibe se lançado no dia
+      const idealVals=hapaNames.map((_,i)=>hapaRecs[i]?.racaoIdealG??null);
       const realVals=hapaNames.map((_,i)=>racaoRealG(hapaRecs[i]));
       const idealSum=sum(idealVals);
       const realSum=sum(realVals);
@@ -4775,8 +4775,7 @@ function renderPainel(){
         if(hv.qty==null){const v=lvf(t.id,'qty',h);if(v!=null){hv.qty=v;hv._qtyPrev=true;}}
         if(hv.bio==null){const v=lvf(t.id,'bio',h);if(v!=null){hv.bio=v;hv._bioPrev=true;}}
         hv._tca=null;
-        // Fallback racaoIdealG — persiste último valor como qty/bio
-        if(hv._ideal==null){const v=lvf(t.id,'racaoIdealG',h);if(v!=null)hv._ideal=v;}
+        // racaoIdealG: só exibe se lançado no dia
         if(hv._ideal!=null)hv._ideal=hv._ideal/1000;
         if(hv._real!=null)hv._real=hv._real/1000;
         // Recalcula _pct com fallback incluído
@@ -4806,8 +4805,7 @@ function renderPainel(){
       // qty e bio independentes — busca último valor não-nulo campo a campo
       if(vals.qty==null){const v=lvf(t.id,'qty',null);if(v!=null){vals.qty=v;vals._qtyPrev=true;}}
       if(vals.bio==null){const v=lvf(t.id,'bio',null);if(v!=null){vals.bio=v;vals._bioPrev=true;}}
-      // Fallback racaoIdealG — persiste último valor lançado
-      if(vals._ideal==null){const v=lvf(t.id,'racaoIdealG',null);if(v!=null)vals._ideal=v;}
+      // racaoIdealG: só exibe se lançado no dia
       vals._tca=tca?parseFloat(tca):null;
       if(vals._ideal!=null)vals._ideal=vals._ideal/1000;
       if(vals._real!=null)vals._real=vals._real/1000;
@@ -7058,7 +7056,7 @@ async function renderMetas() {
 }
 
 
-function salvarMetas() {
+async function salvarMetas() {
   const mes      = parseInt(document.getElementById('meta-mes')?.value);
   const ano      = parseInt(document.getElementById('meta-ano')?.value);
   const perfilId = document.getElementById('meta-perfil-select')?.value || 'padrao';
@@ -7068,9 +7066,26 @@ function salvarMetas() {
     const el = document.getElementById('meta-input-'+ind.id);
     if (el && el.value !== '') valores[ind.id] = el.value;
   });
-  localStorage.setItem(metaKey(perfilId, ano, mes), JSON.stringify(valores));
-  showToast('Metas salvas!', 'success');
+  const key = metaKey(perfilId, ano, mes);
+  localStorage.setItem(key, JSON.stringify(valores));
+  const ok = await sbUpsert('metas', [{ id: key, data: valores }]);
+  showToast(ok ? '✅ Metas salvas!' : '⚠️ Salvo localmente (erro no servidor)', ok ? 'success' : 'error');
   renderMetas();
+}
+
+async function loadMetasFromSupabase() {
+  try {
+    const rows = await sbGet('metas', 'select=id,data');
+    if (!rows) {
+      if (isAdmin()) showToast('⚠️ Metas: tabela não encontrada no servidor.', 'error');
+      return;
+    }
+    rows.forEach(r => {
+      if (r.id && r.data) localStorage.setItem(r.id, JSON.stringify(r.data));
+    });
+  } catch(e) {
+    console.warn('loadMetasFromSupabase error', e);
+  }
 }
 
 // ── PONTO ────────────────────────────────────────────────────
