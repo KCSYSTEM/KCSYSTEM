@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.24</title>
+<title>KC System v4.25</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.24</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.25</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -6738,11 +6738,13 @@ const PERFIS_META = {
         faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
       { id:'producao_larvas',   label:'Quantidade de Larvas',    fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
         faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
-      { id:'qtd_alevinos',      label:'Quantidade de Alevinos',  fonte:'manual', unidade:'alevinos',formato:_fmtProd,
+      { id:'qtd_alevinos',      label:'Quantidade de Alevinos',  fonte:'auto',   unidade:'alevinos',formato:_fmtProd,
         faixas:[{min:800000,valor:100},{min:600000,valor:80},{min:400000,valor:60},{min:300000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
-      { id:'escape_matrizes',   label:'Escape de Matrizes',      fonte:'manual', unidade:'%', formato:v=>v.toFixed(1)+'%', invertido:true,
+      { id:'escape_matrizes',   label:'Escape de Matrizes',      fonte:'admin',  inputLabel:'Peixes escapados', inputUnidade:'peixes', inputMode:'escapados',
+        unidade:'%', formato:v=>v.toFixed(1)+'%', invertido:true,
         faixas:[{max:0,valor:50},{max:5,valor:40},{max:7.5,valor:30},{max:10,valor:20}] },
-      { id:'limpeza_piscicultura', label:'Limpeza da Piscicultura', fonte:'manual', unidade:'% dias', formato:v=>v+'%',
+      { id:'limpeza_piscicultura', label:'Limpeza da Piscicultura', fonte:'admin', inputLabel:'Dias sem limpeza', inputUnidade:'dias', inputMode:'diasSemLimpeza',
+        unidade:'% dias', formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:90,valor:40},{min:0,valor:0}] },
       { id:'mortalidade_manejo',label:'Mortalidade Pós Manejo',  fonte:'manual', unidade:'%', formato:v=>v.toFixed(1)+'%', invertido:true,
         faixas:[{max:2.5,valor:50},{max:5,valor:40},{max:7.5,valor:30},{max:10,valor:20}] },
@@ -6757,11 +6759,12 @@ const PERFIS_META = {
         faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
       { id:'producao_larvas',   label:'Quantidade de Larvas',        fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
         faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
-      { id:'qtd_alevinos',      label:'Quantidade de Alevinos',      fonte:'manual', unidade:'alevinos',formato:_fmtProd,
+      { id:'qtd_alevinos',      label:'Quantidade de Alevinos',      fonte:'auto',   unidade:'alevinos',formato:_fmtProd,
         faixas:[{min:800000,valor:100},{min:600000,valor:80},{min:400000,valor:60},{min:300000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
       { id:'renovacao_agua',    label:'Renovação de Água',           fonte:'manual', unidade:'% dias',  formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:90,valor:40},{min:80,valor:30},{min:70,valor:20},{min:0,valor:0}] },
-      { id:'limpeza_racao_lab', label:'Limpeza — Ração e Laboratório', fonte:'manual', unidade:'% dias', formato:v=>v+'%',
+      { id:'limpeza_racao_lab', label:'Limpeza — Ração e Laboratório', fonte:'admin', inputLabel:'Dias sem limpeza', inputUnidade:'dias', inputMode:'diasSemLimpeza',
+        unidade:'% dias', formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:90,valor:40},{min:0,valor:0}] },
       { id:'pesar_racao',       label:'Pesar Ração',                 fonte:'manual', unidade:'% dias',  formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:90,valor:40},{min:80,valor:30},{min:0,valor:0}] },
@@ -6778,9 +6781,9 @@ function metaKey(perfilId, ano, mes) {
 
 // ── Buscar dados automáticos para as metas ─────────────────
 async function fetchMetasAuto(ano, mes) {
-  const mesStr  = String(mes).padStart(2,'0');
+  const mesStr    = String(mes).padStart(2,'0');
   const mesPrefix = `${ano}-${mesStr}-`;
-  const byLote  = buildColetaByLote();
+  const byLote    = buildColetaByLote();
   let totalOvos = 0, totalLarvas = 0;
   Object.entries(byLote).forEach(([, info]) => {
     if (!info.lastDate?.startsWith(mesPrefix)) return;
@@ -6788,9 +6791,16 @@ async function fetchMetasAuto(ano, mes) {
     const naoGorados = info.naoGoradosPct ?? 100;
     totalLarvas += Math.round((info.ovosTotal || 0) * naoGorados / 100);
   });
+  let totalAlevinos = 0;
+  manejos.forEach(m => {
+    if (m.fase === 'transferencia' && m.data?.startsWith(mesPrefix)) {
+      totalAlevinos += m.qtd_total || 0;
+    }
+  });
   return {
-    qtd_ovos:        totalOvos   > 0 ? Math.round(totalOvos)   : null,
-    producao_larvas: totalLarvas > 0 ? Math.round(totalLarvas) : null,
+    qtd_ovos:        totalOvos     > 0 ? Math.round(totalOvos)     : null,
+    producao_larvas: totalLarvas   > 0 ? Math.round(totalLarvas)   : null,
+    qtd_alevinos:    totalAlevinos > 0 ? Math.round(totalAlevinos) : null,
   };
 }
 
@@ -6855,6 +6865,33 @@ async function renderMetas() {
   const valores = { ...valoresManuais };
   if (autoData.qtd_ovos        != null) valores.qtd_ovos        = autoData.qtd_ovos;
   if (autoData.producao_larvas != null) valores.producao_larvas = autoData.producao_larvas;
+  if (autoData.qtd_alevinos    != null) valores.qtd_alevinos    = autoData.qtd_alevinos;
+
+  // Dias úteis do mês (seg–sáb) para conversão de limpeza
+  const _dtTmp = new Date(ano, mes-1, 1);
+  let nDiasUteis = 0;
+  while (_dtTmp.getMonth() === mes-1) { if (_dtTmp.getDay() !== 0) nDiasUteis++; _dtTmp.setDate(_dtTmp.getDate()+1); }
+
+  // Total peixes em reprodução para conversão de escape
+  const totalPeixesReprod = tanks.filter(t => t.matrizes && !t.empty).reduce((s, t) => {
+    const hns = (t.hapas||'').split(',').map(x=>x.trim()).filter(Boolean);
+    if (hns.length) return hns.reduce((ss, _, i) => { const lr=lastRecHapaMatrizes(t.id,i+1); return ss+(lr?.machos||0)+(lr?.femeas||0); }, s);
+    const lr = lastRec(t.id); return s+(lr?.machos||0)+(lr?.femeas||0);
+  }, 0);
+
+  // Converte inputs brutos (dias / peixes) para o valor de display (%)
+  perfil.indicadores.forEach(ind => {
+    if (!ind.inputMode) return;
+    const raw = valores[ind.id];
+    if (raw === undefined || raw === null || raw === '') return;
+    const n = Number(raw); if (isNaN(n)) return;
+    if (ind.inputMode === 'diasSemLimpeza' && nDiasUteis > 0) {
+      valores[ind.id] = Math.max(0, Math.round((nDiasUteis - n) / nDiasUteis * 100));
+    } else if (ind.inputMode === 'escapados') {
+      if (totalPeixesReprod > 0) valores[ind.id] = parseFloat((n / totalPeixesReprod * 100).toFixed(2));
+      else delete valores[ind.id];
+    }
+  });
 
   const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   let bonusTotal = 0;
@@ -7002,11 +7039,13 @@ async function renderMetas() {
       adminInputs.innerHTML = '';
       const indsEditaveis = perfil.indicadores.filter(i => i.fonte === 'manual' || i.fonte === 'admin');
       indsEditaveis.forEach(ind => {
-        const curVal = valoresManuais[ind.id] !== undefined ? valoresManuais[ind.id] : '';
+        const curVal   = valoresManuais[ind.id] !== undefined ? valoresManuais[ind.id] : '';
+        const lbl      = ind.inputLabel  || ind.label;
+        const und      = ind.inputUnidade || ind.unidade;
         const div = document.createElement('div');
         div.style.cssText = 'display:flex;flex-direction:column;gap:4px;min-width:180px;';
         div.innerHTML = `
-          <label style="font-size:11px;font-weight:700;color:var(--text2);">${ind.label}${ind.unidade?' ('+ind.unidade+')':''}</label>
+          <label style="font-size:11px;font-weight:700;color:var(--text2);">${lbl}${und?' ('+und+')':''}</label>
           <input type="number" id="meta-input-${ind.id}" value="${curVal}" placeholder="Valor" style="padding:8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;">`;
         adminInputs.appendChild(div);
       });
