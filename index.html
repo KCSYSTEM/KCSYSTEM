@@ -6874,8 +6874,12 @@ async function renderMetas() {
 
   // Total peixes em reprodução para conversão de escape
   const totalPeixesReprod = tanks.filter(t => t.matrizes && !t.empty).reduce((s, t) => {
-    const hns = (t.hapas||'').split(',').map(x=>x.trim()).filter(Boolean);
-    if (hns.length) return hns.reduce((ss, _, i) => { const lr=lastRecHapaMatrizes(t.id,i+1); return ss+(lr?.machos||0)+(lr?.femeas||0); }, s);
+    const hapaCount = Number(t.hapas) || 0;
+    if (hapaCount > 0) {
+      let sub = 0;
+      for (let h = 1; h <= hapaCount; h++) { const lr=lastRecHapaMatrizes(t.id,h); sub+=(lr?.machos||0)+(lr?.femeas||0); }
+      return s + sub;
+    }
     const lr = lastRec(t.id); return s+(lr?.machos||0)+(lr?.femeas||0);
   }, 0);
 
