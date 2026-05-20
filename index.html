@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.28</title>
+<title>KC System v4.30</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.28</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.30</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1107,6 +1107,9 @@ function recToTankRow(rec, reason){
     tratos:        rec.tratos!=null?parseInt(rec.tratos):null,
     lote:          rec.lote||null,
     obs:           rec.obs||null,
+    machos:        rec.machos??null,
+    femeas:        rec.femeas??null,
+    racao_lancada: rec.racaoLancada??null,
     overridden:    rec.overridden||false,
     changed_fields:rec._changedFields||null,
   };
@@ -1954,8 +1957,8 @@ function renderColeta(){
       <td><div class="lancamento-tank-name">${r.tankName}</div><div class="lancamento-hapa-name">🪣 ${r.hapaName}</div></td>
       <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" value="${r.lastFemeas}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" value="${r.lastMl}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="${r.lastGorados}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-ovosml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosPorMl" placeholder="—" step="1" inputmode="decimal" value="${r.lastOvos}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-ovosml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosPorMl" placeholder="—" step="1" inputmode="decimal" value="" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">${r.lastFemeas!==''?`<div>♀ ${r.lastFemeas}</div>`:''} ${r.lastMl!==''?`<div>💧 ${r.lastMl}mL</div>`:''} ${r.lastGorados!==''?`<div>💀 ${r.lastGorados}%</div>`:''} ${r.lastOvos!==''?`<div>🔬 ${r.lastOvos}/mL</div>`:''} ${r.lastFemeas===''&&r.lastMl===''&&r.lastGorados===''&&r.lastOvos===''?'—':''}</td>
     </tr>`).join('');
 
@@ -6158,14 +6161,7 @@ function buildColetaByLote(){
     };
     const l = byLote[r.lote];
 
-    // Fêmeas em reprodução (soma de femeas por hapa único — evita duplicatas por data)
-    if(r.femeas!=null){
-      const hapaKey = (r.tankId||'') + '_' + (r.hapa??'x');
-      if(!l._femeasHapas.has(hapaKey)){
-        l.femeasReprod += r.femeas;
-        l._femeasHapas.add(hapaKey);
-      }
-    }
+
 
     // Fêmeas que desovaram
     if(r.desovaFemeas!=null) l.femeasDesovaram += r.desovaFemeas;
@@ -6173,8 +6169,13 @@ function buildColetaByLote(){
     // ML total
     if(r.desovaML!=null) l.mlTotal += r.desovaML;
 
-    // Ovos/mL — média simples por lançamento de lote
-    if(r.ovosPorMl!=null) l._ovosMlVals.push(r.ovosPorMl);
+    // Ovos/mL — deduplicar por hapa (o record mais recente por hapa)
+    if(r.ovosPorMl!=null){
+      const hk=(r.tankId||'lote')+'_'+(r.hapa??'x');
+      if(!l._ovosMlByHapa)l._ovosMlByHapa={};
+      if(!l._ovosMlByHapa[hk]||((r.timestamp||'')>(l._ovosMlByHapa[hk].ts||'')))
+        l._ovosMlByHapa[hk]={val:r.ovosPorMl,ts:r.timestamp||''};
+    }
 
     // Gorados — só coleta UMA entrada por hapa (o record mais recente com ovosGorados)
     // A deduplicação é feita depois; aqui apenas guarda {hapaKey, valor, timestamp}
@@ -6196,8 +6197,11 @@ function buildColetaByLote(){
 
   // Calcula médias finais
   Object.values(byLote).forEach(l=>{
-    l.ovosMlMedio = l._ovosMlVals.length
-      ? parseFloat((l._ovosMlVals.reduce((s,v)=>s+v,0)/l._ovosMlVals.length).toFixed(1))
+    l.femeasReprod = femeasAlocadasEm(l.lastDate) || 0;
+
+    const ovosMlVals = l._ovosMlByHapa ? Object.values(l._ovosMlByHapa).map(x=>x.val) : [];
+    l.ovosMlMedio = ovosMlVals.length
+      ? parseFloat((ovosMlVals.reduce((s,v)=>s+v,0)/ovosMlVals.length).toFixed(1))
       : null;
 
     // Gorados: média dos valores únicos por hapa (último lançamento de cada hapa)
