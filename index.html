@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.31</title>
+<title>KC System v4.34</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -405,7 +405,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.31</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.34</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -611,6 +611,9 @@ input[type="number"]{-moz-appearance:textfield;}
             <input type="number" id="new-racao-kg" placeholder="g/copo" step="0.001" inputmode="decimal" style="width:90px;">
             <button class="add-racao-btn" onclick="addRacao()">+ Add</button>
           </div>
+          <button onclick="resetRacoesParaPadrao()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:1.5px dashed var(--border2);border-radius:8px;color:var(--text3);font-size:13px;cursor:pointer;">
+            ↺ Restaurar lista padrão
+          </button>
         </div>
       </div>
       <!-- Página: usuários -->
@@ -3029,7 +3032,7 @@ function buildRegistroFormForDate(date){
   const lastPh=src?.ph??'';
   const lastMort=src?.mort??0;
 
-  const racaoOpts=racoes.map(r=>`<option value="${r.nome}" ${lastRacaoNome===r.nome?'selected':''}>${r.nome}${r.kg?' ('+Math.round(r.kg*1000)+'g/copo)':''}</option>`).join('');
+  const racaoOpts=racoes.map(r=>`<option value="${r.nome}" ${(lastRacaoNome===r.nome||(r.id&&lastRacaoNome===r.id))?'selected':''}>${r.nome}${r.kg?' ('+Math.round(r.kg*1000)+'g/copo)':''}</option>`).join('');
 
   const existsBanner=existing?`<div class="rec-exists-banner">⚠️ Já existe registro para este dia. Os dados foram carregados. Salvar vai sobreescrever.</div>`:'';
 
@@ -3540,6 +3543,14 @@ function addRacao(){
 }
 function deleteRacao(i){if(confirm(`Remover "${racoes[i].nome}"?`)){racoes.splice(i,1);save();renderRacaoList();showToast('Ração removida','ok');}}
 
+async function resetRacoesParaPadrao(){
+  if(!confirm('Substituir toda a lista de rações pela lista padrão?\nIsso não afeta registros já salvos nos tanques.'))return;
+  racoes.splice(0,racoes.length,...DEFAULT_RACOES.map((x,i)=>({...x,id:'r_pad_'+i})));
+  save();
+  renderRacaoList();
+  showToast('Lista de rações restaurada para o padrão ✓','ok');
+}
+
 // ===== GERENCIAR USUÁRIOS =====
 const ROLE_LABEL={'admin':'Administrador','usuario':'Usuário'};
 const ROLE_COLOR={'admin':'var(--accent)','usuario':'var(--ok)'};
@@ -3921,7 +3932,7 @@ function renderLancamentos(){
     const disabledStyle='background:#d0d8e4;border-color:#b0bcc8;color:#7a8fa3;cursor:not-allowed;';
     const lastRecForRacao=lastRec(r.tankId);
     const racaoAtual=dayRec?.racao||lastRecForRacao?.racao||'';
-    const racaoOpts=racoes.map(rc=>`<option value="${rc.id||rc.nome}" ${racaoAtual===(rc.id||rc.nome)?'selected':''}>${rc.nome||rc.id}</option>`).join('');
+    const racaoOpts=racoes.map(rc=>`<option value="${rc.nome}" ${(racaoAtual===rc.nome||racaoAtual===(rc.id||rc.nome))?'selected':''}>${rc.nome}</option>`).join('');
     const aditivosChk=['biofish','polygain','aquasan','lothar'].map(a=>`
       <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--text2);white-space:nowrap;">
         <input type="checkbox" id="lanc-aditivo-${a}-${rowId}" data-tank="${r.tankId}" data-aditivo="${a}"
@@ -4155,6 +4166,13 @@ async function _doSaveLancamentos(toSave,param,date){
       }
     }
 
+    // Captura tipo de ração e aditivos (antes do branch hapas para não ser ignorado pelo continue)
+    const rowIdRacao=(item.rowId||item.tankId.replace(/[^a-z0-9]/gi,'_'));
+    const racaoTipoEl=document.getElementById(`lanc-racao-tipo-${rowIdRacao}`);
+    const racaoTipo=racaoTipoEl?.value||null;
+    const _aditivosList=['biofish','polygain','aquasan','lothar'];
+    const aditivos=_aditivosList.filter(a=>document.getElementById(`lanc-aditivo-${a}-${rowIdRacao}`)?.checked);
+
     // ── Tanque com hapas + ração real → salva por hapa ─────
     const hapaCount=item.hapas||0;
     if(param==='racaoReal'&&hapaCount>0&&tank.hapaNames?.length){
@@ -4202,6 +4220,8 @@ async function _doSaveLancamentos(toSave,param,date){
           sobra:sobraPorHapaG,
           racaoG:racaoPorHapaG,
           racaoLancada:true,
+          racao:racaoTipo||'',
+          aditivos:aditivos.length?aditivos:null,
           _changedFields:['sobra','racaoG'].filter(f=>({sobra:sobraPorHapaG,racaoG:racaoPorHapaG})[f]!=null),
         };
 
@@ -4221,7 +4241,7 @@ async function _doSaveLancamentos(toSave,param,date){
             timestamp:new Date(baseTs+h).toISOString(),
             lote:lastValFor(item.tankId,'lote',h)||tank.lote||'',hapa:h,
             temp:null,o2:null,amonia:null,ph:null,mort:null,
-            qty:null,bio:null,racao:'',
+            qty:null,bio:null,
             racaoIdealG:idealHapaG,
             ...saveData,
             tratosIdeal:null,tratos:null,obs:'',overridden:false,
@@ -4238,13 +4258,6 @@ async function _doSaveLancamentos(toSave,param,date){
     let finalValueForSave=finalValue;
     if(param==='racaoIdealG'&&finalValue!=null)
       finalValueForSave=parseFloat((finalValue*1000).toFixed(3));
-
-    // Captura tipo de ração selecionado
-    const rowIdRacao=(item.rowId||item.tankId.replace(/[^a-z0-9]/gi,'_'));
-    const racaoTipoEl=document.getElementById(`lanc-racao-tipo-${rowIdRacao}`);
-    const racaoTipo=racaoTipoEl?.value||null;
-    const _aditivosList=['biofish','polygain','aquasan','lothar'];
-    const aditivos=_aditivosList.filter(a=>document.getElementById(`lanc-aditivo-${a}-${rowIdRacao}`)?.checked)||null;
 
     if(existing){
       // ── Mescla no registro existente do dia ──────────────
@@ -4700,8 +4713,8 @@ function renderPainel(){
     if(isPrev)light='⬜';
     // Formata com casas decimais por campo
     if(fieldKey==='_racao_tipo'){
-      const rc=racoes.find(r=>(r.id||r.nome)===v);
-      const txt=rc?(rc.nome||rc.id):(v?String(v):'—');
+      const rc=racoes.find(r=>r.nome===v||r.id===v);
+      const txt=rc?rc.nome:(v?String(v):'—');
       return`<div style="padding:6px 2px;text-align:center;overflow:hidden;"><span style="font-size:10px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:90px;margin:0 auto;" title="${txt}">${txt}</span></div>`;
     }
     if(fieldKey==='_aditivos'){
