@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.3</title>
+<title>KC System v5.4</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.3</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.4</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1871,6 +1871,7 @@ function renderColetaPainel(){
   });
 
   const lotes=Object.values(byLote).sort((a,b)=>b.lote.localeCompare(a.lote));
+  const _coletaByLote=buildColetaByLote();
 
   cont.innerHTML='';
   const wrapper=document.createElement('div');
@@ -1900,7 +1901,7 @@ function renderColetaPainel(){
 
     const _sortedDates=[...l.dates].sort();
     const _loteDate=_sortedDates[_sortedDates.length-1]||'';
-    const _alocadas=femeasAlocadasEm(_loteDate);
+    const _alocadas=_coletaByLote[l.lote]?.femeasReprod??femeasAlocadasEm(_loteDate);
 
     const row=document.createElement('div');
     row.id=rowId;
@@ -6068,8 +6069,14 @@ function makeTCATable(data){
 
 // ===== UTILS =====
 function formatDate(d){if(!d)return'—';const[y,m,dd]=d.split('-');return`${dd}/${m}/${y}`;}
+function fmtMonthShort(d){if(!d)return'';const[y,m,dd]=d.split('-');const ms=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];return`${dd} ${ms[parseInt(m,10)-1]||m} ${y}`;}
 function formatTime(ts){return new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;setTimeout(()=>{t.className='';},3000);}
+
+// Impede que a rodinha do mouse altere inputs numéricos com foco
+document.addEventListener('wheel',function(){
+  if(document.activeElement&&document.activeElement.type==='number')document.activeElement.blur();
+},{passive:true});
 
 // Todos os event listeners após DOM pronto
 document.addEventListener('DOMContentLoaded',function(){
@@ -6485,7 +6492,7 @@ function renderPipelineCard(p){
     const pct = prevQtd ? Math.round(qtdTotal/prevQtd*100) : null;
     const destinos = itens.flatMap(i=>(i.destinos||[]).map(d=>d.tanque_id?tanks.find(t=>t.id===d.tanque_id)?.name||d.tanque_id:''));
     const destinosStr = [...new Set(destinos.filter(Boolean))].join(', ');
-    const dataStr = itens.map(i=>i.data).sort().pop()?.slice(5)||'';
+    const dataStr = fmtMonthShort(itens.map(i=>i.data).sort().pop()||'');
 
     // Botão editar: coleta usa lote_coleta como referência, demais usam id do manejo
     let editBtn = '';
@@ -6552,7 +6559,7 @@ function renderPipelineCard(p){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div>
         <span style="font-size:13px;font-weight:800;color:var(--text);">📦 ${p.lote_coleta}</span>
-        <span style="font-size:11px;color:var(--text3);margin-left:8px;">${p.data_inicio?.slice(0,10)||''}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:8px;">${fmtMonthShort(p.data_inicio?.slice(0,10)||'')}</span>
       </div>
       ${efic!=null?`<span style="font-size:12px;font-weight:700;background:${efic>=40?'#f0fdf4':efic>=25?'#fffbeb':'#fef2f2'};color:${efic>=40?'#16a34a':efic>=25?'#d97706':'#dc2626'};padding:3px 8px;border-radius:99px;">★ ${efic}% geral</span>`:''}
     </div>
