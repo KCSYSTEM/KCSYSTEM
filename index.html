@@ -526,6 +526,8 @@ input[type="number"]{-moz-appearance:textfield;}
         <div><div class="view-title">Manejos</div><div class="view-sub">Pipeline de produção de alevinos</div></div>
         <button onclick="openManejoForm()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Nova Fase</button>
       </div>
+      <!-- Filtro de período -->
+      <div id="manejos-filtro" style="padding:0 13px 8px;"></div>
       <!-- Resumo geral -->
       <div id="manejos-resumo" style="padding:0 13px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"></div>
       <!-- Pipeline -->
@@ -6118,6 +6120,7 @@ document.addEventListener('DOMContentLoaded',function(){
 // ═══════════════════════════════════════════════════════
 
 let manejos = []; // carregado do Supabase
+let _manejoFiltro = {inicio:'', fim:''};
 
 const FASES = {
   larva:        { label:'Larva',         icon:'🦠', cor:'#7c3aed', unidade:'larvas',        prev:'coleta' },
@@ -6264,47 +6267,82 @@ async function deleteManejo(id){
   renderManejos();
 }
 
+// ─── Filtro de período ───────────────────────────────────
+function applyManejoFiltro(){
+  _manejoFiltro.inicio = document.getElementById('mf-inicio')?.value||'';
+  _manejoFiltro.fim    = document.getElementById('mf-fim')?.value||'';
+  renderManejos();
+}
+
 // ─── Render principal ───────────────────────────────────
 async function renderManejos(){
   if(!manejos.length) await loadManejos();
+
+  // ── Filtro de período
+  const filtroEl = document.getElementById('manejos-filtro');
+  const temFiltro = _manejoFiltro.inicio||_manejoFiltro.fim;
+  filtroEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:var(--text3);font-weight:600;">Período:</span>
+      <input type="date" id="mf-inicio" value="${_manejoFiltro.inicio}" onchange="applyManejoFiltro()"
+        style="border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text);">
+      <span style="font-size:12px;color:var(--text3);">até</span>
+      <input type="date" id="mf-fim" value="${_manejoFiltro.fim}" onchange="applyManejoFiltro()"
+        style="border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text);">
+      ${temFiltro?`<button onclick="_manejoFiltro={inicio:'',fim:''};renderManejos()"
+        style="font-size:11px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:5px;padding:3px 8px;cursor:pointer;">✕ Limpar</button>`:''}
+    </div>`;
 
   // ── Resumo geral
   const resumoEl = document.getElementById('manejos-resumo');
   const pipeline = buildPipeline();
 
-  let totalOvos=0, totalAlevinos=0, totalVendido=0;
-  Object.values(pipeline).forEach(p=>{
-    const coleta = p.fases.find(f=>f.fase==='coleta');
-    const transf  = p.fases.filter(f=>f.fase==='transferencia');
-    const venda   = p.fases.filter(f=>f.fase==='venda');
-    if(coleta) totalOvos += coleta.qtd_total||0;
-    transf.forEach(t=>{ totalAlevinos += t.qtd_total||0; });
-    venda.forEach(v=>{ totalVendido += v.qtd_total||0; });
+  const allLotes = Object.values(pipeline);
+  const filteredLotes = allLotes.filter(p=>{
+    const d = p.data_inicio||'';
+    if(_manejoFiltro.inicio && d < _manejoFiltro.inicio) return false;
+    if(_manejoFiltro.fim   && d > _manejoFiltro.fim)    return false;
+    return true;
   });
 
-  const efic = totalOvos && totalVendido ? Math.round(totalVendido/totalOvos*100) : 0;
-  resumoEl.innerHTML = `
-    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Total Ovos</div>
-      <div style="font-size:18px;font-weight:800;color:var(--text);">${fNum(totalOvos)}</div>
-    </div>
-    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Total Alevinos</div>
-      <div style="font-size:18px;font-weight:800;color:#16a34a;">${fNum(totalAlevinos)}</div>
-    </div>
-    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Total Vendido</div>
-      <div style="font-size:18px;font-weight:800;color:#d97706;">${fNum(totalVendido)||'—'}</div>
-    </div>
-    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Eficiência Geral</div>
-      <div style="font-size:18px;font-weight:800;color:${efic>=40?'#16a34a':efic>=25?'#d97706':'#dc2626'}">${efic?efic+'%':'—'}</div>
+  let totalOvos=0, totalOvosBons=0, totalLarva=0, totalMicro=0, totalAlevinos=0, totalVendido=0;
+  filteredLotes.forEach(p=>{
+    const coleta = p.fases.find(f=>f.fase==='coleta');
+    if(coleta){ totalOvos += coleta.qtd_total||0; totalOvosBons += coleta.ovosBons||0; }
+    p.fases.filter(f=>f.fase==='larva').forEach(f=>{ totalLarva += f.qtd_total||0; });
+    p.fases.filter(f=>f.fase==='povoamento').forEach(f=>{ totalMicro += f.qtd_total||0; });
+    p.fases.filter(f=>f.fase==='transferencia').forEach(f=>{ totalAlevinos += f.qtd_total||0; });
+    p.fases.filter(f=>f.fase==='venda').forEach(f=>{ totalVendido += f.qtd_total||0; });
+  });
+
+  const pctBons     = totalOvos     ? Math.round(totalOvosBons/totalOvos*100)    : null;
+  const pctLarva    = totalOvosBons ? Math.round(totalLarva/totalOvosBons*100)   : null;
+  const pctMicro    = totalLarva    ? Math.round(totalMicro/totalLarva*100)      : null;
+  const pctAlevinos = totalMicro    ? Math.round(totalAlevinos/totalMicro*100)   : null;
+  const pctVendido  = totalAlevinos ? Math.round(totalVendido/totalAlevinos*100) : null;
+
+  function rCard(label, val, cor, pct){
+    const pctHtml = pct!=null
+      ? `<div style="font-size:11px;color:${cor};margin-top:2px;font-weight:600;">${pct}%</div>`
+      : '';
+    return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">${label}</div>
+      <div style="font-size:18px;font-weight:800;color:${cor};">${val||'—'}</div>
+      ${pctHtml}
     </div>`;
+  }
+
+  resumoEl.innerHTML =
+    rCard('Ovos Totais',   fNum(totalOvos),      'var(--text)', null) +
+    rCard('Ovos Bons',     fNum(totalOvosBons),  '#0ea5e9',     pctBons) +
+    rCard('Larvas',        fNum(totalLarva),      '#7c3aed',     pctLarva) +
+    rCard('Microalevinos', fNum(totalMicro),      '#2563eb',     pctMicro) +
+    rCard('Alevinos',      fNum(totalAlevinos),   '#16a34a',     pctAlevinos) +
+    rCard('Total Vendido', fNum(totalVendido),    '#d97706',     pctVendido);
 
   // ── Pipeline por lote de origem
   const pipelineEl = document.getElementById('manejos-pipeline');
-  // Ordena por data extraída do ID do lote (ex: C20250103 → 20250103), mais novo primeiro
-  const lotes = Object.values(pipeline).sort((a,b)=>{
+  const lotes = filteredLotes.sort((a,b)=>{
     const dateA = (a.lote_coleta.match(/\d{8}/)||['0'])[0];
     const dateB = (b.lote_coleta.match(/\d{8}/)||['0'])[0];
     return dateB.localeCompare(dateA);
@@ -6313,8 +6351,8 @@ async function renderManejos(){
   if(!lotes.length){
     pipelineEl.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text3);">
       <div style="font-size:36px;margin-bottom:10px;">🔄</div>
-      <div style="font-weight:700;color:var(--text2);">Nenhum manejo registrado</div>
-      <div style="font-size:13px;margin-top:6px;">Clique em "+ Nova Fase" para começar.</div>
+      <div style="font-weight:700;color:var(--text2);">${temFiltro?'Nenhum manejo no período':'Nenhum manejo registrado'}</div>
+      <div style="font-size:13px;margin-top:6px;">${temFiltro?'Ajuste o filtro de período.':'Clique em "+ Nova Fase" para começar.'}</div>
     </div>`;
     return;
   }
