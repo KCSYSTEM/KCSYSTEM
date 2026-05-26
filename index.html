@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.4</title>
+<title>KC System v5.5</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.4</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.5</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1853,21 +1853,43 @@ function renderColetaPainel(){
       if(r.ovosPorMl!=null&&(!byHapaOvos[hk]||((r.timestamp||'')>(byHapaOvos[hk].ts||''))))
         byHapaOvos[hk]={val:r.ovosPorMl,ts:r.timestamp||''};
       if(r.ovosGorados!=null&&(!byHapaGorados[hk]||((r.timestamp||'')>(byHapaGorados[hk].ts||''))))
-        byHapaGorados[hk]={val:r.ovosGorados,ts:r.timestamp||''};
+        byHapaGorados[hk]={val:r.ovosGorados,ts:r.timestamp||'',ml:r.desovaML??null};
     });
+
+    // ovosPorMl: média simples por hapa
     const hapasOvosVals=Object.values(byHapaOvos).map(x=>x.val);
-    const hapasGoradosVals=Object.values(byHapaGorados).map(x=>x.val);
-    const ovosMlMedio=hapasOvosVals.length
+    l.ovosPorMl=hapasOvosVals.length
       ?parseFloat((hapasOvosVals.reduce((s,v)=>s+v,0)/hapasOvosVals.length).toFixed(1))
       :null;
-    const goradosMedio=hapasGoradosVals.length
-      ?parseFloat((hapasGoradosVals.reduce((s,v)=>s+v,0)/hapasGoradosVals.length).toFixed(1))
-      :null;
-    l.ovosPorMl=ovosMlMedio;
-    l.ovosGorados=goradosMedio;
+
+    // Gorados: média ponderada pelo ML de cada hapa
+    const goradosEntries=Object.entries(byHapaGorados);
+    if(goradosEntries.length){
+      const totalMl=goradosEntries.reduce((s,[,e])=>s+(e.ml??0),0);
+      l.ovosGorados=totalMl>0
+        ?parseFloat((goradosEntries.reduce((s,[,e])=>s+e.val*(e.ml??0),0)/totalMl).toFixed(2))
+        :parseFloat((goradosEntries.reduce((s,[,e])=>s+e.val,0)/goradosEntries.length).toFixed(2));
+    } else { l.ovosGorados=null; }
+
     l.ovosTotal=l.ovosPorMl!=null?parseFloat((l.ml*l.ovosPorMl).toFixed(0)):null;
-    l.ovosFinal=l.ovosTotal!=null&&l.ovosGorados!=null
-      ?parseFloat((l.ovosTotal*(1-l.ovosGorados/100)).toFixed(0)):null;
+
+    // Ovos bons: por hapa (ovosPorMl × ml × (1 - gorados/100)); fallback para ovosTotal × (1 - goradosMedio/100)
+    if(l.ovosGorados!=null&&goradosEntries.length){
+      let bonsSum=0,totalComputado=0;
+      goradosEntries.forEach(([hk,ge])=>{
+        const ovosEntry=byHapaOvos[hk];
+        if(ge.ml!=null&&ge.ml>0&&ovosEntry){
+          const hapaOvos=ovosEntry.val*ge.ml;
+          bonsSum+=hapaOvos*(1-ge.val/100);
+          totalComputado+=hapaOvos;
+        }
+      });
+      l.ovosFinal=totalComputado>0
+        ?Math.round(bonsSum)
+        :Math.round((l.ovosTotal||0)*(1-l.ovosGorados/100));
+    } else {
+      l.ovosFinal=l.ovosTotal??null;
+    }
   });
 
   const lotes=Object.values(byLote).sort((a,b)=>b.lote.localeCompare(a.lote));
@@ -1945,9 +1967,13 @@ function renderColetaPainel(){
     const byTankHapa={};
     l.hapas.forEach(r=>{
       const key=`${r.tankName}|${r.hapa}`;
-      if(!byTankHapa[key])byTankHapa[key]={name:r.tankName,hapa:r.hapa,femeas:0,ml:0};
+      if(!byTankHapa[key])byTankHapa[key]={name:r.tankName,hapa:r.hapa,femeasReprod:null,_reprodTs:'',femeas:0,ml:0};
       byTankHapa[key].femeas+=(r.desovaFemeas||0);
       byTankHapa[key].ml+=(r.desovaML||0);
+      if(r.femeasReprod!=null&&(r.timestamp||'')>=byTankHapa[key]._reprodTs){
+        byTankHapa[key].femeasReprod=r.femeasReprod;
+        byTankHapa[key]._reprodTs=r.timestamp||'';
+      }
     });
 
     Object.values(byTankHapa).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true})||(a.hapa-b.hapa)).forEach(th=>{
@@ -1960,7 +1986,7 @@ function renderColetaPainel(){
           <div style="font-size:12px;font-weight:600;color:var(--text);">${th.name}</div>
           <div style="font-size:11px;color:#7c3aed;">🪣 ${hapaName}</div>
         </div>
-        <div></div>
+        <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;color:#0ea5e9;">${th.femeasReprod!=null?fNum(th.femeasReprod):'—'}</div>
         <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${fNum(th.femeas)}</div>
         <div style="padding:7px 4px;text-align:center;font-size:12px;font-weight:700;">${fNum(th.ml,1)}</div>
         <div></div><div></div><div></div><div></div>`;
@@ -6097,6 +6123,7 @@ const FASES = {
   larva:        { label:'Larva',         icon:'🦠', cor:'#7c3aed', unidade:'larvas',        prev:'coleta' },
   povoamento:   { label:'Povoamento',    icon:'🐟', cor:'#2563eb', unidade:'microalevinos',  prev:'larva' },
   transferencia:{ label:'Transferência', icon:'🚛', cor:'#16a34a', unidade:'alevinos',       prev:'povoamento' },
+  venda:        { label:'Venda',         icon:'💰', cor:'#d97706', unidade:'alevinos',       prev:'transferencia' },
 };
 
 // ─── Load / Save ────────────────────────────────────────
@@ -6245,15 +6272,17 @@ async function renderManejos(){
   const resumoEl = document.getElementById('manejos-resumo');
   const pipeline = buildPipeline();
 
-  let totalOvos=0, totalAlevinos=0;
+  let totalOvos=0, totalAlevinos=0, totalVendido=0;
   Object.values(pipeline).forEach(p=>{
     const coleta = p.fases.find(f=>f.fase==='coleta');
     const transf  = p.fases.filter(f=>f.fase==='transferencia');
+    const venda   = p.fases.filter(f=>f.fase==='venda');
     if(coleta) totalOvos += coleta.qtd_total||0;
     transf.forEach(t=>{ totalAlevinos += t.qtd_total||0; });
+    venda.forEach(v=>{ totalVendido += v.qtd_total||0; });
   });
 
-  const efic = totalOvos ? Math.round(totalAlevinos/totalOvos*100) : 0;
+  const efic = totalOvos && totalVendido ? Math.round(totalVendido/totalOvos*100) : 0;
   resumoEl.innerHTML = `
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
       <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Total Ovos</div>
@@ -6264,8 +6293,12 @@ async function renderManejos(){
       <div style="font-size:18px;font-weight:800;color:#16a34a;">${fNum(totalAlevinos)}</div>
     </div>
     <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Total Vendido</div>
+      <div style="font-size:18px;font-weight:800;color:#d97706;">${fNum(totalVendido)||'—'}</div>
+    </div>
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;">
       <div style="font-size:11px;color:var(--text3);margin-bottom:3px;">Eficiência Geral</div>
-      <div style="font-size:18px;font-weight:800;color:${efic>=40?'#16a34a':efic>=25?'#d97706':'#dc2626'}">${efic}%</div>
+      <div style="font-size:18px;font-weight:800;color:${efic>=40?'#16a34a':efic>=25?'#d97706':'#dc2626'}">${efic?efic+'%':'—'}</div>
     </div>`;
 
   // ── Pipeline por lote de origem
@@ -6302,7 +6335,7 @@ function buildPipeline(){
   // Calcula ovos totais por lote coleta
   const coletaPanel = buildColetaByLote();
   Object.entries(coletaPanel).forEach(([lote,info])=>{
-    byLoteColeta[lote] = { lote, ovos: info.ovosTotal||0, ml: info.mlTotal||0, femeas: info.femeasDesovaram||0, data: info.lastDate||'' };
+    byLoteColeta[lote] = { lote, ovos: info.ovosTotal||0, ovosBons: info.ovosBons||0, ml: info.mlTotal||0, femeas: info.femeasDesovaram||0, data: info.lastDate||'' };
   });
 
   // Pipeline de manejos
@@ -6314,7 +6347,7 @@ function buildPipeline(){
       lote_coleta: lote,
       data_inicio: byLoteColeta[lote].data||'',
       ovos: byLoteColeta[lote].ovos||0,
-      fases: [{fase:'coleta', lote_id:lote, qtd_total: byLoteColeta[lote].ovos, data: byLoteColeta[lote].data||''}],
+      fases: [{fase:'coleta', lote_id:lote, qtd_total: byLoteColeta[lote].ovos, ovosBons: byLoteColeta[lote].ovosBons||0, data: byLoteColeta[lote].data||''}],
     };
   });
 
@@ -6457,20 +6490,20 @@ function getRootLotes(manejoId){
 
 // ─── Render card pipeline ───────────────────────────────
 function renderPipelineCard(p){
-  const fasesOrdem = ['coleta','larva','povoamento','transferencia'];
-  const fasesCores = {coleta:'#7c3aed',larva:'#06b6d4',povoamento:'#2563eb',transferencia:'#16a34a'};
-  const fasesIcons = {coleta:'🥚',larva:'🦠',povoamento:'🐟',transferencia:'🚛'};
+  const fasesOrdem = ['coleta','larva','povoamento','transferencia','venda'];
+  const fasesCores = {coleta:'#7c3aed',larva:'#06b6d4',povoamento:'#2563eb',transferencia:'#16a34a',venda:'#d97706'};
+  const fasesIcons = {coleta:'🥚',larva:'🦠',povoamento:'🐟',transferencia:'🚛',venda:'💰'};
 
   // Ordena as fases
   const fases = p.fases.sort((a,b)=>fasesOrdem.indexOf(a.fase)-fasesOrdem.indexOf(b.fase));
   const coleta = fases.find(f=>f.fase==='coleta');
-  const transfs = fases.filter(f=>f.fase==='transferencia');
-  const totalAlevinos = transfs.reduce((s,t)=>s+(t.qtd_total||0),0);
-  const efic = coleta?.qtd_total ? Math.round(totalAlevinos/coleta.qtd_total*100) : null;
+  const vendas = fases.filter(f=>f.fase==='venda');
+  const totalVenda = vendas.reduce((s,t)=>s+(t.qtd_total||0),0);
+  const efic = (coleta?.qtd_total && totalVenda>0) ? Math.round(totalVenda/coleta.qtd_total*100) : null;
 
   // Próxima fase disponível
   const fasesExistentes = new Set(fases.map(f=>f.fase));
-  const proximaFase = ['larva','povoamento','transferencia'].find(f=>!fasesExistentes.has(f));
+  const proximaFase = ['larva','povoamento','transferencia','venda'].find(f=>!fasesExistentes.has(f));
 
   // Fases únicas (pode ter múltiplos de larva/pov/transf)
   const fasesRender = [];
@@ -6488,7 +6521,11 @@ function renderPipelineCard(p){
     const icon = fasesIcons[fase];
     const qtdTotal = itens.reduce((s,i)=>s+(i.qtd_total||0),0);
     const prevFase = fasesOrdem[fasesOrdem.indexOf(fase)-1];
-    const prevQtd = prevFase ? fases.filter(f=>f.fase===prevFase).reduce((s,i)=>s+(i.qtd_total||0),0) : null;
+    let prevQtd = prevFase ? fases.filter(f=>f.fase===prevFase).reduce((s,i)=>s+(i.qtd_total||0),0) : null;
+    if(fase==='larva'){
+      const coletaOvosBons=fases.filter(f=>f.fase==='coleta').reduce((s,i)=>s+(i.ovosBons||0),0);
+      if(coletaOvosBons>0) prevQtd=coletaOvosBons;
+    }
     const pct = prevQtd ? Math.round(qtdTotal/prevQtd*100) : null;
     const destinos = itens.flatMap(i=>(i.destinos||[]).map(d=>d.tanque_id?tanks.find(t=>t.id===d.tanque_id)?.name||d.tanque_id:''));
     const destinosStr = [...new Set(destinos.filter(Boolean))].join(', ');
@@ -6544,7 +6581,7 @@ function renderPipelineCard(p){
     <div style="display:flex;gap:6px;margin-top:8px;">
       ${proximaFase?(()=>{
         // Lote de origem = lote_id da fase imediatamente anterior
-        const faseAnteriorMap = {larva:'coleta', povoamento:'larva', transferencia:'povoamento'};
+        const faseAnteriorMap = {larva:'coleta', povoamento:'larva', transferencia:'povoamento', venda:'transferencia'};
         const faseAnterior = faseAnteriorMap[proximaFase];
         const fasesAnteriores = fases.filter(f=>f.fase===faseAnterior);
         // Se é coleta, usa p.lote_coleta; senão pega o lote_id do manejo anterior
@@ -6790,7 +6827,7 @@ function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
 
   // Auto-gera lote_id
   const fase = document.getElementById('mf-fase').value;
-  const prefix = {larva:'L',povoamento:'P',transferencia:'T'}[fase]||'M';
+  const prefix = {larva:'L',povoamento:'P',transferencia:'T',venda:'V'}[fase]||'M';
   document.getElementById('mf-lote-id').value = prefix + new Date().toISOString().slice(0,10).replace(/-/g,'');
 }
 
@@ -6800,7 +6837,7 @@ function closeManejoForm(){
 
 function updateManejoForm(){
   const fase = document.getElementById('mf-fase')?.value;
-  const prefix = {larva:'L',povoamento:'P',transferencia:'T'}[fase]||'M';
+  const prefix = {larva:'L',povoamento:'P',transferencia:'T',venda:'V'}[fase]||'M';
   const loteEl = document.getElementById('mf-lote-id');
   if(loteEl && !loteEl.dataset.edited){
     loteEl.value = prefix + new Date().toISOString().slice(0,10).replace(/-/g,'');
