@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.2</title>
+<title>KC System v5.3</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.2</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.3</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -762,20 +762,9 @@ input[type="number"]{-moz-appearance:textfield;}
         </div>
         <!-- Lote (só para desova) -->
         <div id="coleta-lote-row" style="display:none;padding:8px 13px;background:var(--surface);border-bottom:1.5px solid var(--border);">
-          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
-            <div style="flex:2;min-width:160px;">
-              <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">🥚 Nome do Lote</div>
-              <input type="text" id="coleta-lote" placeholder="Ex: Lote A - Abr/26" oninput="updateFemeasReprodField()"
-                style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none;box-sizing:border-box;">
-            </div>
-            <div style="flex:1;min-width:130px;">
-              <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">♀ Fêmeas em Reprodução</div>
-              <input type="number" id="coleta-femeas-reprod" min="0" placeholder="Auto"
-                style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;font-weight:600;outline:none;box-sizing:border-box;"
-                onchange="saveFemeasReprodFromForm()" onblur="saveFemeasReprodFromForm()" onkeydown="if(event.key==='Enter')this.blur()">
-              <div id="coleta-femeas-reprod-hint" style="font-size:10px;color:var(--text3);margin-top:3px;display:none;">Valor automático — editável</div>
-            </div>
-          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">🥚 Nome do Lote</div>
+          <input type="text" id="coleta-lote" placeholder="Ex: Lote A - Abr/26"
+            style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:14px;font-weight:600;outline:none;-webkit-appearance:none;box-sizing:border-box;">
         </div>
         <div class="lancamento-progress" id="coleta-progress" style="padding:6px 13px;display:none;"></div>
         <div style="overflow-x:auto;padding:0 13px 80px;">
@@ -1139,9 +1128,6 @@ try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.
 let estoqueItens=[], estoqueMov=[];
 try{const ei=localStorage.getItem('kc_estoque_itens');if(ei)estoqueItens=JSON.parse(ei);}catch(e){}
 try{const em=localStorage.getItem('kc_estoque_mov');if(em)estoqueMov=JSON.parse(em);}catch(e){}
-// Overrides manuais de fêmeas em reprodução por lote de coleta
-let femeasReprodOvr={};
-try{const fr=localStorage.getItem('kc_femeas_reprod_ovr');if(fr)femeasReprodOvr=JSON.parse(fr);}catch(e){}
 let confirmCallback=null;
 
 // ===== SUPABASE =====
@@ -1289,6 +1275,7 @@ function coletaToRow(rec, reason){
     ml:           rec.desovaML??rec.ml??null,
     ovos_por_ml:  rec.ovosPorMl??rec.ovos_por_ml??null,
     ovos_gorados: rec.ovosGorados??rec.ovos_gorados??null,
+    femeas_reprod:rec.femeasReprod??null,
     overridden:   rec.overridden||false,
   };
   if(reason){
@@ -1318,6 +1305,7 @@ function coletaRowToRec(row){
     ml:            row.ml,
     ovosPorMl:     row.ovos_por_ml,
     ovosGorados:   row.ovos_gorados,
+    femeasReprod:  row.femeas_reprod??null,
     overridden:    row.overridden,
   };
 }
@@ -2022,7 +2010,8 @@ function renderColeta(){
     // Adiciona thead
     tbody.insertAdjacentHTML('beforebegin',`<thead><tr>
       <th style="min-width:130px;">Tanque / Hapa</th>
-      <th style="min-width:80px;">♀ Fêmeas</th>
+      <th style="min-width:80px;">♀ Reprod</th>
+      <th style="min-width:80px;">♀ Desovaram</th>
       <th style="min-width:90px;">💧 Vol (mL)</th>
       <th style="min-width:90px;">💀 Gorados (%)</th>
       <th style="min-width:90px;">🔬 Ovos/mL</th>
@@ -2058,11 +2047,13 @@ function renderColeta(){
         const t=tanks.find(x=>x.id===tankId)||{id:tankId,name:tankId};
         const hapaName = t.hapaNames?.[hapaNum-1] || ('Hapa '+hapaNum);
         const hapaRecs = loteExistente.filter(r=>r.tankId===tankId&&r.hapa==hapaNum);
+        const lastReprodRec  = byTs(hapaRecs.filter(r=>r.femeasReprod!=null))[0];
         const lastFemeasRec  = byTs(hapaRecs.filter(r=>r.desovaFemeas!=null))[0];
         const lastMlRec      = byTs(hapaRecs.filter(r=>r.desovaML!=null))[0];
         const lastGoradosRec = byTs(hapaRecs.filter(r=>r.ovosGorados!=null))[0];
         const lastOvosRec    = byTs(hapaRecs.filter(r=>r.ovosPorMl!=null))[0];
         rows.push({tankId,tankName:t.name||tankId,hapaNum,hapaName,
+          lastReprod:lastReprodRec?.femeasReprod??'',
           lastFemeas:lastFemeasRec?.desovaFemeas??'',lastMl:lastMlRec?.desovaML??'',
           lastGorados:lastGoradosRec?.ovosGorados??'',lastOvos:lastOvosRec?.ovosPorMl??'',ri:ri++});
       });
@@ -2072,11 +2063,13 @@ function renderColeta(){
         (t.hapaNames||[]).forEach((nm,i)=>{
           const h=i+1;
           const hapaRecs=[...coletaRecords.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden),...records.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&!coletaRecords.some(c=>c.id===r.id))];
+          const lastReprodRec  = byTs(hapaRecs.filter(r=>r.femeasReprod!=null))[0];
           const lastFemeasRec  = byTs(hapaRecs.filter(r=>r.desovaFemeas!=null))[0];
           const lastMlRec      = byTs(hapaRecs.filter(r=>r.desovaML!=null))[0];
           const lastGoradosRec = byTs(hapaRecs.filter(r=>r.ovosGorados!=null))[0];
           const lastOvosRec    = byTs(hapaRecs.filter(r=>r.ovosPorMl!=null))[0];
           rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,
+            lastReprod:lastReprodRec?.femeasReprod??'',
             lastFemeas:lastFemeasRec?.desovaFemeas??'',lastMl:lastMlRec?.desovaML??'',
             lastGorados:lastGoradosRec?.ovosGorados??'',lastOvos:lastOvosRec?.ovosPorMl??'',ri:ri++});
         });
@@ -2084,13 +2077,13 @@ function renderColeta(){
     }
     tbody.innerHTML=rows.map(r=>`<tr>
       <td><div class="lancamento-tank-name">${r.tankName}</div><div class="lancamento-hapa-name">🪣 ${r.hapaName}</div></td>
+      <td><input class="lancamento-input" type="number" id="col-reprod-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeasReprod" placeholder="0" inputmode="numeric" value="${r.lastReprod}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" value="${r.lastFemeas}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" value="${r.lastMl}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="${r.lastGorados}" data-initial="${r.lastGorados}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td><input class="lancamento-input" type="number" id="col-ovosml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosPorMl" placeholder="—" step="1" inputmode="decimal" value="${r.lastOvos}" data-initial="${r.lastOvos}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">${r.lastFemeas!==''?`<div>♀ ${r.lastFemeas}</div>`:''} ${r.lastMl!==''?`<div>💧 ${r.lastMl}mL</div>`:''} ${r.lastGorados!==''?`<div>💀 ${r.lastGorados}%</div>`:''} ${r.lastOvos!==''?`<div>🔬 ${r.lastOvos}/mL</div>`:''} ${r.lastFemeas===''&&r.lastMl===''&&r.lastGorados===''&&r.lastOvos===''?'—':''}</td>
+      <td style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">${r.lastReprod!==''?`<div>♀R ${r.lastReprod}</div>`:''} ${r.lastFemeas!==''?`<div>♀ ${r.lastFemeas}</div>`:''} ${r.lastMl!==''?`<div>💧 ${r.lastMl}mL</div>`:''} ${r.lastGorados!==''?`<div>💀 ${r.lastGorados}%</div>`:''} ${r.lastOvos!==''?`<div>🔬 ${r.lastOvos}/mL</div>`:''} ${r.lastReprod===''&&r.lastFemeas===''&&r.lastMl===''&&r.lastGorados===''&&r.lastOvos===''?'—':''}</td>
     </tr>`).join('');
-    requestAnimationFrame(updateFemeasReprodField);
 
   } else {
     // Por lote (ovosPorMl ou ovosGorados)
@@ -2149,20 +2142,18 @@ async function saveColeta(){
   if(!param){showToast('Selecione um parâmetro','error');return;}
   if(!date){showToast('Selecione uma data','error');return;}
 
-  const prog=document.getElementById('coleta-progress');
-  prog.style.display='block';prog.textContent='Salvando...';
-
   let saved=0;
   const baseTs=Date.now();
 
   if(param==='desova'){
     const lote=document.getElementById('coleta-lote')?.value.trim();
-    if(!lote){showToast('Informe o nome do lote','error');prog.style.display='none';return;}
+    if(!lote){showToast('Informe o nome do lote','error');return;}
     const inputs=document.querySelectorAll('#coleta-tbody input[data-tank]');
     const byRow={};
     inputs.forEach(inp=>{
       const key=`${inp.dataset.tank}_${inp.dataset.hapa}`;
       if(!byRow[key])byRow[key]={tankId:inp.dataset.tank,hapaNum:parseInt(inp.dataset.hapa)};
+      if(inp.dataset.field==='femeasReprod')byRow[key].femeasReprod=numOrNull(inp.value);
       if(inp.dataset.field==='femeas')byRow[key].femeas=numOrNull(inp.value);
       if(inp.dataset.field==='ml')byRow[key].ml=numOrNull(inp.value);
       if(inp.dataset.field==='ovosGorados'){
@@ -2176,19 +2167,18 @@ async function saveColeta(){
         byRow[key].ovosPorMl=changed?numOrNull(inp.value):null;
       }
     });
-    const toSave=Object.values(byRow).filter(r=>r.femeas!=null||r.ml!=null||r._goradosChanged||r._ovosMlChanged);
-    if(!toSave.length){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
-    // Valida gorados: bloqueia fração (< 1) e valor acima de 100
+    const toSave=Object.values(byRow).filter(r=>r.femeasReprod!=null||r.femeas!=null||r.ml!=null||r._goradosChanged||r._ovosMlChanged);
+    if(!toSave.length){showToast('Nenhum valor preenchido','error');return;}
     for(const item of toSave){
       if(item._goradosChanged&&item.ovosGorados!=null){
-        if(item.ovosGorados>0&&item.ovosGorados<1){showToast(`Gorados "${item.ovosGorados}" parece fração — use percentual (ex: 30 para 30%)`,'error');prog.style.display='none';return;}
-        if(item.ovosGorados>100){showToast('Gorados não pode ser maior que 100%','error');prog.style.display='none';return;}
+        if(item.ovosGorados>0&&item.ovosGorados<1){showToast(`Gorados "${item.ovosGorados}" parece fração — use percentual (ex: 30 para 30%)`,'error');return;}
+        if(item.ovosGorados>100){showToast('Gorados não pode ser maior que 100%','error');return;}
       }
     }
+    showSaveProgress(0,toSave.length);
     for(const item of toSave){
       const tank=tanks.find(t=>t.id===item.tankId);
       const hapaName=tank?.hapaNames?.[item.hapaNum-1]||('Hapa '+item.hapaNum);
-      // Arquiva registro anterior do mesmo lote/hapa se existir
       const existing=coletaRecords.find(r=>r.lote===lote&&r.tankId===item.tankId&&r.hapa==item.hapaNum&&!r.overridden);
       if(existing){
         existing.overridden=true;
@@ -2201,6 +2191,7 @@ async function saveColeta(){
         hapa:item.hapaNum,hapaName,date,
         user:currentUser.name,username:currentUser.username,
         timestamp:new Date(baseTs+saved).toISOString(),
+        femeasReprod:item.femeasReprod??existing?.femeasReprod??null,
         desovaFemeas:item.femeas??existing?.desovaFemeas??null,
         desovaML:item.ml??existing?.desovaML??null,
         ovosGorados:item._goradosChanged?item.ovosGorados:(existing?.ovosGorados??null),
@@ -2209,29 +2200,22 @@ async function saveColeta(){
       coletaRecords.push(rec);
       await saveColetaRecord_sb(rec);
       saved++;
+      showSaveProgress(saved,toSave.length);
     }
     localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
   } else {
-    // Parâmetros por lote (ovosPorMl, ovosGorados agregado) — também vai para coleta_records
     const inputs=document.querySelectorAll('#coleta-tbody input[data-lote]');
-    // Valida gorados < 1 (provável fração em vez de percentual)
     for(const inp of inputs){
       if(inp.dataset.field==='ovosGorados'&&inp.value.trim()){
         const v=numOrNull(inp.value);
-        if(v!=null&&v>0&&v<1){
-          showToast(`Gorados: "${inp.value}" parece uma fração — use percentual (ex: 30 para 30%)`, 'error');
-          prog.style.display='none'; return;
-        }
-        if(v!=null&&v>100){
-          showToast('Gorados não pode ser maior que 100%','error');
-          prog.style.display='none'; return;
-        }
+        if(v!=null&&v>0&&v<1){showToast(`Gorados: "${inp.value}" parece uma fração — use percentual (ex: 30 para 30%)`,'error');return;}
+        if(v!=null&&v>100){showToast('Gorados não pode ser maior que 100%','error');return;}
       }
     }
-    for(const inp of inputs){
-      if(!inp.value.trim())continue;
-      const changed=inp.value!==(inp.dataset.initial??'');
-      if(!changed)continue;
+    const toSave=[...inputs].filter(inp=>inp.value.trim()&&inp.value!==(inp.dataset.initial??''));
+    if(!toSave.length){showToast('Nenhum valor preenchido','error');return;}
+    showSaveProgress(0,toSave.length);
+    for(const inp of toSave){
       const lote=inp.dataset.lote;
       const field=inp.dataset.field;
       const rec={id:`coleta_${field}_${baseTs}_${lote.replace(/\s/g,'_')}`,
@@ -2245,37 +2229,14 @@ async function saveColeta(){
       coletaRecords.push(rec);
       await saveColetaRecord_sb(rec);
       saved++;
+      showSaveProgress(saved,toSave.length);
     }
-    if(!saved){showToast('Nenhum valor preenchido','error');prog.style.display='none';return;}
     localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
   }
 
-  prog.style.display='none';
   renderColeta();
   renderColetaPainel();
-  showColetaSalvoPopup(saved);
-}
-
-function showColetaSalvoPopup(saved){
-  // Remove popup anterior se existir
-  const old=document.getElementById('coleta-salvo-popup');
-  if(old)old.remove();
-  const popup=document.createElement('div');
-  popup.id='coleta-salvo-popup';
-  popup.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;';
-  popup.innerHTML=`
-    <div style="background:var(--surface);border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-      <div style="font-size:40px;margin-bottom:12px;">✅</div>
-      <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;">Coleta salva!</div>
-      <div style="font-size:13px;color:var(--text3);margin-bottom:20px;">${saved} registro${saved>1?'s':''} salvo${saved>1?'s':''} com sucesso.</div>
-      <button onclick="document.getElementById('coleta-salvo-popup').remove()"
-        style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 40px;font-size:15px;font-weight:700;cursor:pointer;width:100%;">
-        OK
-      </button>
-    </div>`;
-  document.body.appendChild(popup);
-  // Fecha ao clicar fora
-  popup.addEventListener('click',function(e){if(e.target===popup)popup.remove();});
+  showSaveDone(saved);
 }
 
 async function toggleMatrizesTank(on){
@@ -6395,6 +6356,14 @@ function buildColetaByLote(){
         l._ovosMlByHapa[hk]={val:r.ovosPorMl,ts:r.timestamp||''};
     }
 
+    // Fêmeas em reprodução — dedup por hapa (mais recente), soma no final
+    if(r.femeasReprod!=null){
+      const hk=(r.tankId||'lote')+'_'+(r.hapa??'x');
+      if(!l._femeasReprodByHapa)l._femeasReprodByHapa={};
+      if(!l._femeasReprodByHapa[hk]||((r.timestamp||'')>(l._femeasReprodByHapa[hk].ts||'')))
+        l._femeasReprodByHapa[hk]={val:r.femeasReprod,ts:r.timestamp||''};
+    }
+
     // Gorados — dedup por hapa (mais recente); guarda ml do mesmo record para ponderar
     if(r.ovosGorados!=null){
       const hk = (r.tankId||'lote')+'_'+(r.hapa??'x');
@@ -6414,8 +6383,10 @@ function buildColetaByLote(){
 
   // Calcula médias finais
   Object.entries(byLote).forEach(([lote,l])=>{
-    const auto = femeasAlocadasEm(l.lastDate) || 0;
-    l.femeasReprod = (femeasReprodOvr[lote]!=null) ? femeasReprodOvr[lote] : auto;
+    const hapaReprodEntries = l._femeasReprodByHapa ? Object.values(l._femeasReprodByHapa) : [];
+    l.femeasReprod = hapaReprodEntries.length
+      ? hapaReprodEntries.reduce((s,e)=>s+e.val, 0)
+      : (femeasAlocadasEm(l.lastDate) || 0);
 
     const ovosMlVals = l._ovosMlByHapa ? Object.values(l._ovosMlByHapa).map(x=>x.val) : [];
     l.ovosMlMedio = ovosMlVals.length
@@ -6536,27 +6507,17 @@ function renderPipelineCard(p){
           <span style="font-size:10px;color:var(--text3);">${label}</span>
           <span style="font-size:11px;font-weight:700;color:${color};">${val}</span>
         </div>`;
-      const loteKey = p.lote_coleta.replace(/'/g,"\\'");
-      const femeasEditRow = isAdmin()
-        ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);">
-            <span style="font-size:10px;color:var(--text3);">Fêmeas em reprodução</span>
-            <input type="number" min="0" value="${ci.femeasReprod||0}"
-              style="width:64px;text-align:right;font-size:11px;font-weight:700;color:var(--text);border:none;border-bottom:1.5px solid var(--border2);background:transparent;outline:none;padding:0 2px;"
-              onchange="saveFemeasReprodOvr('${loteKey}',this.value)"
-              onblur="saveFemeasReprodOvr('${loteKey}',this.value)"
-              onkeydown="if(event.key==='Enter')this.blur()">
-          </div>`
-        : row('Fêmeas em reprodução', fmt(ci.femeasReprod));
+      const femeasEditRow = row('Fêmeas em reprodução', fmt(ci.femeasReprod));
       coletaDetails = `<div style="margin-top:8px;background:rgba(124,58,237,0.04);border:1px solid rgba(124,58,237,0.15);border-radius:8px;padding:8px;text-align:left;">
         ${femeasEditRow}
         ${row('Fêmeas desovaram',  fmt(ci.femeasDesovaram))}
         ${row('Volume total (mL)', fmt(ci.mlTotal))}
         ${row('Ovos/mL (média)',   fmt(ci.ovosMlMedio,1))}
         ${row('Ovos totais',       fmt(ci.ovosTotal))}
+        ${ci.ovosTotal&&ci.femeasDesovaram ? row('Ovos/fêmea', fmt(Math.round(ci.ovosTotal/ci.femeasDesovaram))) : ''}
         ${row('% Gorados',         ci.goradosMedio!=null ? fmt(ci.goradosMedio,2)+'%' : '—', '#dc2626')}
         ${row('% Não gorados',     ci.naoGoradosPct!=null ? fmt(ci.naoGoradosPct,2)+'%' : '—', '#16a34a')}
         ${row('Ovos bons',         fmt(ci.ovosBons), '#16a34a')}
-        ${ci.ovosPorFemea!=null ? row('Ovos/fêmea', fmt(ci.ovosPorFemea)) : ''}
       </div>`;
     }
 
@@ -6604,39 +6565,6 @@ function renderPipelineCard(p){
 
 
 
-// ─── Override manual de fêmeas em reprodução por lote ──────
-function saveFemeasReprodOvr(lote, valStr){
-  const val = parseInt(valStr, 10);
-  if(isNaN(val)||val<0) return;
-  femeasReprodOvr[lote] = val;
-  localStorage.setItem('kc_femeas_reprod_ovr', JSON.stringify(femeasReprodOvr));
-}
-
-function updateFemeasReprodField(){
-  const inp = document.getElementById('coleta-femeas-reprod');
-  const hint = document.getElementById('coleta-femeas-reprod-hint');
-  if(!inp) return;
-  const lote = document.getElementById('coleta-lote')?.value.trim();
-  const date = document.getElementById('coleta-date')?.value;
-  const auto = femeasAlocadasEm(date) || 0;
-  const ovr = (lote && femeasReprodOvr[lote]!=null) ? femeasReprodOvr[lote] : null;
-  inp.value = ovr!=null ? ovr : (auto||'');
-  inp.dataset.auto = auto;
-  inp.dataset.initial = String(inp.value);
-  if(hint) hint.style.display = isAdmin() ? 'block' : 'none';
-  inp.readOnly = !isAdmin();
-  inp.style.opacity = isAdmin() ? '1' : '0.7';
-}
-
-function saveFemeasReprodFromForm(){
-  const lote = document.getElementById('coleta-lote')?.value.trim();
-  const inp = document.getElementById('coleta-femeas-reprod');
-  if(!lote || !inp) return;
-  const val = inp.value.trim();
-  if(val === '' || val === inp.dataset.initial) return;
-  saveFemeasReprodOvr(lote, val);
-  inp.dataset.initial = val;
-}
 
 // ─── Editar Coleta (navega para módulo Coleta com lote pré-selecionado) ────
 function editColeta(loteId){
