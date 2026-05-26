@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v4.36</title>
+<title>KC System v5.0</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -395,6 +395,9 @@ input[type="number"]{-moz-appearance:textfield;}
         <div onclick="switchModule('pessoal')" id="mod-btn-pessoal" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);">
           <span>👤</span> Pessoal
         </div>
+        <div onclick="switchModule('estoques')" id="mod-btn-estoques" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
+          <span>📦</span> Estoques
+        </div>
         <div onclick="switchModule('config')" id="mod-btn-config" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
           <span>⚙️</span> Configuração
         </div>
@@ -405,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v4.36</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.0</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -821,6 +824,97 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
   </div>
 
+<!-- ===== MÓDULO ESTOQUES ===== -->
+<div id="modulo-estoques" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+  <!-- Nav abas -->
+  <div style="display:flex;border-bottom:2px solid var(--border);background:var(--surface);flex-shrink:0;">
+    <button onclick="showEstoqueView('itens')" id="enav-itens" class="estoque-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-bottom:2px solid var(--accent);cursor:pointer;margin-bottom:-2px;">📋 Itens</button>
+    <button onclick="showEstoqueView('lancar')" id="enav-lancar" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">✏️ Lançar</button>
+    <button onclick="showEstoqueView('painel')" id="enav-painel" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📊 Painel</button>
+  </div>
+
+  <!-- VIEW ITENS -->
+  <div id="eview-itens" class="eview" style="flex:1;overflow-y:auto;display:block;">
+    <div class="view-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div><div class="view-title">Itens de Estoque</div><div class="view-sub">Gerencie os itens controlados</div></div>
+    </div>
+    <div style="padding:0 16px 16px;">
+      <div id="estoque-itens-form" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;">Novo Item</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div style="flex:2;min-width:140px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Nome do item</div>
+            <input type="text" id="estoque-item-nome" placeholder="Ex: Ração 1mm" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
+          </div>
+          <div style="flex:1;min-width:100px;">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Unidade</div>
+            <input type="text" id="estoque-item-unidade" placeholder="kg / L / saco" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
+          </div>
+          <button onclick="addEstoqueItem()" style="padding:10px 20px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Adicionar</button>
+        </div>
+      </div>
+      <div id="estoque-itens-list" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <!-- gerado por JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW LANÇAR -->
+  <div id="eview-lancar" class="eview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div><div class="view-title">Lançar Movimentação</div><div class="view-sub">Entradas de compra e saídas de consumo</div></div>
+    </div>
+    <div style="padding:0 16px 16px;">
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;">Novo Lançamento</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Item</div>
+            <select id="emov-item" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Tipo</div>
+            <select id="emov-tipo" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
+              <option value="entrada">Entrada (compra)</option>
+              <option value="saida">Saída (consumo)</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Data</div>
+            <input type="date" id="emov-data" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Quantidade</div>
+            <input type="number" id="emov-qtd" placeholder="0" inputmode="decimal" min="0" step="0.01" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Observação (opcional)</div>
+          <input type="text" id="emov-obs" placeholder="Fornecedor, nota fiscal..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
+        </div>
+        <button onclick="saveEstoqueMov()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+      </div>
+      <div id="estoque-mov-hist" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <!-- gerado por JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW PAINEL -->
+  <div id="eview-painel" class="eview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header">
+      <div><div class="view-title">Painel de Estoques</div><div class="view-sub">Posição atual de cada item</div></div>
+    </div>
+    <div style="padding:0 16px 16px;">
+      <div id="estoque-painel-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <!-- gerado por JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
   <!-- BOTTOM NAV (módulo operação) -->
   <div class="bottom-nav">
     <div class="nav-item active" id="nav-tanques" onclick="showView('tanques')">
@@ -1030,6 +1124,10 @@ let currentUser=null,tanks=[],records=[],racoes=[],activeTank=null,activeTab='re
 // Array separado para registros de coleta/desova (lidos de coleta_records no Supabase)
 let coletaRecords=[];
 try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.parse(cc);}catch(e){}
+// Módulo Estoques
+let estoqueItens=[], estoqueMov=[];
+try{const ei=localStorage.getItem('kc_estoque_itens');if(ei)estoqueItens=JSON.parse(ei);}catch(e){}
+try{const em=localStorage.getItem('kc_estoque_mov');if(em)estoqueMov=JSON.parse(em);}catch(e){}
 let confirmCallback=null;
 
 // ===== SUPABASE =====
@@ -1279,21 +1377,21 @@ function toggleModuleMenu(){
 }
 
 function switchModule(mod){
-  if((mod==='coleta'||mod==='config')&&!isAdmin()){
+  if((mod==='coleta'||mod==='config'||mod==='estoques')&&!isAdmin()){
     showToast('Módulo restrito a administradores','error');
     document.getElementById('module-dropdown').style.display='none';
     return;
   }
   activeModule=mod;
   document.getElementById('module-dropdown').style.display='none';
-  const labels={operacao:'OPERAÇÃO',coleta:'COLETA',config:'CONFIG.',pessoal:'PESSOAL'};
+  const labels={operacao:'OPERAÇÃO',coleta:'COLETA',config:'CONFIG.',pessoal:'PESSOAL',estoques:'ESTOQUES'};
   document.getElementById('module-label').textContent=labels[mod]||mod.toUpperCase();
 
   // Estilos do dropdown
   const base='padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;';
   const active=base+'color:var(--accent);background:var(--accent-dim);';
   const inactive=base+'color:var(--text2);';
-  ['operacao','coleta','config','pessoal'].forEach(m=>{
+  ['operacao','coleta','config','pessoal','estoques'].forEach(m=>{
     const el=document.getElementById('mod-btn-'+m);
     if(el)el.style.cssText=mod===m?active:inactive;
   });
@@ -1303,10 +1401,12 @@ function switchModule(mod){
   const fabEl=document.getElementById('fab-btn');
   const colEl=document.getElementById('modulo-coleta');
   const pessoalEl=document.getElementById('modulo-pessoal');
+  const estEl=document.getElementById('modulo-estoques');
 
   // Esconde tudo primeiro
   opEl.style.display='none'; navEl.style.display='none';
   colEl.style.display='none'; pessoalEl.style.display='none';
+  if(estEl)estEl.style.display='none';
   if(fabEl)fabEl.style.display='none';
 
   if(mod==='operacao'){
@@ -1324,6 +1424,9 @@ function switchModule(mod){
     const metasBtn=document.getElementById('pnav-metas');
     if(metasBtn) metasBtn.style.display=isAdmin()?'':'none';
     requestAnimationFrame(()=>showPessoalView(isAdmin()?'metas':'ponto'));
+  } else if(mod==='estoques'){
+    if(estEl)estEl.style.display='flex';
+    showEstoqueView('painel');
   }
 }
 
@@ -2536,6 +2639,9 @@ async function load(){
 
   // ── 7. Metas (valores admin) ───────────────────────────────
   await loadMetasFromSupabase();
+
+  // ── 8. Estoques ───────────────────────────────────────────
+  await loadEstoqueFromSupabase();
 
   // ── 8. Garante estrutura de tanques ───────────────────────
   const validIds=new Set();
@@ -6792,6 +6898,222 @@ async function saveNovaFase(){
   }
 }
 
+
+// ============================================================
+// MÓDULO ESTOQUES
+// ============================================================
+
+function showEstoqueView(v){
+  document.querySelectorAll('.eview').forEach(el=>{el.style.display='none';});
+  document.querySelectorAll('.estoque-nav').forEach(el=>{
+    el.style.color='var(--text2)';
+    el.style.borderBottom='none';
+    el.classList.remove('active');
+  });
+  const vEl=document.getElementById('eview-'+v);
+  if(vEl)vEl.style.display='block';
+  const nEl=document.getElementById('enav-'+v);
+  if(nEl){nEl.style.color='var(--accent)';nEl.style.borderBottom='2px solid var(--accent)';nEl.classList.add('active');}
+  if(v==='itens')renderEstoqueItens();
+  else if(v==='lancar'){renderEstoqueLancarForm();renderEstoqueMovHist();}
+  else if(v==='painel')renderEstoquePainel();
+}
+
+async function loadEstoqueFromSupabase(){
+  try{
+    const rows=await sbGet('estoque_itens','select=id,data');
+    if(rows&&rows.length){
+      estoqueItens=rows.map(r=>r.data).filter(Boolean);
+      localStorage.setItem('kc_estoque_itens',JSON.stringify(estoqueItens));
+    }
+  }catch(e){console.warn('load estoque_itens error',e);}
+  try{
+    const rows=await sbGet('estoque_mov','select=id,data&order=data.desc,timestamp.desc');
+    if(rows&&rows.length){
+      estoqueMov=rows.map(r=>r.data).filter(Boolean);
+      localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
+    }
+  }catch(e){console.warn('load estoque_mov error',e);}
+}
+
+async function addEstoqueItem(){
+  const nome=document.getElementById('estoque-item-nome').value.trim();
+  const unidade=document.getElementById('estoque-item-unidade').value.trim();
+  if(!nome){showToast('Informe o nome do item','error');return;}
+  const item={id:'ei_'+Date.now(),nome,unidade:unidade||'un'};
+  estoqueItens.push(item);
+  localStorage.setItem('kc_estoque_itens',JSON.stringify(estoqueItens));
+  const ok=await sbUpsert('estoque_itens',[{id:item.id,data:item}]);
+  if(ok)showToast('Item adicionado ✓','ok');
+  else showToast('Salvo localmente (sem internet)','ok');
+  document.getElementById('estoque-item-nome').value='';
+  document.getElementById('estoque-item-unidade').value='';
+  renderEstoqueItens();
+  renderEstoqueLancarForm();
+}
+
+async function deleteEstoqueItem(id){
+  if(!confirm('Remover este item? Movimentações existentes não serão apagadas.'))return;
+  estoqueItens=estoqueItens.filter(x=>x.id!==id);
+  localStorage.setItem('kc_estoque_itens',JSON.stringify(estoqueItens));
+  await sbDelete('estoque_itens',id);
+  showToast('Item removido ✓','ok');
+  renderEstoqueItens();
+  renderEstoqueLancarForm();
+}
+
+function renderEstoqueItens(){
+  const el=document.getElementById('estoque-itens-list');
+  if(!el)return;
+  if(!estoqueItens.length){
+    el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum item cadastrado</div>`;
+    return;
+  }
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--surface2);">
+      <th style="padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);">Item</th>
+      <th style="padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);">Unidade</th>
+      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Ação</th>
+    </tr></thead>
+    <tbody>
+    ${estoqueItens.map((item,i)=>`
+      <tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
+        <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}</td>
+        <td style="padding:11px 14px;font-size:12px;color:var(--text2);">${item.unidade||'un'}</td>
+        <td style="padding:11px 14px;text-align:center;">
+          <button onclick="deleteEstoqueItem('${item.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Remover">×</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderEstoqueLancarForm(){
+  const sel=document.getElementById('emov-item');
+  if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML=`<option value="">Selecione...</option>`+
+    estoqueItens.map(x=>`<option value="${x.id}" ${x.id===current?'selected':''}>${x.nome} (${x.unidade||'un'})</option>`).join('');
+  // Set today's date if empty
+  const dataEl=document.getElementById('emov-data');
+  if(dataEl&&!dataEl.value){
+    const now=new Date();
+    dataEl.value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  }
+}
+
+function renderEstoqueMovHist(){
+  const el=document.getElementById('estoque-mov-hist');
+  if(!el)return;
+  const recent=[...estoqueMov].sort((a,b)=>(b.timestamp||'')>(a.timestamp||'')?1:-1).slice(0,30);
+  if(!recent.length){
+    el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum lançamento ainda</div>`;
+    return;
+  }
+  el.innerHTML=`<div style="padding:10px 14px 6px;font-size:12px;font-weight:700;color:var(--text2);">Últimos lançamentos</div>
+  <table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--surface2);">
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);">Data</th>
+      <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);">Item</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Tipo</th>
+      <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--text2);">Qtd</th>
+    </tr></thead>
+    <tbody>
+    ${recent.map((m,i)=>{
+      const item=estoqueItens.find(x=>x.id===m.itemId);
+      const nomeItem=item?item.nome:(m.itemNome||m.itemId||'—');
+      const cor=m.tipo==='entrada'?'#16a34a':'#dc2626';
+      const label=m.tipo==='entrada'?'Entrada':'Saída';
+      return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
+        <td style="padding:9px 12px;font-size:12px;color:var(--text2);">${m.date||'—'}</td>
+        <td style="padding:9px 12px;font-size:12px;color:var(--text);">${nomeItem}</td>
+        <td style="padding:9px 12px;text-align:center;"><span style="font-size:11px;font-weight:700;color:${cor};background:${m.tipo==='entrada'?'rgba(22,163,74,0.1)':'rgba(220,38,38,0.1)'};border-radius:6px;padding:2px 8px;">${label}</span></td>
+        <td style="padding:9px 12px;text-align:right;font-size:13px;font-weight:700;color:${cor};">${m.tipo==='entrada'?'+':'-'}${m.qtd}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function saveEstoqueMov(){
+  const itemId=document.getElementById('emov-item').value;
+  const tipo=document.getElementById('emov-tipo').value;
+  const data=document.getElementById('emov-data').value;
+  const qtdRaw=document.getElementById('emov-qtd').value;
+  const obs=document.getElementById('emov-obs').value.trim();
+  if(!itemId){showToast('Selecione um item','error');return;}
+  if(!data){showToast('Informe a data','error');return;}
+  const qtd=parseFloat(qtdRaw);
+  if(isNaN(qtd)||qtd<=0){showToast('Quantidade inválida','error');return;}
+  const item=estoqueItens.find(x=>x.id===itemId);
+  const mov={
+    id:'emov_'+Date.now(),
+    itemId,
+    itemNome:item?.nome||'',
+    date:data,
+    tipo,
+    qtd,
+    obs:obs||null,
+    userName:currentUser?.name||currentUser?.username||'',
+    timestamp:new Date().toISOString()
+  };
+  estoqueMov.push(mov);
+  localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
+  const ok=await sbUpsert('estoque_mov',[{id:mov.id,data:mov}]);
+  if(ok)showToast('Lançamento salvo ✓','ok');
+  else showToast('Salvo localmente (sem internet)','ok');
+  document.getElementById('emov-qtd').value='';
+  document.getElementById('emov-obs').value='';
+  renderEstoquePainel();
+  renderEstoqueMovHist();
+}
+
+function renderEstoquePainel(){
+  const el=document.getElementById('estoque-painel-wrap');
+  if(!el)return;
+  if(!estoqueItens.length){
+    el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum item cadastrado</div>`;
+    return;
+  }
+  const now=new Date();
+  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const prev=new Date(now);prev.setDate(prev.getDate()-1);
+  const yesterday=`${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
+
+  const rows=estoqueItens.map(item=>{
+    const movs=estoqueMov.filter(m=>m.itemId===item.id);
+    // Estoque D-1: saldo de todas as movs com data <= ontem
+    const saldoD1=movs.filter(m=>m.date<=yesterday)
+      .reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+    // Consumo D-1: saídas com data = ontem
+    const consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida')
+      .reduce((s,m)=>s+m.qtd,0);
+    // Estoque hoje atual: saldo incluindo movs de hoje
+    const saldoHoje=movs.filter(m=>m.date<=today)
+      .reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+    const unidade=item.unidade||'un';
+    const fmt=v=>Number.isInteger(v)?v:parseFloat(v.toFixed(2));
+    const corSaldo=saldoHoje<0?'var(--danger)':'var(--text)';
+    return`<tr style="border-top:1px solid var(--border);">
+      <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}</td>
+      <td style="padding:12px 14px;text-align:center;font-size:12px;color:var(--text2);">${unidade}</td>
+      <td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${fmt(saldoD1)}</td>
+      <td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:600;color:${consumoD1>0?'var(--danger)':'var(--text3)'};">${consumoD1>0?'-'+fmt(consumoD1):'—'}</td>
+      <td style="padding:12px 14px;text-align:center;font-size:14px;font-weight:700;color:${corSaldo};">${fmt(saldoHoje)}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--surface2);">
+      <th style="padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);">Item</th>
+      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Un.</th>
+      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Estoque D-1</th>
+      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Consumo D-1</th>
+      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Estoque Hoje</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
 
 </script>
 <script>
