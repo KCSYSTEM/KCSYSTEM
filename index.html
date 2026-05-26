@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.0</title>
+<title>KC System v5.1</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.0</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.1</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1128,6 +1128,9 @@ try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.
 let estoqueItens=[], estoqueMov=[];
 try{const ei=localStorage.getItem('kc_estoque_itens');if(ei)estoqueItens=JSON.parse(ei);}catch(e){}
 try{const em=localStorage.getItem('kc_estoque_mov');if(em)estoqueMov=JSON.parse(em);}catch(e){}
+// Overrides manuais de fêmeas em reprodução por lote de coleta
+let femeasReprodOvr={};
+try{const fr=localStorage.getItem('kc_femeas_reprod_ovr');if(fr)femeasReprodOvr=JSON.parse(fr);}catch(e){}
 let confirmCallback=null;
 
 // ===== SUPABASE =====
@@ -6374,8 +6377,9 @@ function buildColetaByLote(){
   });
 
   // Calcula médias finais
-  Object.values(byLote).forEach(l=>{
-    l.femeasReprod = femeasAlocadasEm(l.lastDate) || 0;
+  Object.entries(byLote).forEach(([lote,l])=>{
+    const auto = femeasAlocadasEm(l.lastDate) || 0;
+    l.femeasReprod = (femeasReprodOvr[lote]!=null) ? femeasReprodOvr[lote] : auto;
 
     const ovosMlVals = l._ovosMlByHapa ? Object.values(l._ovosMlByHapa).map(x=>x.val) : [];
     l.ovosMlMedio = ovosMlVals.length
@@ -6470,16 +6474,27 @@ function renderPipelineCard(p){
     }
     // Detalhes extras da coleta
     let coletaDetails = '';
-    if(fase==='coleta' && _coletaInfo){
-      const ci = _coletaInfo;
+    if(fase==='coleta'){
+      const ci = _coletaInfo || {femeasReprod:0,femeasDesovaram:0,mlTotal:0,ovosMlMedio:null,ovosTotal:0,goradosMedio:null,naoGoradosPct:null,ovosBons:0,ovosPorFemea:null};
       const fmt = (v,dec=0) => v!=null ? Number(v).toLocaleString('pt-BR',{maximumFractionDigits:dec}) : '—';
       const row = (label,val,color='var(--text)') =>
         `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);">
           <span style="font-size:10px;color:var(--text3);">${label}</span>
           <span style="font-size:11px;font-weight:700;color:${color};">${val}</span>
         </div>`;
+      const loteKey = p.lote_coleta.replace(/'/g,"\\'");
+      const femeasEditRow = isAdmin()
+        ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:10px;color:var(--text3);">Fêmeas em reprodução</span>
+            <input type="number" min="0" value="${ci.femeasReprod||0}"
+              style="width:64px;text-align:right;font-size:11px;font-weight:700;color:var(--text);border:none;border-bottom:1.5px solid var(--border2);background:transparent;outline:none;padding:0 2px;"
+              onchange="saveFemeasReprodOvr('${loteKey}',this.value)"
+              onblur="saveFemeasReprodOvr('${loteKey}',this.value)"
+              onkeydown="if(event.key==='Enter')this.blur()">
+          </div>`
+        : row('Fêmeas em reprodução', fmt(ci.femeasReprod));
       coletaDetails = `<div style="margin-top:8px;background:rgba(124,58,237,0.04);border:1px solid rgba(124,58,237,0.15);border-radius:8px;padding:8px;text-align:left;">
-        ${ci.femeasReprod   ? row('Fêmeas em reprodução', fmt(ci.femeasReprod)) : ''}
+        ${femeasEditRow}
         ${row('Fêmeas desovaram',  fmt(ci.femeasDesovaram))}
         ${row('Volume total (mL)', fmt(ci.mlTotal))}
         ${row('Ovos/mL (média)',   fmt(ci.ovosMlMedio,1))}
@@ -6534,6 +6549,14 @@ function renderPipelineCard(p){
 }
 
 
+
+// ─── Override manual de fêmeas em reprodução por lote ──────
+function saveFemeasReprodOvr(lote, valStr){
+  const val = parseInt(valStr, 10);
+  if(isNaN(val)||val<0) return;
+  femeasReprodOvr[lote] = val;
+  localStorage.setItem('kc_femeas_reprod_ovr', JSON.stringify(femeasReprodOvr));
+}
 
 // ─── Editar Coleta (navega para módulo Coleta com lote pré-selecionado) ────
 function editColeta(loteId){
