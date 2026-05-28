@@ -3302,6 +3302,17 @@ async function saveRecord(){
       `Já existe um registro para ${formatDate(date)}${activeHapa?` (${hapaLabel(activeTank,activeHapa)})`:''} neste tanque.
 Salvar manterá o original no histórico e usará este como o registro oficial do dia.`,
       async()=>{
+        // Merge: campos não preenchidos no novo registro herdam o valor existente
+        ['temp','o2','amonia','ph','qty','bio','racaoIdealG','sobra','racaoG','tratosIdeal','tratos','machos','femeas'].forEach(f=>{
+          if(rec[f]==null && existing[f]!=null) rec[f]=existing[f];
+        });
+        if(!rec.racao  && existing.racao)  rec.racao=existing.racao;
+        if(!rec.lote   && existing.lote)   rec.lote=existing.lote;
+        if(!rec.obs    && existing.obs)    rec.obs=existing.obs;
+        if(rec.mort===0 && existing.mort>0 && !document.getElementById('reg-mort')?.value) rec.mort=existing.mort;
+        if(!rec.racaoLancada && existing.racaoLancada) rec.racaoLancada=existing.racaoLancada;
+        if(!rec.aditivos?.length && existing.aditivos?.length) rec.aditivos=existing.aditivos;
+
         const idx=records.findIndex(r=>r.id===existing.id);
         if(idx>=0){
           records[idx].overridden=true;
