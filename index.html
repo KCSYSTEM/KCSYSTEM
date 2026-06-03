@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.6</title>
+<title>KC System v5.7</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.6</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.7</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -4084,10 +4084,11 @@ function renderLancamentos(){
     const lastRecForRacao=lastRec(r.tankId);
     const racaoAtual=dayRec?.racao||lastRecForRacao?.racao||'';
     const racaoOpts=racoes.map(rc=>`<option value="${rc.nome}" ${(racaoAtual===rc.nome||racaoAtual===(rc.id||rc.nome))?'selected':''}>${rc.nome}</option>`).join('');
+    const aditivosAtual=dayRec?.aditivos||lastRecForRacao?.aditivos||[];
     const aditivosChk=['biofish','polygain','aquasan','lothar'].map(a=>`
       <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--text2);white-space:nowrap;">
         <input type="checkbox" id="lanc-aditivo-${a}-${rowId}" data-tank="${r.tankId}" data-aditivo="${a}"
-          style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent);">
+          style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent);"${aditivosAtual.includes(a)?' checked':''}>
         ${a.charAt(0).toUpperCase()+a.slice(1)}
       </label>`).join('');
     return`<tr>
@@ -4377,9 +4378,11 @@ async function _doSaveLancamentos(toSave,param,date){
         }
 
         const _temQtd=isZero||sobraPorHapaG!=null||racaoPorHapaG!=null;
+        // Tipo/aditivo sem quantidade: só atualiza registro existente; não cria novo
+        if(!_temQtd&&!exH)continue;
         const saveData={
           ...(_temQtd&&{sobra:sobraPorHapaG,racaoG:racaoPorHapaG,racaoLancada:true}),
-          racao:racaoTipo||'',
+          ...(racaoTipo&&{racao:racaoTipo}),
           aditivos:aditivos.length?aditivos:null,
           _changedFields:['sobra','racaoG'].filter(f=>({sobra:sobraPorHapaG,racaoG:racaoPorHapaG})[f]!=null),
         };
@@ -4434,7 +4437,7 @@ async function _doSaveLancamentos(toSave,param,date){
           existing.racaoLancada=true;
         }
         if(racaoTipo)existing.racao=racaoTipo;
-        if(aditivos?.length)existing.aditivos=aditivos; else if(aditivos!==null)existing.aditivos=null;
+        existing.aditivos=aditivos.length?aditivos:null;
       } else {
         existing[param]=param==='racaoIdealG'?finalValueForSave:finalValue;
       }
@@ -4471,6 +4474,9 @@ async function _doSaveLancamentos(toSave,param,date){
         } else if(finalSobra!=null||finalRacaoReal!=null){
           newRec.sobra=finalSobra; newRec.racaoG=finalRacaoReal??null;
           newRec.racaoLancada=true;
+        } else {
+          // Tipo/aditivo sem quantidade: não cria registro vazio
+          saved++;showSaveProgress(saved,toSave.length);continue;
         }
         if(racaoTipo)newRec.racao=racaoTipo;
         if(aditivos?.length)newRec.aditivos=aditivos;
@@ -6999,7 +7005,8 @@ async function saveNovaFase(){
   // qtd_total = o que SAIU (destinos), não o que entrou (origens)
   const qtdOrigem  = origens.reduce((s,o)=>s+o.qtd,0);
   const qtdDestino = destinos.reduce((s,d)=>s+d.qtd,0);
-  const qtdTotal   = qtdDestino||qtdOrigem; // usa destinos se preenchidos, senão origem como fallback
+  // Se destinos foram informados (mesmo com 0), usa soma deles — evita tratar 0 como "não preenchido"
+  const qtdTotal   = destinos.length ? qtdDestino : qtdOrigem;
 
   const m = {
     id: 'manejo_'+Date.now(),
@@ -7073,7 +7080,7 @@ async function addEstoqueItem(){
   localStorage.setItem('kc_estoque_itens',JSON.stringify(estoqueItens));
   const ok=await sbUpsert('estoque_itens',[{id:item.id,data:item}]);
   if(ok)showToast('Item adicionado ✓','ok');
-  else showToast('Salvo localmente (sem internet)','ok');
+  else showToast('⚠️ Salvo localmente — tabela estoque_itens não encontrada no Supabase','error');
   document.getElementById('estoque-item-nome').value='';
   document.getElementById('estoque-item-unidade').value='';
   renderEstoqueItens();
@@ -7205,7 +7212,7 @@ async function saveEstoqueMov(){
   localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
   const ok=await sbUpsert('estoque_mov',[{id:mov.id,data:mov}]);
   if(ok)showToast('Lançamento salvo ✓','ok');
-  else showToast('Salvo localmente (sem internet)','ok');
+  else showToast('⚠️ Salvo localmente — tabela estoque_mov não encontrada no Supabase','error');
   document.getElementById('emov-qtd').value='';
   document.getElementById('emov-obs').value='';
   renderEstoquePainel();
