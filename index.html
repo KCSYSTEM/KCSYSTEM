@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.9</title>
+<title>KC System v5.10</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.9</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.10</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -912,11 +912,23 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
   </div>
 
+  <!-- VIEW GRÁFICO -->
+  <div id="eview-grafico" class="eview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header">
+      <div><div class="view-title">Gráfico de Estoque</div><div class="view-sub">Histórico e projeção de consumo</div></div>
+    </div>
+    <div style="padding:0 16px 16px;">
+      <div id="estoque-grafico-filtro" style="margin-bottom:12px;"></div>
+      <div id="estoque-grafico-container"></div>
+    </div>
+  </div>
+
   <!-- Nav abas — rodapé -->
   <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
     <button onclick="showEstoqueView('itens')" id="enav-itens" class="estoque-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">📋 Itens</button>
     <button onclick="showEstoqueView('lancar')" id="enav-lancar" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">✏️ Lançar</button>
     <button onclick="showEstoqueView('painel')" id="enav-painel" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📊 Painel</button>
+    <button onclick="showEstoqueView('grafico')" id="enav-grafico" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📈 Gráfico</button>
   </div>
 </div>
 
@@ -2603,6 +2615,46 @@ function onRealtimeTank(tank){
   renderTankView();updateMapSub();
 }
 
+// Sincroniza registros do Supabase sem recarregar tudo — fallback quando WS falha
+async function refreshRecordsFromSupabase(){
+  if(!currentUser)return;
+  try{
+    const rows=await sbGet('tank_records','select=id,tank_id,tank_name,date,username,user_name,timestamp,data,racao_lancada,aditivos&order=timestamp.desc&limit=5000');
+    if(!rows||!rows.length)return;
+    let updated=false;
+    rows.forEach(row=>{
+      const rec=tankRowToRec(row);
+      if(!rec?.id)return;
+      const idx=records.findIndex(r=>r.id===rec.id);
+      if(idx>=0){
+        if((rec.timestamp||'')>(records[idx].timestamp||'')){records[idx]=rec;updated=true;}
+      } else {
+        if(!rec.overridden){records.push(rec);updated=true;}
+      }
+    });
+    if(updated){
+      localStorage.setItem('kc_records',JSON.stringify(records));
+      try{renderTankView();updateMapSub();}catch(e){}
+      const av=document.querySelector('.view.active')?.id;
+      if(av==='view-painel')try{renderPainel();}catch(e){}
+      if(av==='view-lancamentos')try{renderLancamentos();}catch(e){}
+      if(av==='view-history')try{renderGlobalHistory();}catch(e){}
+    }
+  }catch(e){console.warn('refreshRecords error',e);}
+}
+
+// Sync ao voltar para o app (troca de aba/tela)
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&currentUser) refreshRecordsFromSupabase();
+});
+
+// Polling a cada 60s como fallback se o WebSocket estiver desconectado
+setInterval(()=>{
+  if(currentUser&&(!_realtimeWs||_realtimeWs.readyState!==WebSocket.OPEN)){
+    refreshRecordsFromSupabase();
+  }
+},60000);
+
 function showSyncBadge(msg){
   const el=document.getElementById('sync-status');
   if(!el)return;
@@ -2688,10 +2740,14 @@ async function load(){
   const validIds=new Set();
   GROUPS.forEach(g=>g.tanks.forEach(td=>validIds.add('tank_'+g.id+'_'+td.num)));
   tanks=tanks.filter(t=>validIds.has(t.id)||!t.id.startsWith('tank_'));
+  let _newTanksAdded=false;
   GROUPS.forEach(g=>g.tanks.forEach(td=>{
-    if(!tanks.find(x=>x.id==='tank_'+g.id+'_'+td.num))
+    if(!tanks.find(x=>x.id==='tank_'+g.id+'_'+td.num)){
       tanks.push({id:'tank_'+g.id+'_'+td.num,groupId:g.id,name:td.name,num:td.num,species:'Não informado',volume:td.volume,shape:td.shape,large:td.large||false});
+      _newTanksAdded=true;
+    }
   }));
+  if(_newTanksAdded) saveTanks_sb().catch(()=>{});
 
   // ── 7. Garante rações ─────────────────────────────────────
   if(!racoes.length) racoes=DEFAULT_RACOES.map((x,i)=>({...x,id:'r'+i}));
@@ -4000,7 +4056,7 @@ function renderLancamentos(){
   }
 
   const activeTanks=tanks.filter(t=>!t.empty&&records.some(r=>r.tankId===t.id))
-    .sort((a,b)=>(a.num||0)-(b.num||0));
+    .sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
 
   let rows=[];
   activeTanks.forEach(t=>{
@@ -4873,8 +4929,8 @@ function renderPainel(){
     // Tanque sem hapas: verifica registros sem hapa
     return records.some(r=>r.tankId===t.id);
   });
-  // Separa ativos e vazios, ambos em ordem crescente por número
-  const sorted=[...activeTanks].sort((a,b)=>(a.num||0)-(b.num||0));
+  // Separa ativos e vazios, ambos em ordem alfabética por nome
+  const sorted=[...activeTanks].sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
   const ativos=sorted.filter(t=>!t.empty);
   const vazios=sorted.filter(t=>t.empty);
 
@@ -6817,7 +6873,7 @@ async function saveEdicaoFase(manejoId){
     if(tankEl&&qtdEl&&qtdEl.value){ destinos.push({tanque_id:tankEl.value, qtd:parseFloat(qtdEl.value)||0, peso_g:parseFloat(pesoEl?.value)||null}); }
   });
   m.destinos = destinos;
-  m.qtd_total = destinos.reduce((s,d)=>s+(d.qtd||0),0) || origens.reduce((s,o)=>s+(o.qtd||0),0);
+  m.qtd_total = destinos.length ? destinos.reduce((s,d)=>s+(d.qtd||0),0) : origens.reduce((s,o)=>s+(o.qtd||0),0);
 
   showSaveProgress(0,1);
   try{
@@ -7061,6 +7117,7 @@ function showEstoqueView(v){
   if(nEl){nEl.style.color='var(--accent)';nEl.style.borderTop='2px solid var(--accent)';nEl.style.marginTop='-2px';nEl.classList.add('active');}
   if(v==='itens')renderEstoqueItens();
   else if(v==='lancar'){renderEstoqueLancarForm();renderEstoqueMovHist();}
+  else if(v==='grafico')renderEstoqueGrafico();
   else if(v==='painel')renderEstoquePainel();
 }
 
@@ -7285,6 +7342,194 @@ async function saveEstoqueMov(){
   renderEstoqueMovHist();
 }
 
+// ── Gráfico de estoque ───────────────────────────────────────
+function _estoqueAllItems(){
+  return[
+    ...racoes.map(r=>({id:_racaoId(r),nome:r.nome,unidade:'kg',isRacao:true,racaoNome:r.nome})),
+    ...estoqueItens.map(i=>({...i,isRacao:false}))
+  ];
+}
+
+function _estoqueSeriesRange(item,dateStart,dateEnd){
+  const byDate={};
+  const add=(d,e,s)=>{if(!byDate[d])byDate[d]={e:0,s:0};byDate[d].e+=e;byDate[d].s+=s;};
+  estoqueMov.filter(m=>m.itemId===item.id).forEach(m=>{
+    if(m.tipo==='entrada')add(m.date,m.qtd,0);else add(m.date,0,m.qtd);
+  });
+  if(item.isRacao){
+    records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0)
+      .forEach(r=>add(r.date,0,r.racaoG/1000));
+  }
+  let saldo=0;
+  Object.entries(byDate).filter(([d])=>d<dateStart).forEach(([,v])=>saldo+=v.e-v.s);
+  const series=[];
+  let d=new Date(dateStart+'T12:00:00');
+  const end=new Date(dateEnd+'T12:00:00');
+  while(d<=end){
+    const ds=d.toISOString().split('T')[0];
+    if(byDate[ds])saldo+=byDate[ds].e-byDate[ds].s;
+    series.push({date:ds,saldo:parseFloat(saldo.toFixed(3))});
+    d.setDate(d.getDate()+1);
+  }
+  return series;
+}
+
+function _estoqueProjection(series){
+  if(!series.length)return[];
+  const last=series[series.length-1].saldo;
+  if(last<=0)return[];
+  const drops=[];
+  for(let i=1;i<series.length;i++){
+    const chg=series[i-1].saldo-series[i].saldo;
+    if(chg>0)drops.push(chg);
+  }
+  if(!drops.length)return[];
+  const avg=drops.reduce((s,v)=>s+v,0)/drops.length;
+  if(avg<=0)return[];
+  const proj=[];let saldo=last;
+  let d=new Date(series[series.length-1].date+'T12:00:00');
+  for(let i=0;i<730;i++){
+    d.setDate(d.getDate()+1);
+    saldo=Math.max(0,saldo-avg);
+    proj.push({date:d.toISOString().split('T')[0],saldo:parseFloat(saldo.toFixed(3))});
+    if(saldo<=0)break;
+  }
+  return proj;
+}
+
+function renderEstoqueGrafico(){
+  const container=document.getElementById('estoque-grafico-container');
+  const filtroEl=document.getElementById('estoque-grafico-filtro');
+  if(!container)return;
+  const allItems=_estoqueAllItems();
+  if(!allItems.length){container.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);">Nenhum item cadastrado</div>';return;}
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const todayStr=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const d30=new Date(now);d30.setDate(d30.getDate()-30);
+  const def30=`${d30.getFullYear()}-${pad(d30.getMonth()+1)}-${pad(d30.getDate())}`;
+  const ini=document.getElementById('eg-inicio')?.value||def30;
+  const fim=document.getElementById('eg-fim')?.value||todayStr;
+  const selId=document.getElementById('eg-item')?.value||allItems[0]?.id||'';
+  const itemOpts=allItems.map(it=>`<option value="${it.id}"${it.id===selId?' selected':''}>${it.nome}</option>`).join('');
+  filtroEl.innerHTML=`
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--surface);border-radius:12px;border:1.5px solid var(--border);padding:10px 12px;">
+      <select id="eg-item" onchange="renderEstoqueGrafico()"
+        style="flex:2;min-width:130px;border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;font-size:13px;background:var(--bg);color:var(--text);">${itemOpts}</select>
+      <input type="date" id="eg-inicio" value="${ini}" onchange="renderEstoqueGrafico()"
+        style="border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px;background:var(--bg);color:var(--text);">
+      <span style="font-size:12px;color:var(--text3);">até</span>
+      <input type="date" id="eg-fim" value="${fim}" onchange="renderEstoqueGrafico()"
+        style="border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px;background:var(--bg);color:var(--text);">
+    </div>`;
+  const item=allItems.find(it=>it.id===selId);
+  if(!item){container.innerHTML='';return;}
+  const series=_estoqueSeriesRange(item,ini,fim);
+  const proj=_estoqueProjection(series);
+  const lastSaldo=series.length?series[series.length-1].saldo:0;
+  const zeroDate=proj.length?proj[proj.length-1].date:null;
+  const corSaldo=lastSaldo<0?'#ef4444':lastSaldo<20?'#f59e0b':'#22c55e';
+  container.innerHTML=`
+    <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;margin-bottom:12px;">
+      <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--border);">
+        <div style="font-size:14px;font-weight:700;color:var(--text);">${item.nome} <span style="font-size:11px;font-weight:500;color:var(--text3);">(${item.unidade||'un'})</span></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:var(--text2);">Estoque atual: <span style="font-weight:800;color:${corSaldo};">${parseFloat(lastSaldo.toFixed(2))} ${item.unidade||'un'}</span></div>
+          ${zeroDate?`<div style="font-size:12px;color:var(--text2);">Projeção zero: <span style="font-weight:800;color:#ef4444;">${fmtMonthShort(zeroDate)}</span></div>`:'<div style="font-size:12px;color:#22c55e;font-weight:600;">✓ Sem previsão de falta</div>'}
+        </div>
+      </div>
+      <canvas id="eg-canvas" style="width:100%;display:block;padding:0;"></canvas>
+    </div>`;
+  requestAnimationFrame(()=>_drawEstoqueChart(series,proj,item.unidade||'un'));
+}
+
+function _drawEstoqueChart(series,proj,unidade){
+  const canvas=document.getElementById('eg-canvas');
+  if(!canvas)return;
+  const DPR=window.devicePixelRatio||1;
+  const W=canvas.parentElement.clientWidth||320;
+  const H=260;
+  canvas.width=W*DPR;canvas.height=H*DPR;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(DPR,DPR);
+  const P={t:24,r:12,b:48,l:58};
+  const cW=W-P.l-P.r,cH=H-P.t-P.b;
+  const all=[...series,...proj];
+  if(!all.length)return;
+  const maxV=Math.max(...all.map(p=>p.saldo),0.1);
+  const minV=Math.min(...all.map(p=>p.saldo),0);
+  const range=maxV-minV||1;
+  const tx=(i,tot)=>P.l+(i/Math.max(tot-1,1))*cW;
+  const ty=v=>P.t+cH-((v-minV)/range)*cH;
+  const cs=getComputedStyle(document.documentElement);
+  const borderC=cs.getPropertyValue('--border').trim()||'#e2e8f0';
+  // Grid + Y labels
+  ctx.font=`${10*DPR/DPR}px sans-serif`;
+  for(let i=0;i<=4;i++){
+    const y=P.t+(cH/4)*i;
+    const v=maxV-(range/4)*i;
+    ctx.strokeStyle=borderC;ctx.lineWidth=0.5;ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+cW,y);ctx.stroke();
+    ctx.fillStyle='#94a3b8';ctx.textAlign='right';ctx.font='10px sans-serif';
+    ctx.fillText(parseFloat(v.toFixed(1)),P.l-4,y+4);
+  }
+  // Zero line
+  if(minV<0){
+    const zy=ty(0);
+    ctx.strokeStyle='rgba(239,68,68,0.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(P.l,zy);ctx.lineTo(P.l+cW,zy);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const tot=all.length;
+  // Fill actual
+  if(series.length>1){
+    ctx.beginPath();
+    series.forEach((p,i)=>{const x=tx(i,tot);const y=ty(p.saldo);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.lineTo(tx(series.length-1,tot),ty(0));ctx.lineTo(tx(0,tot),ty(0));ctx.closePath();
+    ctx.fillStyle='rgba(59,130,246,0.12)';ctx.fill();
+  }
+  // Actual line
+  if(series.length>0){
+    ctx.strokeStyle='#3b82f6';ctx.lineWidth=2.5;ctx.setLineDash([]);
+    ctx.beginPath();
+    series.forEach((p,i)=>{const x=tx(i,tot);const y=ty(p.saldo);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.stroke();
+  }
+  // Projection line
+  if(proj.length>0){
+    ctx.strokeStyle='#ef4444';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    const sx=tx(series.length-1,tot);const sy=ty(series[series.length-1].saldo);
+    ctx.moveTo(sx,sy);
+    proj.forEach((_,i)=>{const x=tx(series.length+i,tot);const y=ty(proj[i].saldo);ctx.lineTo(x,y);});
+    ctx.stroke();ctx.setLineDash([]);
+    // Vertical line at zero-day
+    const zx=tx(tot-1,tot);
+    ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(zx,P.t);ctx.lineTo(zx,P.t+cH);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#ef4444';ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+    const lastDate=proj[proj.length-1].date.split('-');
+    ctx.fillText(`${lastDate[2]}/${lastDate[1]}/${lastDate[0].slice(2)}`,zx,P.t+cH+28);
+  }
+  // X labels (every ~6 points)
+  const step=Math.max(1,Math.floor(tot/6));
+  ctx.fillStyle='#94a3b8';ctx.font='10px sans-serif';ctx.textAlign='center';
+  for(let i=0;i<tot;i+=step){
+    const p=all[i];if(!p)continue;
+    const parts=p.date.split('-');
+    ctx.fillText(`${parts[2]}/${parts[1]}`,tx(i,tot),P.t+cH+14);
+  }
+  // Legend
+  ctx.fillStyle='#3b82f6';ctx.fillRect(P.l,6,18,3);
+  ctx.fillStyle='#64748b';ctx.font='10px sans-serif';ctx.textAlign='left';
+  ctx.fillText('Histórico',P.l+22,10);
+  if(proj.length){
+    ctx.fillStyle='#ef4444';ctx.fillRect(P.l+90,6,18,3);
+    ctx.fillStyle='#64748b';ctx.fillText('Projeção',P.l+112,10);
+  }
+}
+
 function applyEstoqueFiltro(){
   _estoquePainelFiltro.inicio=document.getElementById('ep-inicio')?.value||'';
   _estoquePainelFiltro.fim   =document.getElementById('ep-fim')?.value||'';
@@ -7346,17 +7591,18 @@ function renderEstoquePainel(){
 
   const rows=allItems.map((item,i)=>{
     const unidade=item.unidade||'un';
-    let saldoD1,consumoD1,saldoHoje,consumoPeriodo=null;
+    let saldoD1,entradaD1=0,consumoD1,saldoHoje,consumoPeriodo=null;
 
     if(item.isRacao){
-      saldoD1   =racaoSaldoAte(item.id,item.racaoNome,yesterday);
-      saldoHoje =racaoSaldoAte(item.id,item.racaoNome,today);
+      saldoD1  =racaoSaldoAte(item.id,item.racaoNome,yesterday);
+      saldoHoje=racaoSaldoAte(item.id,item.racaoNome,today);
+      entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'&&m.date===yesterday)
+        .reduce((s,m)=>s+m.qtd,0);
       const consumoD1G=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===yesterday)
         .reduce((s,r)=>s+(r.racaoG||0),0);
       const saidaMovD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='saida'&&m.date===yesterday)
         .reduce((s,m)=>s+m.qtd,0);
       consumoD1=consumoD1G/1000+saidaMovD1;
-
       if(temFiltro){
         const cG=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0
           &&(!ini||r.date>=ini)&&(!fim||r.date<=fim))
@@ -7369,6 +7615,7 @@ function renderEstoquePainel(){
     } else {
       const movs=estoqueMov.filter(m=>m.itemId===item.id);
       saldoD1  =movs.filter(m=>m.date<=yesterday).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+      entradaD1=movs.filter(m=>m.date===yesterday&&m.tipo==='entrada').reduce((s,m)=>s+m.qtd,0);
       consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
       saldoHoje=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       if(temFiltro){
@@ -7381,29 +7628,31 @@ function renderEstoquePainel(){
     const badge=item.isRacao
       ?`<span style="font-size:10px;font-weight:700;background:rgba(22,163,74,0.12);color:#16a34a;border-radius:6px;padding:1px 5px;margin-left:5px;">🌾</span>`:'';
     const tdPeriodo=temFiltro
-      ?`<td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:700;color:${consumoPeriodo>0?'var(--danger)':'var(--text3)'};">${consumoPeriodo>0?'-'+fmt(consumoPeriodo):'—'}</td>`:'';
+      ?`<td style="padding:12px 10px;text-align:center;font-size:13px;font-weight:700;color:${consumoPeriodo>0?'var(--danger)':'var(--text3)'};">${consumoPeriodo>0?'-'+fmt(consumoPeriodo):'—'}</td>`:'';
 
     return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
       <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}${badge}</td>
-      <td style="padding:12px 14px;text-align:center;font-size:12px;color:var(--text2);">${unidade}</td>
-      <td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${fmt(saldoD1)}</td>
-      <td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:600;color:${consumoD1>0?'var(--danger)':'var(--text3)'};">${consumoD1>0?'-'+fmt(consumoD1):'—'}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:12px;color:var(--text2);">${unidade}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${fmt(saldoD1)}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${entradaD1>0?'#16a34a':'var(--text3)'};">${entradaD1>0?'+'+fmt(entradaD1):'—'}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${consumoD1>0?'var(--danger)':'var(--text3)'};">${consumoD1>0?'-'+fmt(consumoD1):'—'}</td>
       ${tdPeriodo}
-      <td style="padding:12px 14px;text-align:center;font-size:14px;font-weight:700;color:${corSaldo};">${fmt(saldoHoje)}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:14px;font-weight:700;color:${corSaldo};">${fmt(saldoHoje)}</td>
     </tr>`;
   }).join('');
 
   const thPeriodo=temFiltro
-    ?`<th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Consumo Período</th>`:'';
+    ?`<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Consumo Período</th>`:'';
 
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:var(--surface2);">
-      <th style="padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);">Item</th>
-      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Un.</th>
-      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Estoque D-1</th>
-      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Consumo D-1</th>
+      <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);">Item</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Un.</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Estoque D-1</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#16a34a;">Entrada D-1</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--danger);">Consumo D-1</th>
       ${thPeriodo}
-      <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Estoque Hoje</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Estoque Hoje</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
