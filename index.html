@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.8</title>
+<title>KC System v5.9</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.8</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.9</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -828,12 +828,6 @@ input[type="number"]{-moz-appearance:textfield;}
 
 <!-- ===== MÓDULO ESTOQUES ===== -->
 <div id="modulo-estoques" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
-  <!-- Nav abas -->
-  <div style="display:flex;border-bottom:2px solid var(--border);background:var(--surface);flex-shrink:0;">
-    <button onclick="showEstoqueView('itens')" id="enav-itens" class="estoque-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-bottom:2px solid var(--accent);cursor:pointer;margin-bottom:-2px;">📋 Itens</button>
-    <button onclick="showEstoqueView('lancar')" id="enav-lancar" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">✏️ Lançar</button>
-    <button onclick="showEstoqueView('painel')" id="enav-painel" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📊 Painel</button>
-  </div>
 
   <!-- VIEW ITENS -->
   <div id="eview-itens" class="eview" style="flex:1;overflow-y:auto;display:block;">
@@ -896,7 +890,8 @@ input[type="number"]{-moz-appearance:textfield;}
           <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Observação (opcional)</div>
           <input type="text" id="emov-obs" placeholder="Fornecedor, nota fiscal..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box;outline:none;">
         </div>
-        <button onclick="saveEstoqueMov()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+        <button id="emov-save-btn" onclick="saveEstoqueMov()" style="padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+        <button id="emov-cancel-btn" onclick="cancelEditEstoqueMov()" style="display:none;padding:10px 18px;background:none;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text2);margin-left:8px;">✕ Cancelar</button>
       </div>
       <div id="estoque-mov-hist" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
         <!-- gerado por JS -->
@@ -915,6 +910,13 @@ input[type="number"]{-moz-appearance:textfield;}
         <!-- gerado por JS -->
       </div>
     </div>
+  </div>
+
+  <!-- Nav abas — rodapé -->
+  <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
+    <button onclick="showEstoqueView('itens')" id="enav-itens" class="estoque-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">📋 Itens</button>
+    <button onclick="showEstoqueView('lancar')" id="enav-lancar" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">✏️ Lançar</button>
+    <button onclick="showEstoqueView('painel')" id="enav-painel" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📊 Painel</button>
   </div>
 </div>
 
@@ -1111,8 +1113,12 @@ const GROUPS=[
     {num:1,name:'Lab 1', volume:500,shape:'rect',large:false},
     {num:2,name:'Lab 2', volume:500,shape:'rect',large:false},
     {num:3,name:'Lab 3', volume:500,shape:'rect',large:false},
+    {num:4,name:'LabX',  volume:500,shape:'rect',large:false},
   ]},
-  {id:'cimento',name:'Cimento',icon:'🧱',shape:'rect',paired:false,tanks:[]},
+  {id:'cimento',name:'Cimento',icon:'🧱',shape:'rect',paired:false,tanks:[
+    ...Array.from({length:5}, (_,i)=>({num:i+1, name:`Cimento ${i+1}`,  shape:'circle',volume:100,large:false})),
+    ...Array.from({length:9}, (_,i)=>({num:i+6, name:`Cimento ${i+6}`,  shape:'rect',  volume:100,large:false})),
+  ]},
 ];
 const DEFAULT_RACOES=[
   {nome:'Farelada reversão 56%'},
@@ -7045,13 +7051,14 @@ function showEstoqueView(v){
   document.querySelectorAll('.eview').forEach(el=>{el.style.display='none';});
   document.querySelectorAll('.estoque-nav').forEach(el=>{
     el.style.color='var(--text2)';
-    el.style.borderBottom='none';
+    el.style.borderTop='none';
+    el.style.marginTop='0';
     el.classList.remove('active');
   });
   const vEl=document.getElementById('eview-'+v);
   if(vEl)vEl.style.display='block';
   const nEl=document.getElementById('enav-'+v);
-  if(nEl){nEl.style.color='var(--accent)';nEl.style.borderBottom='2px solid var(--accent)';nEl.classList.add('active');}
+  if(nEl){nEl.style.color='var(--accent)';nEl.style.borderTop='2px solid var(--accent)';nEl.style.marginTop='-2px';nEl.classList.add('active');}
   if(v==='itens')renderEstoqueItens();
   else if(v==='lancar'){renderEstoqueLancarForm();renderEstoqueMovHist();}
   else if(v==='painel')renderEstoquePainel();
@@ -7171,6 +7178,7 @@ function renderEstoqueMovHist(){
       <th style="padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);">Item</th>
       <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Tipo</th>
       <th style="padding:8px 12px;text-align:right;font-size:11px;font-weight:700;color:var(--text2);">Qtd</th>
+      <th style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);"></th>
     </tr></thead>
     <tbody>
     ${recent.map((m,i)=>{
@@ -7180,13 +7188,59 @@ function renderEstoqueMovHist(){
       const label=m.tipo==='entrada'?'Entrada':'Saída';
       return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
         <td style="padding:9px 12px;font-size:12px;color:var(--text2);">${m.date||'—'}</td>
-        <td style="padding:9px 12px;font-size:12px;color:var(--text);">${nomeItem}</td>
+        <td style="padding:9px 12px;font-size:12px;color:var(--text);">${nomeItem}${m.obs?`<div style="font-size:10px;color:var(--text3);">${m.obs}</div>`:''}</td>
         <td style="padding:9px 12px;text-align:center;"><span style="font-size:11px;font-weight:700;color:${cor};background:${m.tipo==='entrada'?'rgba(22,163,74,0.1)':'rgba(220,38,38,0.1)'};border-radius:6px;padding:2px 8px;">${label}</span></td>
         <td style="padding:9px 12px;text-align:right;font-size:13px;font-weight:700;color:${cor};">${m.tipo==='entrada'?'+':'-'}${m.qtd}</td>
+        <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
+          <button onclick="editEstoqueMov('${m.id}')" title="Editar" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;cursor:pointer;color:var(--accent);margin-right:4px;">✏️</button>
+          <button onclick="deleteEstoqueMov('${m.id}')" title="Excluir" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;cursor:pointer;color:var(--danger);">🗑️</button>
+        </td>
       </tr>`;
     }).join('')}
     </tbody>
   </table>`;
+}
+
+let _editingMovId = null;
+
+function editEstoqueMov(id){
+  const mov=estoqueMov.find(m=>m.id===id);
+  if(!mov)return;
+  _editingMovId=id;
+  renderEstoqueLancarForm();
+  const sel=document.getElementById('emov-item');
+  if(sel)sel.value=mov.itemId;
+  document.getElementById('emov-tipo').value=mov.tipo;
+  document.getElementById('emov-data').value=mov.date||'';
+  document.getElementById('emov-qtd').value=mov.qtd;
+  document.getElementById('emov-obs').value=mov.obs||'';
+  const btn=document.getElementById('emov-save-btn');
+  if(btn)btn.textContent='💾 Atualizar';
+  const cancel=document.getElementById('emov-cancel-btn');
+  if(cancel)cancel.style.display='inline-block';
+  document.getElementById('emov-save-btn')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function cancelEditEstoqueMov(){
+  _editingMovId=null;
+  document.getElementById('emov-item').value='';
+  document.getElementById('emov-qtd').value='';
+  document.getElementById('emov-obs').value='';
+  const btn=document.getElementById('emov-save-btn');
+  if(btn)btn.textContent='💾 Salvar';
+  const cancel=document.getElementById('emov-cancel-btn');
+  if(cancel)cancel.style.display='none';
+}
+
+async function deleteEstoqueMov(id){
+  showConfirm('Excluir lançamento','Deseja excluir este lançamento? Esta ação não pode ser desfeita.',async()=>{
+    estoqueMov=estoqueMov.filter(m=>m.id!==id);
+    localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
+    await sbDelete('estoque_mov',id);
+    showToast('Lançamento excluído ✓','ok');
+    renderEstoqueMovHist();
+    renderEstoquePainel();
+  });
 }
 
 async function saveEstoqueMov(){
@@ -7200,8 +7254,10 @@ async function saveEstoqueMov(){
   const qtd=parseFloat(qtdRaw);
   if(isNaN(qtd)||qtd<=0){showToast('Quantidade inválida','error');return;}
   const item=_findEstoqueItem(itemId);
+
+  const movId=_editingMovId||('emov_'+Date.now());
   const mov={
-    id:'emov_'+Date.now(),
+    id:movId,
     itemId,
     itemNome:item?.nome||'',
     date:data,
@@ -7211,13 +7267,20 @@ async function saveEstoqueMov(){
     userName:currentUser?.name||currentUser?.username||'',
     timestamp:new Date().toISOString()
   };
-  estoqueMov.push(mov);
+
+  if(_editingMovId){
+    const idx=estoqueMov.findIndex(m=>m.id===_editingMovId);
+    if(idx>=0)estoqueMov[idx]=mov; else estoqueMov.push(mov);
+  } else {
+    estoqueMov.push(mov);
+  }
+
   localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
   const ok=await sbUpsert('estoque_mov',[{id:mov.id,data:mov}]);
-  if(ok)showToast('Lançamento salvo ✓','ok');
+  if(ok)showToast(_editingMovId?'Lançamento atualizado ✓':'Lançamento salvo ✓','ok');
   else showToast('⚠️ Salvo localmente — tabela estoque_mov não encontrada no Supabase','error');
-  document.getElementById('emov-qtd').value='';
-  document.getElementById('emov-obs').value='';
+
+  cancelEditEstoqueMov();
   renderEstoquePainel();
   renderEstoqueMovHist();
 }
