@@ -7116,9 +7116,9 @@ function showEstoqueView(v){
   const nEl=document.getElementById('enav-'+v);
   if(nEl){nEl.style.color='var(--accent)';nEl.style.borderTop='2px solid var(--accent)';nEl.style.marginTop='-2px';nEl.classList.add('active');}
   if(v==='itens')renderEstoqueItens();
-  else if(v==='lancar'){renderEstoqueLancarForm();renderEstoqueMovHist();}
-  else if(v==='grafico')renderEstoqueGrafico();
-  else if(v==='painel')renderEstoquePainel();
+  else if(v==='lancar')loadEstoqueFromSupabase().then(()=>{renderEstoqueLancarForm();renderEstoqueMovHist();});
+  else if(v==='painel')loadEstoqueFromSupabase().then(()=>renderEstoquePainel());
+  else if(v==='grafico')loadEstoqueFromSupabase().then(()=>renderEstoqueGrafico());
 }
 
 async function loadEstoqueFromSupabase(){
