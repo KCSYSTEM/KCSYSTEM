@@ -910,6 +910,7 @@ input[type="number"]{-moz-appearance:textfield;}
       <div><div class="view-title">Painel de Estoques</div><div class="view-sub">Posição atual de cada item</div></div>
     </div>
     <div style="padding:0 16px 16px;">
+      <div id="estoque-painel-filtro" style="padding-bottom:10px;"></div>
       <div id="estoque-painel-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
         <!-- gerado por JS -->
       </div>
@@ -1130,6 +1131,7 @@ try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.
 let estoqueItens=[], estoqueMov=[];
 try{const ei=localStorage.getItem('kc_estoque_itens');if(ei)estoqueItens=JSON.parse(ei);}catch(e){}
 try{const em=localStorage.getItem('kc_estoque_mov');if(em)estoqueMov=JSON.parse(em);}catch(e){}
+let _estoquePainelFiltro={inicio:'',fim:''};
 let confirmCallback=null;
 
 // ===== SUPABASE =====
@@ -1431,7 +1433,7 @@ function switchModule(mod){
     requestAnimationFrame(()=>showPessoalView(isAdmin()?'metas':'ponto'));
   } else if(mod==='estoques'){
     if(estEl)estEl.style.display='flex';
-    showEstoqueView('painel');
+    loadEstoqueFromSupabase().then(()=>showEstoqueView('painel'));
   }
 }
 
@@ -7091,36 +7093,52 @@ async function deleteEstoqueItem(id){
 function renderEstoqueItens(){
   const el=document.getElementById('estoque-itens-list');
   if(!el)return;
-  if(!estoqueItens.length){
+  if(!racoes.length&&!estoqueItens.length){
     el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum item cadastrado</div>`;
     return;
   }
+  const racaoRows=racoes.map((r,i)=>`
+    <tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
+      <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${r.nome}
+        <span style="font-size:10px;font-weight:700;background:rgba(22,163,74,0.12);color:#16a34a;border-radius:6px;padding:1px 6px;margin-left:6px;">🌾 Ração</span>
+      </td>
+      <td style="padding:11px 14px;font-size:12px;color:var(--text2);">kg</td>
+      <td style="padding:11px 14px;text-align:center;font-size:11px;color:var(--text3);">auto</td>
+    </tr>`).join('');
+  const manualRows=estoqueItens.map((item,i)=>`
+    <tr style="border-top:1px solid var(--border);${(racoes.length+i)%2===1?'background:var(--surface2);':''}">
+      <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}</td>
+      <td style="padding:11px 14px;font-size:12px;color:var(--text2);">${item.unidade||'un'}</td>
+      <td style="padding:11px 14px;text-align:center;">
+        <button onclick="deleteEstoqueItem('${item.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Remover">×</button>
+      </td>
+    </tr>`).join('');
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:var(--surface2);">
       <th style="padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);">Item</th>
       <th style="padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);">Unidade</th>
       <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Ação</th>
     </tr></thead>
-    <tbody>
-    ${estoqueItens.map((item,i)=>`
-      <tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
-        <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}</td>
-        <td style="padding:11px 14px;font-size:12px;color:var(--text2);">${item.unidade||'un'}</td>
-        <td style="padding:11px 14px;text-align:center;">
-          <button onclick="deleteEstoqueItem('${item.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Remover">×</button>
-        </td>
-      </tr>`).join('')}
-    </tbody>
+    <tbody>${racaoRows}${manualRows}</tbody>
   </table>`;
+}
+
+function _racaoId(r){return r.id||('r_'+r.nome);}
+function _findEstoqueItem(itemId){
+  return estoqueItens.find(x=>x.id===itemId)||racoes.find(r=>_racaoId(r)===itemId);
 }
 
 function renderEstoqueLancarForm(){
   const sel=document.getElementById('emov-item');
   if(!sel)return;
   const current=sel.value;
-  sel.innerHTML=`<option value="">Selecione...</option>`+
-    estoqueItens.map(x=>`<option value="${x.id}" ${x.id===current?'selected':''}>${x.nome} (${x.unidade||'un'})</option>`).join('');
-  // Set today's date if empty
+  const racaoOpts=racoes.length
+    ?`<optgroup label="🌾 Rações">${racoes.map(r=>`<option value="${_racaoId(r)}" ${_racaoId(r)===current?'selected':''}>${r.nome} (kg)</option>`).join('')}</optgroup>`
+    :'';
+  const outraOpts=estoqueItens.length
+    ?`<optgroup label="📦 Outros Itens">${estoqueItens.map(x=>`<option value="${x.id}" ${x.id===current?'selected':''}>${x.nome} (${x.unidade||'un'})</option>`).join('')}</optgroup>`
+    :'';
+  sel.innerHTML=`<option value="">Selecione...</option>${racaoOpts}${outraOpts}`;
   const dataEl=document.getElementById('emov-data');
   if(dataEl&&!dataEl.value){
     const now=new Date();
@@ -7146,7 +7164,7 @@ function renderEstoqueMovHist(){
     </tr></thead>
     <tbody>
     ${recent.map((m,i)=>{
-      const item=estoqueItens.find(x=>x.id===m.itemId);
+      const item=_findEstoqueItem(m.itemId);
       const nomeItem=item?item.nome:(m.itemNome||m.itemId||'—');
       const cor=m.tipo==='entrada'?'#16a34a':'#dc2626';
       const label=m.tipo==='entrada'?'Entrada':'Saída';
@@ -7171,7 +7189,7 @@ async function saveEstoqueMov(){
   if(!data){showToast('Informe a data','error');return;}
   const qtd=parseFloat(qtdRaw);
   if(isNaN(qtd)||qtd<=0){showToast('Quantidade inválida','error');return;}
-  const item=estoqueItens.find(x=>x.id===itemId);
+  const item=_findEstoqueItem(itemId);
   const mov={
     id:'emov_'+Date.now(),
     itemId,
@@ -7194,40 +7212,116 @@ async function saveEstoqueMov(){
   renderEstoqueMovHist();
 }
 
+function applyEstoqueFiltro(){
+  _estoquePainelFiltro.inicio=document.getElementById('ep-inicio')?.value||'';
+  _estoquePainelFiltro.fim   =document.getElementById('ep-fim')?.value||'';
+  renderEstoquePainel();
+}
+
 function renderEstoquePainel(){
   const el=document.getElementById('estoque-painel-wrap');
   if(!el)return;
-  if(!estoqueItens.length){
+
+  // Filtro de período
+  const filtroEl=document.getElementById('estoque-painel-filtro');
+  const temFiltro=_estoquePainelFiltro.inicio||_estoquePainelFiltro.fim;
+  if(filtroEl){
+    filtroEl.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text3);font-weight:600;">Período:</span>
+        <input type="date" id="ep-inicio" value="${_estoquePainelFiltro.inicio}" onchange="applyEstoqueFiltro()"
+          style="border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text);">
+        <span style="font-size:12px;color:var(--text3);">até</span>
+        <input type="date" id="ep-fim" value="${_estoquePainelFiltro.fim}" onchange="applyEstoqueFiltro()"
+          style="border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface);color:var(--text);">
+        ${temFiltro?`<button onclick="_estoquePainelFiltro={inicio:'',fim:''};renderEstoquePainel()"
+          style="font-size:11px;color:var(--text3);background:none;border:1px solid var(--border);border-radius:5px;padding:3px 8px;cursor:pointer;">✕ Limpar</button>`:''}
+      </div>`;
+  }
+
+  // Lista unificada: rações (virtuais) + itens manuais
+  const allItems=[
+    ...racoes.map(r=>({id:_racaoId(r),nome:r.nome,unidade:'kg',isRacao:true,racaoNome:r.nome})),
+    ...estoqueItens.map(i=>({...i,isRacao:false}))
+  ];
+
+  if(!allItems.length){
     el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum item cadastrado</div>`;
     return;
   }
-  const now=new Date();
-  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  const prev=new Date(now);prev.setDate(prev.getDate()-1);
-  const yesterday=`${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
 
-  const rows=estoqueItens.map(item=>{
-    const movs=estoqueMov.filter(m=>m.itemId===item.id);
-    // Estoque D-1: saldo de todas as movs com data <= ontem
-    const saldoD1=movs.filter(m=>m.date<=yesterday)
-      .reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
-    // Consumo D-1: saídas com data = ontem
-    const consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida')
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const prev=new Date(now);prev.setDate(prev.getDate()-1);
+  const yesterday=`${prev.getFullYear()}-${pad(prev.getMonth()+1)}-${pad(prev.getDate())}`;
+  const fmt=v=>v===0?'0':(Number.isInteger(v)?v:parseFloat(v.toFixed(2)));
+
+  // Saldo de uma ração até uma data (entradas mov - saídas mov - consumo records)
+  const racaoSaldoAte=(id,nome,upTo)=>{
+    const entradas=estoqueMov.filter(m=>m.itemId===id&&m.tipo==='entrada'&&m.date<=upTo)
       .reduce((s,m)=>s+m.qtd,0);
-    // Estoque hoje atual: saldo incluindo movs de hoje
-    const saldoHoje=movs.filter(m=>m.date<=today)
-      .reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+    const saidasMov=estoqueMov.filter(m=>m.itemId===id&&m.tipo==='saida'&&m.date<=upTo)
+      .reduce((s,m)=>s+m.qtd,0);
+    const consumoKg=records.filter(r=>!r.overridden&&r.racao===nome&&r.racaoG>0&&r.date<=upTo)
+      .reduce((s,r)=>s+(r.racaoG||0),0)/1000;
+    return entradas-saidasMov-consumoKg;
+  };
+
+  const ini=_estoquePainelFiltro.inicio;
+  const fim=_estoquePainelFiltro.fim;
+
+  const rows=allItems.map((item,i)=>{
     const unidade=item.unidade||'un';
-    const fmt=v=>Number.isInteger(v)?v:parseFloat(v.toFixed(2));
+    let saldoD1,consumoD1,saldoHoje,consumoPeriodo=null;
+
+    if(item.isRacao){
+      saldoD1   =racaoSaldoAte(item.id,item.racaoNome,yesterday);
+      saldoHoje =racaoSaldoAte(item.id,item.racaoNome,today);
+      const consumoD1G=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===yesterday)
+        .reduce((s,r)=>s+(r.racaoG||0),0);
+      const saidaMovD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='saida'&&m.date===yesterday)
+        .reduce((s,m)=>s+m.qtd,0);
+      consumoD1=consumoD1G/1000+saidaMovD1;
+
+      if(temFiltro){
+        const cG=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0
+          &&(!ini||r.date>=ini)&&(!fim||r.date<=fim))
+          .reduce((s,r)=>s+(r.racaoG||0),0);
+        const cMov=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='saida'
+          &&(!ini||m.date>=ini)&&(!fim||m.date<=fim))
+          .reduce((s,m)=>s+m.qtd,0);
+        consumoPeriodo=parseFloat((cG/1000+cMov).toFixed(2));
+      }
+    } else {
+      const movs=estoqueMov.filter(m=>m.itemId===item.id);
+      saldoD1  =movs.filter(m=>m.date<=yesterday).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+      consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
+      saldoHoje=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+      if(temFiltro){
+        consumoPeriodo=movs.filter(m=>m.tipo==='saida'&&(!ini||m.date>=ini)&&(!fim||m.date<=fim))
+          .reduce((s,m)=>s+m.qtd,0);
+      }
+    }
+
     const corSaldo=saldoHoje<0?'var(--danger)':'var(--text)';
-    return`<tr style="border-top:1px solid var(--border);">
-      <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}</td>
+    const badge=item.isRacao
+      ?`<span style="font-size:10px;font-weight:700;background:rgba(22,163,74,0.12);color:#16a34a;border-radius:6px;padding:1px 5px;margin-left:5px;">🌾</span>`:'';
+    const tdPeriodo=temFiltro
+      ?`<td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:700;color:${consumoPeriodo>0?'var(--danger)':'var(--text3)'};">${consumoPeriodo>0?'-'+fmt(consumoPeriodo):'—'}</td>`:'';
+
+    return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
+      <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}${badge}</td>
       <td style="padding:12px 14px;text-align:center;font-size:12px;color:var(--text2);">${unidade}</td>
       <td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${fmt(saldoD1)}</td>
       <td style="padding:12px 14px;text-align:center;font-size:13px;font-weight:600;color:${consumoD1>0?'var(--danger)':'var(--text3)'};">${consumoD1>0?'-'+fmt(consumoD1):'—'}</td>
+      ${tdPeriodo}
       <td style="padding:12px 14px;text-align:center;font-size:14px;font-weight:700;color:${corSaldo};">${fmt(saldoHoje)}</td>
     </tr>`;
   }).join('');
+
+  const thPeriodo=temFiltro
+    ?`<th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Consumo Período</th>`:'';
 
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:var(--surface2);">
@@ -7235,6 +7329,7 @@ function renderEstoquePainel(){
       <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Un.</th>
       <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Estoque D-1</th>
       <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Consumo D-1</th>
+      ${thPeriodo}
       <th style="padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:var(--text2);">Estoque Hoje</th>
     </tr></thead>
     <tbody>${rows}</tbody>
