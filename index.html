@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.10</title>
+<title>KC System v5.11</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.10</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.11</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -655,11 +655,6 @@ input[type="number"]{-moz-appearance:textfield;}
 
 <!-- ===== MÓDULO PESSOAL ===== -->
 <div id="modulo-pessoal" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
-  <!-- Nav abas -->
-  <div style="display:flex;border-bottom:2px solid var(--border);background:var(--surface);flex-shrink:0;">
-    <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-bottom:2px solid var(--accent);cursor:pointer;margin-bottom:-2px;">🎯 Metas</button>
-    <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🕐 Ponto</button>
-  </div>
 
   <!-- VIEW METAS -->
   <div id="pview-metas" class="pview" style="flex:1;overflow-y:auto;display:block;">
@@ -730,6 +725,12 @@ input[type="number"]{-moz-appearance:textfield;}
       <!-- Tabela detalhada -->
       <div id="ponto-detalhe" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;"></div>
     </div>
+  </div>
+
+  <!-- Nav abas — rodapé -->
+  <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
+    <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🎯 Metas</button>
+    <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">🕐 Ponto</button>
   </div>
 </div>
 
@@ -1450,6 +1451,10 @@ function switchModule(mod){
     pessoalEl.style.display='flex';
     const metasBtn=document.getElementById('pnav-metas');
     if(metasBtn) metasBtn.style.display=isAdmin()?'':'none';
+    const _now=new Date();
+    const _mes=String(_now.getMonth()+1), _ano=String(_now.getFullYear());
+    ['ponto-mes','meta-mes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=_mes;});
+    ['ponto-ano','meta-ano'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=_ano;});
     requestAnimationFrame(()=>showPessoalView(isAdmin()?'metas':'ponto'));
   } else if(mod==='estoques'){
     if(estEl)estEl.style.display='flex';
@@ -7130,7 +7135,7 @@ async function loadEstoqueFromSupabase(){
     }
   }catch(e){console.warn('load estoque_itens error',e);}
   try{
-    const rows=await sbGet('estoque_mov','select=id,data&order=data.desc,timestamp.desc');
+    const rows=await sbGet('estoque_mov','select=id,data&order=id.desc');
     if(rows&&rows.length){
       estoqueMov=rows.map(r=>r.data).filter(Boolean);
       localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
@@ -7774,7 +7779,8 @@ function showPessoalView(v) {
   document.querySelectorAll('.pview').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.pessoal-nav').forEach(el => {
     el.style.color = 'var(--text2)';
-    el.style.borderBottom = 'none';
+    el.style.borderTop = 'none';
+    el.style.marginTop = '';
     el.style.background = 'none';
   });
   const viewEl = document.getElementById('pview-'+v);
@@ -7782,8 +7788,8 @@ function showPessoalView(v) {
   const navEl = document.getElementById('pnav-'+v);
   if (navEl) {
     navEl.style.color = 'var(--accent)';
-    navEl.style.borderBottom = '2px solid var(--accent)';
-    navEl.style.marginBottom = '-2px';
+    navEl.style.borderTop = '2px solid var(--accent)';
+    navEl.style.marginTop = '-2px';
   }
   if (v === 'metas') setTimeout(renderMetas, 0);
   if (v === 'ponto') setTimeout(renderPonto, 0);
