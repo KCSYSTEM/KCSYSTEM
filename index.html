@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.11</title>
+<title>KC System v5.12</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -408,7 +408,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.11</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.12</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1449,13 +1449,11 @@ function switchModule(mod){
     showView('settings');
   } else if(mod==='pessoal'){
     pessoalEl.style.display='flex';
-    const metasBtn=document.getElementById('pnav-metas');
-    if(metasBtn) metasBtn.style.display=isAdmin()?'':'none';
     const _now=new Date();
     const _mes=String(_now.getMonth()+1), _ano=String(_now.getFullYear());
     ['ponto-mes','meta-mes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=_mes;});
     ['ponto-ano','meta-ano'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=_ano;});
-    requestAnimationFrame(()=>showPessoalView(isAdmin()?'metas':'ponto'));
+    requestAnimationFrame(()=>showPessoalView('metas'));
   } else if(mod==='estoques'){
     if(estEl)estEl.style.display='flex';
     loadEstoqueFromSupabase().then(()=>showEstoqueView('painel'));
@@ -2470,6 +2468,7 @@ function startRealtime(){
       payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'tank_records'},
         {event:'UPDATE',schema:'public',table:'tank_records'},
+        {event:'DELETE',schema:'public',table:'tank_records'},
       ]}},
       ref:'1'
     };
@@ -2501,10 +2500,32 @@ function startRealtime(){
       ]}},
       ref:'3'
     };
+    const joinEstoqueMov={
+      topic:'realtime:public:estoque_mov',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'estoque_mov'},
+        {event:'UPDATE',schema:'public',table:'estoque_mov'},
+        {event:'DELETE',schema:'public',table:'estoque_mov'},
+      ]}},
+      ref:'5'
+    };
+    const joinEstoqueItens={
+      topic:'realtime:public:estoque_itens',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'estoque_itens'},
+        {event:'UPDATE',schema:'public',table:'estoque_itens'},
+        {event:'DELETE',schema:'public',table:'estoque_itens'},
+      ]}},
+      ref:'6'
+    };
     _realtimeWs.send(JSON.stringify(joinRecords));
     _realtimeWs.send(JSON.stringify(joinColetaRecords));
     _realtimeWs.send(JSON.stringify(joinTanks));
     _realtimeWs.send(JSON.stringify(joinUsers));
+    _realtimeWs.send(JSON.stringify(joinEstoqueMov));
+    _realtimeWs.send(JSON.stringify(joinEstoqueItens));
 
     // Heartbeat a cada 25s para manter conexão viva
     _realtimeHeartbeat=setInterval(()=>{
@@ -2517,16 +2538,25 @@ function startRealtime(){
   _realtimeWs.onmessage=(ev)=>{
     try{
       const msg=JSON.parse(ev.data);
-      if(msg.event==='postgres_changes'||msg.event==='INSERT'||msg.event==='UPDATE'){
+      if(msg.event==='postgres_changes'||msg.event==='INSERT'||msg.event==='UPDATE'||msg.event==='DELETE'){
         const payload=msg.payload?.data||msg.payload;
         if(!payload)return;
         const table=payload.table||msg.topic?.split(':')[2];
-        const row=payload.record||payload.new;
+        const eventType=payload.type||msg.event; // 'INSERT','UPDATE','DELETE'
+        // DELETE traz old_record; INSERT/UPDATE traz record/new
+        const row=eventType==='DELETE'
+          ?(payload.old_record||payload.old)
+          :(payload.record||payload.new);
         if(!row)return;
 
         if(table==='tank_records'){
-          const rec=tankRowToRec(row);
-          onRealtimeRecord(rec);
+          if(eventType==='DELETE'){
+            const delId=row.id;
+            if(delId){records=records.filter(r=>r.id!==delId);localStorage.setItem('kc_records',JSON.stringify(records));renderTankView();}
+          } else {
+            const rec=tankRowToRec(row);
+            onRealtimeRecord(rec);
+          }
         }
         if(table==='coleta_records'){
           const colRec=coletaRowToRec(row);
@@ -2542,8 +2572,14 @@ function startRealtime(){
         if(table==='tanks'&&row.data){
           onRealtimeTank(row.data);
         }
-        if(table==='users'&&row.data){
-          onRealtimeUser(row.id||row.data?.id,row.data,payload.type);
+        if(table==='users'){
+          onRealtimeUser(row.id||row.data?.id,row.data,eventType);
+        }
+        if(table==='estoque_mov'){
+          onRealtimeEstoqueMov(row,eventType);
+        }
+        if(table==='estoque_itens'){
+          onRealtimeEstoqueItens(row,eventType);
         }
       }
     }catch(e){}
@@ -2611,6 +2647,46 @@ function onRealtimeUser(id,data,type){
   localStorage.setItem('kc_users',JSON.stringify(
     Object.fromEntries(Object.entries(USERS).filter(([k])=>!DEFAULT_USERS[k]))
   ));
+}
+
+function _refreshEstoqueViews(){
+  const estoqueEl=document.getElementById('modulo-estoques');
+  if(!estoqueEl||estoqueEl.style.display==='none')return;
+  const activeNav=document.querySelector('.enav.active')?.id?.replace('enav-','');
+  if(activeNav==='lancar'){renderEstoqueLancarForm();renderEstoqueMovHist();}
+  else if(activeNav==='painel')renderEstoquePainel();
+  else if(activeNav==='grafico')renderEstoqueGrafico();
+}
+
+function onRealtimeEstoqueMov(row,eventType){
+  const id=row?.id;
+  if(!id)return;
+  if(eventType==='DELETE'){
+    estoqueMov=estoqueMov.filter(m=>m.id!==id);
+  } else {
+    const mov=row.data||row;
+    if(!mov)return;
+    const idx=estoqueMov.findIndex(m=>m.id===id);
+    if(idx>=0)estoqueMov[idx]=mov; else estoqueMov.push(mov);
+  }
+  localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
+  _refreshEstoqueViews();
+  showSyncBadge('↻ Estoque atualizado');
+}
+
+function onRealtimeEstoqueItens(row,eventType){
+  const id=row?.id;
+  if(!id)return;
+  if(eventType==='DELETE'){
+    estoqueItens=estoqueItens.filter(i=>i.id!==id);
+  } else {
+    const item=row.data||row;
+    if(!item)return;
+    const idx=estoqueItens.findIndex(i=>i.id===id);
+    if(idx>=0)estoqueItens[idx]=item; else estoqueItens.push(item);
+  }
+  localStorage.setItem('kc_estoque_itens',JSON.stringify(estoqueItens));
+  _refreshEstoqueViews();
 }
 
 function onRealtimeTank(tank){
@@ -7249,7 +7325,7 @@ function renderEstoqueMovHist(){
       const cor=m.tipo==='entrada'?'#16a34a':'#dc2626';
       const label=m.tipo==='entrada'?'Entrada':'Saída';
       return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
-        <td style="padding:9px 12px;font-size:12px;color:var(--text2);">${m.date||'—'}</td>
+        <td style="padding:9px 12px;font-size:12px;color:var(--text2);">${m.date?m.date.split('-').reverse().join('-'):'—'}</td>
         <td style="padding:9px 12px;font-size:12px;color:var(--text);">${nomeItem}${m.obs?`<div style="font-size:10px;color:var(--text3);">${m.obs}</div>`:''}</td>
         <td style="padding:9px 12px;text-align:center;"><span style="font-size:11px;font-weight:700;color:${cor};background:${m.tipo==='entrada'?'rgba(22,163,74,0.1)':'rgba(220,38,38,0.1)'};border-radius:6px;padding:2px 8px;">${label}</span></td>
         <td style="padding:9px 12px;text-align:right;font-size:13px;font-weight:700;color:${cor};">${m.tipo==='entrada'?'+':'-'}${m.qtd}</td>
@@ -7380,17 +7456,13 @@ function _estoqueSeriesRange(item,dateStart,dateEnd){
 }
 
 function _estoqueProjection(series){
-  if(!series.length)return[];
+  if(series.length<2)return[];
   const last=series[series.length-1].saldo;
   if(last<=0)return[];
-  const drops=[];
-  for(let i=1;i<series.length;i++){
-    const chg=series[i-1].saldo-series[i].saldo;
-    if(chg>0)drops.push(chg);
-  }
-  if(!drops.length)return[];
-  const avg=drops.reduce((s,v)=>s+v,0)/drops.length;
-  if(avg<=0)return[];
+  const win=series.slice(-6); // até 5 intervalos (últimos 5 dias)
+  const totalDrop=win[0].saldo-last;
+  if(totalDrop<=0)return[];
+  const avg=totalDrop/Math.max(win.length-1,1);
   const proj=[];let saldo=last;
   let d=new Date(series[series.length-1].date+'T12:00:00');
   for(let i=0;i<730;i++){
@@ -7575,9 +7647,10 @@ function renderEstoquePainel(){
 
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
-  const today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const prev=new Date(now);prev.setDate(prev.getDate()-1);
   const yesterday=`${prev.getFullYear()}-${pad(prev.getMonth()+1)}-${pad(prev.getDate())}`;
+  const prev2=new Date(now);prev2.setDate(prev2.getDate()-2);
+  const dayBeforeYest=`${prev2.getFullYear()}-${pad(prev2.getMonth()+1)}-${pad(prev2.getDate())}`;
   const fmt=v=>v===0?'0':(Number.isInteger(v)?v:parseFloat(v.toFixed(2)));
 
   // Saldo de uma ração até uma data (entradas mov - saídas mov - consumo records)
@@ -7599,8 +7672,9 @@ function renderEstoquePainel(){
     let saldoD1,entradaD1=0,consumoD1,saldoHoje,consumoPeriodo=null;
 
     if(item.isRacao){
-      saldoD1  =racaoSaldoAte(item.id,item.racaoNome,yesterday);
-      saldoHoje=racaoSaldoAte(item.id,item.racaoNome,today);
+      // D-1 = saldo no início de ontem (fim de anteontem); Hoje = fim de ontem = D-1 + entradas - consumo D-1
+      saldoD1  =racaoSaldoAte(item.id,item.racaoNome,dayBeforeYest);
+      saldoHoje=racaoSaldoAte(item.id,item.racaoNome,yesterday);
       entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'&&m.date===yesterday)
         .reduce((s,m)=>s+m.qtd,0);
       const consumoD1G=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===yesterday)
@@ -7619,10 +7693,11 @@ function renderEstoquePainel(){
       }
     } else {
       const movs=estoqueMov.filter(m=>m.itemId===item.id);
-      saldoD1  =movs.filter(m=>m.date<=yesterday).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+      // D-1 = saldo no início de ontem; Hoje = fim de ontem
+      saldoD1  =movs.filter(m=>m.date<=dayBeforeYest).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       entradaD1=movs.filter(m=>m.date===yesterday&&m.tipo==='entrada').reduce((s,m)=>s+m.qtd,0);
       consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
-      saldoHoje=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+      saldoHoje=movs.filter(m=>m.date<=yesterday).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       if(temFiltro){
         consumoPeriodo=movs.filter(m=>m.tipo==='saida'&&(!ini||m.date>=ini)&&(!fim||m.date<=fim))
           .reduce((s,m)=>s+m.qtd,0);
