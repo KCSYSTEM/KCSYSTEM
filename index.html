@@ -7013,7 +7013,14 @@ function editColeta(loteId){
         const loteRow = document.getElementById('coleta-lote-row');
         if(loteRow) loteRow.style.display='block';
       }
-      // 2. Seleciona desova e renderiza com o lote já preenchido
+      // 2. Pré-preenche a data com a data existente dos registros do lote
+      const dateEl = document.getElementById('coleta-date');
+      if(dateEl){
+        const existingRecs = coletaRecords.filter(r=>r.lote===loteId&&!r.overridden);
+        const lastDate = existingRecs.map(r=>r.date||'').filter(Boolean).sort().pop();
+        if(lastDate) dateEl.value = lastDate;
+      }
+      // 3. Seleciona desova e renderiza com o lote já preenchido
       const paramEl = document.getElementById('coleta-param');
       if(paramEl) paramEl.value = 'desova';
       renderColeta();
@@ -7031,7 +7038,7 @@ function editManejoFase(manejoId){
   const lotesManejo = manejos.map(x=>x.lote_id).filter(Boolean);
   const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===m.fase?'selected':''}>${v.icon} ${v.label}</option>`).join('');
-  const tankOpts = tanks.slice().sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 
   const html=`
   <div id="manejo-overlay" onclick="if(event.target===this)closeManejoForm()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;">
@@ -7162,7 +7169,7 @@ function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
 
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===faseSugerida?'selected':''}>${v.icon} ${v.label}</option>`).join('');
   const origensOpts = todosLotesOrigem.map(l=>`<option value="${l}" ${l===loteOrigemSugerido?'selected':''}>${l}</option>`).join('');
-  const tankOpts = tanks.slice().sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
 
   const html=`
   <div id="manejo-overlay" onclick="if(event.target===this)closeManejoForm()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;">
@@ -7274,7 +7281,7 @@ function addOrigemRow(loteDefault=''){
 }
 
 function addDestinoRow(){
-  const tankOpts = tanks.slice().sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   const id = 'dest_'+Date.now();
   const row = document.createElement('div');
   row.style.cssText='display:flex;gap:6px;align-items:center;';
@@ -7289,7 +7296,7 @@ function addDestinoRow(){
 }
 
 function addTamanhoRow(){
-  const tankOpts = tanks.filter(t=>t.groupId==='geo-elevada').sort((a,b)=>(a.num||0)-(b.num||0)).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.filter(t=>t.groupId==='geo-elevada').sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   const id = 'tam_'+Date.now();
   const row = document.createElement('div');
   row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
