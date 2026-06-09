@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v5.13</title>
+<title>KC System v6.0 — Financeiro</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -398,6 +398,9 @@ input[type="number"]{-moz-appearance:textfield;}
         <div onclick="switchModule('estoques')" id="mod-btn-estoques" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
           <span>📦</span> Estoques
         </div>
+        <div onclick="switchModule('financeiro')" id="mod-btn-financeiro" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
+          <span>💰</span> Financeiro
+        </div>
         <div onclick="switchModule('config')" id="mod-btn-config" style="padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);" class="mod-admin-only">
           <span>⚙️</span> Configuração
         </div>
@@ -408,7 +411,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v5.13</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.0</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -679,7 +682,7 @@ input[type="number"]{-moz-appearance:textfield;}
 
     <!-- Tabela de metas -->
     <div style="padding:0 16px 16px;">
-      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;" id="meta-tabela-wrap">
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;" id="meta-tabela-wrap">
         <!-- gerado por JS -->
       </div>
 
@@ -731,6 +734,157 @@ input[type="number"]{-moz-appearance:textfield;}
   <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
     <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🎯 Metas</button>
     <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">🕐 Ponto</button>
+  </div>
+</div>
+
+<!-- ===== MÓDULO FINANCEIRO ===== -->
+<div id="modulo-financeiro" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+
+  <!-- VIEW VENDAS -->
+  <div id="fview-vendas" class="fview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header">
+      <div><div class="view-title">Vendas</div><div class="view-sub">Registrar e acompanhar vendas</div></div>
+    </div>
+    <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:14px;">
+      <!-- Formulário -->
+      <div id="fin-venda-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-venda-form-title">➕ Nova Venda</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--text2);">Cliente</label><input id="fv-cliente" type="text" placeholder="Nome do cliente" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Quantidade (kg)</label><input id="fv-qtd" type="number" min="0" step="0.001" placeholder="0,000" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Biometria (g/peixe)</label><input id="fv-bio" type="number" min="0" step="0.1" placeholder="0,0" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Valor unitário (R$/kg)</label><input id="fv-vunit" type="number" min="0" step="0.01" placeholder="0,00" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Quebra (%)</label><input id="fv-quebra" type="number" min="0" max="100" step="0.1" placeholder="0,0" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Valor Total (R$)</label><input id="fv-vtotal" type="text" readonly placeholder="—" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2,#f1f5f9);color:var(--accent);font-size:13px;font-weight:700;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Impostos 4% (R$)</label><input id="fv-impostos" type="text" readonly placeholder="—" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2,#f1f5f9);color:var(--text2);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Data da Venda</label><input id="fv-dvenda" type="date" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Data de Vencimento</label><input id="fv-dvenc" type="date" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Data de Pagamento</label><input id="fv-dpag" type="date" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Forma de Pagamento</label>
+            <select id="fv-fpag" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              <option value="">Selecione...</option>
+              <option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cheque</option><option>Dinheiro</option>
+            </select>
+          </div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Nº Nota Fiscal</label><input id="fv-nf" type="text" placeholder="000000" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Nº GTA</label><input id="fv-gta" type="text" placeholder="GTA-000" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--text2);">Observações</label><input id="fv-obs" type="text" placeholder="Opcional" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button onclick="finSalvarVenda()" id="fv-save-btn" style="flex:1;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar Venda</button>
+          <button onclick="finCancelarVenda()" id="fv-cancel-btn" style="display:none;padding:11px 16px;background:none;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text2);">✕ Cancelar</button>
+        </div>
+      </div>
+      <!-- Histórico vendas -->
+      <div id="fin-vendas-hist" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow-x:auto;"></div>
+    </div>
+  </div>
+
+  <!-- VIEW GASTOS -->
+  <div id="fview-gastos" class="fview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header">
+      <div><div class="view-title">Gastos</div><div class="view-sub">Registrar despesas operacionais e de capital</div></div>
+    </div>
+    <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:14px;">
+      <!-- Formulário -->
+      <div id="fin-gasto-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-gasto-form-title">➕ Novo Gasto</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Data</label><input id="fg-data" type="date" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Valor (R$)</label><input id="fg-valor" type="number" min="0" step="0.01" placeholder="0,00" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Responsável</label>
+            <select id="fg-resp" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Forma de Pagamento</label>
+            <select id="fg-fpag" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              <option value="">Selecione...</option>
+              <option>PIX</option><option>Transferência</option><option>Boleto</option><option>Cheque</option><option>Dinheiro</option><option>Cartão</option>
+            </select>
+          </div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Classificação</label>
+            <select id="fg-class" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              <option value="opex">OPEX — Operacional</option>
+              <option value="capex">CAPEX — Capital</option>
+            </select>
+          </div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Tipo de Gasto</label>
+            <div style="display:flex;gap:6px;margin-top:4px;">
+              <select id="fg-tipo" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></select>
+              <button onclick="finNovoTipoGasto()" title="Novo tipo" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--accent);font-size:14px;cursor:pointer;">+</button>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--text2);">Razão Social / Nome do Recebedor</label><input id="fg-nome" type="text" placeholder="Nome ou Razão Social" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">CNPJ / CPF</label><input id="fg-doc" type="text" placeholder="00.000.000/0001-00" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div style="display:flex;align-items:center;gap:10px;padding-top:18px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;">
+              <input type="checkbox" id="fg-reembolso" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+              Reembolso
+            </label>
+          </div>
+          <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--text2);">Observações</label><input id="fg-obs" type="text" placeholder="Opcional" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button onclick="finSalvarGasto()" id="fg-save-btn" style="flex:1;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salvar Gasto</button>
+          <button onclick="finCancelarGasto()" id="fg-cancel-btn" style="display:none;padding:11px 16px;background:none;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text2);">✕ Cancelar</button>
+        </div>
+      </div>
+      <!-- Histórico gastos -->
+      <div id="fin-gastos-hist" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow-x:auto;"></div>
+    </div>
+  </div>
+
+  <!-- VIEW PAINEL -->
+  <div id="fview-painel" class="fview" style="flex:1;overflow-y:auto;display:block;">
+    <div class="view-header">
+      <div><div class="view-title">Painel Financeiro</div><div class="view-sub">Visão consolidada de entradas e saídas</div></div>
+    </div>
+    <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px;">
+      <!-- Cards resumo -->
+      <div id="fin-painel-cards" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;"></div>
+      <!-- Filtros -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button onclick="finPainelFiltro('tudo')" id="fp-btn-tudo" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Tudo</button>
+        <button onclick="finPainelFiltro('vendas')" id="fp-btn-vendas" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">💰 Vendas</button>
+        <button onclick="finPainelFiltro('gastos')" id="fp-btn-gastos" style="padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:none;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;">💸 Gastos</button>
+        <div style="display:flex;gap:6px;margin-left:auto;align-items:center;">
+          <input type="date" id="fp-ini" onchange="renderFinPainel()" style="padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;background:var(--bg);color:var(--text);">
+          <span style="font-size:11px;color:var(--text3);">até</span>
+          <input type="date" id="fp-fim" onchange="renderFinPainel()" style="padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;background:var(--bg);color:var(--text);">
+        </div>
+      </div>
+      <!-- Lista -->
+      <div id="fin-painel-lista" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow-x:auto;"></div>
+    </div>
+  </div>
+
+  <!-- VIEW DRE -->
+  <div id="fview-dre" class="fview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header">
+      <div><div class="view-title">DRE</div><div class="view-sub">Demonstração do Resultado do Exercício</div></div>
+    </div>
+    <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px;">
+      <!-- Filtro período -->
+      <div style="background:var(--surface);border-radius:12px;border:1.5px solid var(--border);padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:12px;font-weight:600;color:var(--text2);">Período:</span>
+        <input type="date" id="dre-ini" onchange="renderFinDRE()" style="padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;background:var(--bg);color:var(--text);">
+        <span style="font-size:11px;color:var(--text3);">até</span>
+        <input type="date" id="dre-fim" onchange="renderFinDRE()" style="padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;background:var(--bg);color:var(--text);">
+        <button onclick="finDRESetPeriodo('mes')" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;background:none;color:var(--text2);cursor:pointer;">Mês atual</button>
+        <button onclick="finDRESetPeriodo('ano')" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;background:none;color:var(--text2);cursor:pointer;">Ano atual</button>
+      </div>
+      <!-- DRE -->
+      <div id="fin-dre-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;"></div>
+    </div>
+  </div>
+
+  <!-- Nav abas — rodapé -->
+  <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
+    <button onclick="showFinanceiroView('painel')" id="fnav-painel" class="fin-nav active" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">📊 Painel</button>
+    <button onclick="showFinanceiroView('vendas')" id="fnav-vendas" class="fin-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💰 Vendas</button>
+    <button onclick="showFinanceiroView('gastos')" id="fnav-gastos" class="fin-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💸 Gastos</button>
+    <button onclick="showFinanceiroView('dre')" id="fnav-dre" class="fin-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📈 DRE</button>
   </div>
 </div>
 
@@ -1405,21 +1559,21 @@ function toggleModuleMenu(){
 }
 
 function switchModule(mod){
-  if((mod==='coleta'||mod==='config'||mod==='estoques')&&!isAdmin()){
+  if((mod==='coleta'||mod==='config'||mod==='estoques'||mod==='financeiro')&&!isAdmin()){
     showToast('Módulo restrito a administradores','error');
     document.getElementById('module-dropdown').style.display='none';
     return;
   }
   activeModule=mod;
   document.getElementById('module-dropdown').style.display='none';
-  const labels={operacao:'OPERAÇÃO',coleta:'COLETA',config:'CONFIG.',pessoal:'PESSOAL',estoques:'ESTOQUES'};
+  const labels={operacao:'OPERAÇÃO',coleta:'COLETA',config:'CONFIG.',pessoal:'PESSOAL',estoques:'ESTOQUES',financeiro:'FINANCEIRO'};
   document.getElementById('module-label').textContent=labels[mod]||mod.toUpperCase();
 
   // Estilos do dropdown
   const base='padding:13px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;';
   const active=base+'color:var(--accent);background:var(--accent-dim);';
   const inactive=base+'color:var(--text2);';
-  ['operacao','coleta','config','pessoal','estoques'].forEach(m=>{
+  ['operacao','coleta','config','pessoal','estoques','financeiro'].forEach(m=>{
     const el=document.getElementById('mod-btn-'+m);
     if(el)el.style.cssText=mod===m?active:inactive;
   });
@@ -1430,11 +1584,13 @@ function switchModule(mod){
   const colEl=document.getElementById('modulo-coleta');
   const pessoalEl=document.getElementById('modulo-pessoal');
   const estEl=document.getElementById('modulo-estoques');
+  const finEl=document.getElementById('modulo-financeiro');
 
   // Esconde tudo primeiro
   opEl.style.display='none'; navEl.style.display='none';
   colEl.style.display='none'; pessoalEl.style.display='none';
   if(estEl)estEl.style.display='none';
+  if(finEl)finEl.style.display='none';
   if(fabEl)fabEl.style.display='none';
 
   if(mod==='operacao'){
@@ -1457,6 +1613,9 @@ function switchModule(mod){
   } else if(mod==='estoques'){
     if(estEl)estEl.style.display='flex';
     loadEstoqueFromSupabase().then(()=>showEstoqueView('painel'));
+  } else if(mod==='financeiro'){
+    if(finEl)finEl.style.display='flex';
+    loadFinanceiroFromSupabase().then(()=>showFinanceiroView('painel'));
   }
 }
 
@@ -2520,12 +2679,34 @@ function startRealtime(){
       ]}},
       ref:'6'
     };
+    const joinFinVendas={
+      topic:'realtime:public:financeiro_vendas',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'financeiro_vendas'},
+        {event:'UPDATE',schema:'public',table:'financeiro_vendas'},
+        {event:'DELETE',schema:'public',table:'financeiro_vendas'},
+      ]}},
+      ref:'7'
+    };
+    const joinFinGastos={
+      topic:'realtime:public:financeiro_gastos',
+      event:'phx_join',
+      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+        {event:'INSERT',schema:'public',table:'financeiro_gastos'},
+        {event:'UPDATE',schema:'public',table:'financeiro_gastos'},
+        {event:'DELETE',schema:'public',table:'financeiro_gastos'},
+      ]}},
+      ref:'8'
+    };
     _realtimeWs.send(JSON.stringify(joinRecords));
     _realtimeWs.send(JSON.stringify(joinColetaRecords));
     _realtimeWs.send(JSON.stringify(joinTanks));
     _realtimeWs.send(JSON.stringify(joinUsers));
     _realtimeWs.send(JSON.stringify(joinEstoqueMov));
     _realtimeWs.send(JSON.stringify(joinEstoqueItens));
+    _realtimeWs.send(JSON.stringify(joinFinVendas));
+    _realtimeWs.send(JSON.stringify(joinFinGastos));
 
     // Heartbeat a cada 25s para manter conexão viva
     _realtimeHeartbeat=setInterval(()=>{
@@ -2580,6 +2761,9 @@ function startRealtime(){
         }
         if(table==='estoque_itens'){
           onRealtimeEstoqueItens(row,eventType);
+        }
+        if(table==='financeiro_vendas'||table==='financeiro_gastos'){
+          onRealtimeFinanceiro(row,eventType,table);
         }
       }
     }catch(e){}
@@ -6398,7 +6582,7 @@ async function saveManejo(m){
     x.id !== m.id &&
     x.fase === m.fase &&
     !x.overridden &&
-    getRootLotes(x.id).some(r=>rootsNovo.includes(r))
+    (x.lote_id === m.lote_id || getRootLotes(x.id).some(r=>rootsNovo.includes(r)))
   );
   for(const ant of anteriores){
     ant.overridden = true;
@@ -7181,6 +7365,419 @@ async function saveNovaFase(){
 
 
 // ============================================================
+// MÓDULO FINANCEIRO
+// ============================================================
+
+let finVendas = [];
+let finGastos = [];
+let _finVendaEditId = null;
+let _finGastoEditId = null;
+let _finPainelFiltro = 'tudo';
+let _finTiposGasto = ['Salários','Transporte','Bonificação por resultado','Prestador de serviço','Ração','Material de consumo','Peças e manutenção corretiva','Arrendamento'];
+
+function showFinanceiroView(v){
+  document.querySelectorAll('.fview').forEach(el=>{el.style.display='none';});
+  document.querySelectorAll('.fin-nav').forEach(el=>{
+    el.style.color='var(--text2)';
+    el.style.borderTop='none';
+    el.style.marginTop='';
+  });
+  const viewEl=document.getElementById('fview-'+v);
+  const navEl=document.getElementById('fnav-'+v);
+  if(viewEl){viewEl.style.display='flex';viewEl.style.flexDirection='column';}
+  if(navEl){navEl.style.color='var(--accent)';navEl.style.borderTop='2px solid var(--accent)';navEl.style.marginTop='-2px';}
+  if(v==='vendas'){renderFinVendasHist();}
+  else if(v==='gastos'){_finPopulateRespSelect();_finPopulateTipoSelect();renderFinGastosHist();}
+  else if(v==='painel'){renderFinPainel();}
+  else if(v==='dre'){renderFinDRE();}
+}
+
+async function loadFinanceiroFromSupabase(){
+  try{
+    const [rv,rg]=await Promise.all([sbGet('financeiro_vendas','select=id,data'),sbGet('financeiro_gastos','select=id,data')]);
+    if(rv!=null){finVendas=rv.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));}
+    if(rg!=null){finGastos=rg.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));}
+    // tipos de gasto customizados
+    const tiposStr=localStorage.getItem('kc_fin_tipos');
+    if(tiposStr){try{_finTiposGasto=JSON.parse(tiposStr);}catch(e){}}
+  }catch(e){
+    const vs=localStorage.getItem('kc_fin_vendas');const gs=localStorage.getItem('kc_fin_gastos');
+    if(vs)try{finVendas=JSON.parse(vs);}catch(e){}
+    if(gs)try{finGastos=JSON.parse(gs);}catch(e){}
+  }
+}
+
+function _finSaveTipos(){localStorage.setItem('kc_fin_tipos',JSON.stringify(_finTiposGasto));}
+
+function _finPopulateRespSelect(){
+  const sel=document.getElementById('fg-resp');if(!sel)return;
+  const prev=sel.value;
+  sel.innerHTML='<option value="">Selecione...</option>';
+  (allUsers||[]).forEach(u=>{
+    const opt=document.createElement('option');opt.value=u.name;opt.textContent=u.name;sel.appendChild(opt);
+  });
+  if(prev)sel.value=prev;
+}
+
+function _finPopulateTipoSelect(){
+  const sel=document.getElementById('fg-tipo');if(!sel)return;
+  const prev=sel.value;
+  sel.innerHTML='';
+  _finTiposGasto.forEach(t=>{const opt=document.createElement('option');opt.value=t;opt.textContent=t;sel.appendChild(opt);});
+  if(prev)sel.value=prev;
+}
+
+function finNovoTipoGasto(){
+  const nome=prompt('Nome do novo tipo de gasto:');
+  if(!nome||!nome.trim())return;
+  const n=nome.trim();
+  if(_finTiposGasto.includes(n)){showToast('Tipo já existe','error');return;}
+  _finTiposGasto.push(n);_finSaveTipos();_finPopulateTipoSelect();
+  document.getElementById('fg-tipo').value=n;
+  showToast('Tipo adicionado');
+}
+
+function finCalcVenda(){
+  const qtd=parseFloat(document.getElementById('fv-qtd')?.value)||0;
+  const vunit=parseFloat(document.getElementById('fv-vunit')?.value)||0;
+  const quebra=parseFloat(document.getElementById('fv-quebra')?.value)||0;
+  const total=qtd*vunit*(1-quebra/100);
+  const impostos=total*0.04;
+  const fmtBR=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const vtEl=document.getElementById('fv-vtotal');const imEl=document.getElementById('fv-impostos');
+  if(vtEl)vtEl.value=qtd||vunit?'R$ '+fmtBR(total):'';
+  if(imEl)imEl.value=qtd||vunit?'R$ '+fmtBR(impostos):'';
+}
+
+function finCancelarVenda(){
+  _finVendaEditId=null;
+  ['fv-cliente','fv-qtd','fv-bio','fv-vunit','fv-quebra','fv-vtotal','fv-impostos','fv-dvenda','fv-dvenc','fv-dpag','fv-nf','fv-gta','fv-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const fpEl=document.getElementById('fv-fpag');if(fpEl)fpEl.value='';
+  const t=document.getElementById('fin-venda-form-title');if(t)t.textContent='➕ Nova Venda';
+  const btn=document.getElementById('fv-save-btn');if(btn)btn.textContent='💾 Salvar Venda';
+  const c=document.getElementById('fv-cancel-btn');if(c)c.style.display='none';
+}
+
+function finEditVenda(id){
+  const v=finVendas.find(x=>x.id===id);if(!v)return;
+  _finVendaEditId=id;
+  const set=(elId,val)=>{const el=document.getElementById(elId);if(el)el.value=val||'';};
+  set('fv-cliente',v.cliente);set('fv-qtd',v.qtd);set('fv-bio',v.bio);set('fv-vunit',v.vunit);
+  set('fv-quebra',v.quebra);set('fv-dvenda',v.dvenda);set('fv-dvenc',v.dvenc);set('fv-dpag',v.dpag);
+  set('fv-fpag',v.fpag);set('fv-nf',v.nf);set('fv-gta',v.gta);set('fv-obs',v.obs);
+  finCalcVenda();
+  const t=document.getElementById('fin-venda-form-title');if(t)t.textContent='✏️ Editar Venda';
+  const btn=document.getElementById('fv-save-btn');if(btn)btn.textContent='💾 Atualizar';
+  const c=document.getElementById('fv-cancel-btn');if(c)c.style.display='';
+  document.getElementById('fview-vendas')?.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function finSalvarVenda(){
+  const get=id=>document.getElementById(id)?.value.trim()||'';
+  const cliente=get('fv-cliente');const dvenda=get('fv-dvenda');
+  if(!cliente||!dvenda){showToast('Cliente e data são obrigatórios','error');return;}
+  const qtd=parseFloat(document.getElementById('fv-qtd')?.value)||0;
+  const vunit=parseFloat(document.getElementById('fv-vunit')?.value)||0;
+  const quebra=parseFloat(document.getElementById('fv-quebra')?.value)||0;
+  const total=qtd*vunit*(1-quebra/100);
+  const dvenc=get('fv-dvenc');const dpag=get('fv-dpag');
+  let diasAtraso=null;
+  if(dvenc){
+    const ref=dpag?new Date(dpag):new Date();
+    diasAtraso=Math.floor((ref-new Date(dvenc))/(1000*60*60*24));
+  }
+  const id=_finVendaEditId||('fv_'+Date.now());
+  const venda={id,cliente,qtd,bio:parseFloat(document.getElementById('fv-bio')?.value)||null,vunit,quebra,total,impostos:total*0.04,dvenda,dvenc,dpag,fpag:get('fv-fpag'),diasAtraso,nf:get('fv-nf'),gta:get('fv-gta'),obs:get('fv-obs'),criadoEm:_finVendaEditId?finVendas.find(x=>x.id===_finVendaEditId)?.criadoEm:new Date().toISOString()};
+  try{
+    await sbUpsert('financeiro_vendas',{id,data:venda});
+    const idx=finVendas.findIndex(x=>x.id===id);
+    if(idx>=0)finVendas[idx]=venda;else finVendas.push(venda);
+    localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));
+    showToast('Venda salva');finCancelarVenda();renderFinVendasHist();
+  }catch(e){showToast('Erro ao salvar','error');console.error(e);}
+}
+
+async function finDeletarVenda(id){
+  if(!confirm('Excluir esta venda?'))return;
+  try{
+    await sbDelete('financeiro_vendas',id);
+    finVendas=finVendas.filter(x=>x.id!==id);
+    localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));
+    showToast('Venda excluída');renderFinVendasHist();
+  }catch(e){showToast('Erro ao excluir','error');}
+}
+
+function renderFinVendasHist(){
+  const wrap=document.getElementById('fin-vendas-hist');if(!wrap)return;
+  const fmtR=v=>(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtD=s=>s?s.split('-').reverse().join('/'):'—';
+  const sorted=[...finVendas].sort((a,b)=>(b.dvenda||'').localeCompare(a.dvenda||''));
+  if(!sorted.length){wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhuma venda registrada</div>';return;}
+  let html=`<table style="width:100%;min-width:640px;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:var(--surface2,#f8fafc);">
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Data</th>
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Cliente</th>
+      <th style="padding:10px 8px;text-align:right;color:var(--text2);font-weight:600;">Qtd(kg)</th>
+      <th style="padding:10px 8px;text-align:right;color:var(--text2);font-weight:600;">R$/kg</th>
+      <th style="padding:10px 8px;text-align:right;color:var(--text2);font-weight:600;">Total</th>
+      <th style="padding:10px 8px;text-align:center;color:var(--text2);font-weight:600;">Pgto</th>
+      <th style="padding:10px 8px;text-align:center;color:var(--text2);font-weight:600;">Atraso</th>
+      <th style="padding:10px 8px;text-align:center;color:var(--text2);font-weight:600;"></th>
+    </tr></thead><tbody>`;
+  sorted.forEach(v=>{
+    const atrasoStr=v.diasAtraso!=null?(v.diasAtraso>0?`<span style="color:#ef4444;">${v.diasAtraso}d</span>`:v.diasAtraso===0?'No dia':`<span style="color:#22c55e;">${Math.abs(v.diasAtraso)}d antes</span>`):'—';
+    html+=`<tr style="border-top:1px solid var(--border);">
+      <td style="padding:9px 8px;color:var(--text);">${fmtD(v.dvenda)}</td>
+      <td style="padding:9px 8px;color:var(--text);font-weight:600;">${v.cliente||'—'}</td>
+      <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.qtd?Number(v.qtd).toLocaleString('pt-BR',{maximumFractionDigits:3}):'—'}</td>
+      <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.vunit?'R$'+fmtR(v.vunit):'—'}</td>
+      <td style="padding:9px 8px;text-align:right;color:var(--accent);font-weight:700;">R$${fmtR(v.total)}</td>
+      <td style="padding:9px 8px;text-align:center;color:var(--text2);">${v.dpag?'✓':fmtD(v.dvenc)}</td>
+      <td style="padding:9px 8px;text-align:center;">${atrasoStr}</td>
+      <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
+        <button onclick="finEditVenda('${v.id}')" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;background:none;color:var(--text2);cursor:pointer;">✏️</button>
+        <button onclick="finDeletarVenda('${v.id}')" style="padding:4px 8px;border:1.5px solid #fca5a5;border-radius:6px;font-size:11px;background:none;color:#ef4444;cursor:pointer;margin-left:4px;">🗑</button>
+      </td>
+    </tr>`;
+  });
+  wrap.innerHTML=html+'</tbody></table>';
+}
+
+function finCancelarGasto(){
+  _finGastoEditId=null;
+  ['fg-data','fg-valor','fg-nome','fg-doc','fg-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const r=document.getElementById('fg-resp');if(r)r.value='';
+  const f=document.getElementById('fg-fpag');if(f)f.value='';
+  const c=document.getElementById('fg-class');if(c)c.value='opex';
+  const re=document.getElementById('fg-reembolso');if(re)re.checked=false;
+  const t=document.getElementById('fin-gasto-form-title');if(t)t.textContent='➕ Novo Gasto';
+  const btn=document.getElementById('fg-save-btn');if(btn)btn.textContent='💾 Salvar Gasto';
+  const cb=document.getElementById('fg-cancel-btn');if(cb)cb.style.display='none';
+}
+
+function finEditGasto(id){
+  const g=finGastos.find(x=>x.id===id);if(!g)return;
+  _finGastoEditId=id;
+  const set=(elId,val)=>{const el=document.getElementById(elId);if(el)el.value=val||'';};
+  set('fg-data',g.data);set('fg-valor',g.valor);set('fg-resp',g.resp);set('fg-fpag',g.fpag);
+  set('fg-class',g.class||'opex');set('fg-tipo',g.tipo);set('fg-nome',g.nome);set('fg-doc',g.doc);set('fg-obs',g.obs);
+  const re=document.getElementById('fg-reembolso');if(re)re.checked=!!g.reembolso;
+  const t=document.getElementById('fin-gasto-form-title');if(t)t.textContent='✏️ Editar Gasto';
+  const btn=document.getElementById('fg-save-btn');if(btn)btn.textContent='💾 Atualizar';
+  const cb=document.getElementById('fg-cancel-btn');if(cb)cb.style.display='';
+  document.getElementById('fview-gastos')?.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function finSalvarGasto(){
+  const get=id=>document.getElementById(id)?.value.trim()||'';
+  const data=get('fg-data');const valor=parseFloat(document.getElementById('fg-valor')?.value)||0;
+  if(!data||!valor){showToast('Data e valor são obrigatórios','error');return;}
+  const id=_finGastoEditId||('fg_'+Date.now());
+  const gasto={id,data,valor,resp:get('fg-resp'),fpag:get('fg-fpag'),class:get('fg-class')||'opex',tipo:get('fg-tipo'),nome:get('fg-nome'),doc:get('fg-doc'),reembolso:document.getElementById('fg-reembolso')?.checked||false,obs:get('fg-obs'),criadoEm:_finGastoEditId?finGastos.find(x=>x.id===id)?.criadoEm:new Date().toISOString()};
+  try{
+    await sbUpsert('financeiro_gastos',{id,data:gasto});
+    const idx=finGastos.findIndex(x=>x.id===id);
+    if(idx>=0)finGastos[idx]=gasto;else finGastos.push(gasto);
+    localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));
+    showToast('Gasto salvo');finCancelarGasto();renderFinGastosHist();
+  }catch(e){showToast('Erro ao salvar','error');console.error(e);}
+}
+
+async function finDeletarGasto(id){
+  if(!confirm('Excluir este gasto?'))return;
+  try{
+    await sbDelete('financeiro_gastos',id);
+    finGastos=finGastos.filter(x=>x.id!==id);
+    localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));
+    showToast('Gasto excluído');renderFinGastosHist();
+  }catch(e){showToast('Erro ao excluir','error');}
+}
+
+function renderFinGastosHist(){
+  const wrap=document.getElementById('fin-gastos-hist');if(!wrap)return;
+  const fmtR=v=>(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtD=s=>s?s.split('-').reverse().join('/'):'—';
+  const sorted=[...finGastos].sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  if(!sorted.length){wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum gasto registrado</div>';return;}
+  let html=`<table style="width:100%;min-width:580px;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:var(--surface2,#f8fafc);">
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Data</th>
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Tipo</th>
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Recebedor</th>
+      <th style="padding:10px 8px;text-align:center;color:var(--text2);font-weight:600;">Class.</th>
+      <th style="padding:10px 8px;text-align:right;color:var(--text2);font-weight:600;">Valor</th>
+      <th style="padding:10px 8px;text-align:center;color:var(--text2);font-weight:600;"></th>
+    </tr></thead><tbody>`;
+  sorted.forEach(g=>{
+    html+=`<tr style="border-top:1px solid var(--border);">
+      <td style="padding:9px 8px;color:var(--text);">${fmtD(g.data)}</td>
+      <td style="padding:9px 8px;color:var(--text);">${g.tipo||'—'}${g.reembolso?' <span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:1px 5px;border-radius:4px;font-weight:600;">Reimb.</span>':''}</td>
+      <td style="padding:9px 8px;color:var(--text2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.nome||'—'}</td>
+      <td style="padding:9px 8px;text-align:center;"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;${g.class==='capex'?'background:#dbeafe;color:#1d4ed8;':'background:#dcfce7;color:#15803d;'}">${(g.class||'opex').toUpperCase()}</span></td>
+      <td style="padding:9px 8px;text-align:right;color:#ef4444;font-weight:700;">R$${fmtR(g.valor)}</td>
+      <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
+        <button onclick="finEditGasto('${g.id}')" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;background:none;color:var(--text2);cursor:pointer;">✏️</button>
+        <button onclick="finDeletarGasto('${g.id}')" style="padding:4px 8px;border:1.5px solid #fca5a5;border-radius:6px;font-size:11px;background:none;color:#ef4444;cursor:pointer;margin-left:4px;">🗑</button>
+      </td>
+    </tr>`;
+  });
+  wrap.innerHTML=html+'</tbody></table>';
+}
+
+function finPainelFiltro(f){
+  _finPainelFiltro=f;
+  ['tudo','vendas','gastos'].forEach(k=>{
+    const btn=document.getElementById('fp-btn-'+k);if(!btn)return;
+    if(k===f){btn.style.background='var(--accent)';btn.style.color='#fff';btn.style.borderColor='var(--accent)';}
+    else{btn.style.background='none';btn.style.color='var(--text2)';btn.style.borderColor='var(--border)';}
+  });
+  renderFinPainel();
+}
+
+function renderFinPainel(){
+  const ini=document.getElementById('fp-ini')?.value||'';
+  const fim=document.getElementById('fp-fim')?.value||'';
+  const fmtR=v=>(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtD=s=>s?s.split('-').reverse().join('/'):'—';
+
+  const vFiltered=finVendas.filter(v=>(!ini||v.dvenda>=ini)&&(!fim||v.dvenda<=fim));
+  const gFiltered=finGastos.filter(g=>(!ini||g.data>=ini)&&(!fim||g.data<=fim));
+  const totalVendas=vFiltered.reduce((s,v)=>s+(v.total||0),0);
+  const totalGastos=gFiltered.reduce((s,g)=>s+(g.valor||0),0);
+  const resultado=totalVendas-totalGastos;
+
+  // Cards
+  const cardsEl=document.getElementById('fin-painel-cards');
+  if(cardsEl){
+    const cardStyle='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;';
+    cardsEl.innerHTML=`
+      <div style="${cardStyle}"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:6px;">RECEITA</div><div style="font-size:16px;font-weight:800;color:var(--accent);">R$${fmtR(totalVendas)}</div></div>
+      <div style="${cardStyle}"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:6px;">GASTOS</div><div style="font-size:16px;font-weight:800;color:#ef4444;">R$${fmtR(totalGastos)}</div></div>
+      <div style="${cardStyle}"><div style="font-size:10px;font-weight:600;color:var(--text2);margin-bottom:6px;">RESULTADO</div><div style="font-size:16px;font-weight:800;color:${resultado>=0?'#22c55e':'#ef4444'};">R$${fmtR(resultado)}</div></div>`;
+  }
+
+  // Lista combinada
+  const listaEl=document.getElementById('fin-painel-lista');if(!listaEl)return;
+  let items=[];
+  if(_finPainelFiltro!=='gastos')vFiltered.forEach(v=>items.push({tipo:'venda',data:v.dvenda,desc:v.cliente,sub:'Venda de peixe',valor:v.total,obj:v}));
+  if(_finPainelFiltro!=='vendas')gFiltered.forEach(g=>items.push({tipo:'gasto',data:g.data,desc:g.tipo||'Gasto',sub:g.nome||'',valor:-g.valor,obj:g}));
+  items.sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  if(!items.length){listaEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum lançamento no período</div>';return;}
+  let html=`<table style="width:100%;min-width:460px;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:var(--surface2,#f8fafc);">
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Data</th>
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Descrição</th>
+      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Detalhe</th>
+      <th style="padding:10px 8px;text-align:right;color:var(--text2);font-weight:600;">Valor</th>
+    </tr></thead><tbody>`;
+  items.forEach(it=>{
+    const clr=it.tipo==='venda'?'var(--accent)':'#ef4444';
+    const sinal=it.tipo==='venda'?'+':'-';
+    html+=`<tr style="border-top:1px solid var(--border);">
+      <td style="padding:9px 8px;color:var(--text);">${fmtD(it.data)}</td>
+      <td style="padding:9px 8px;font-weight:600;color:var(--text);">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${clr};margin-right:6px;"></span>${it.desc}
+      </td>
+      <td style="padding:9px 8px;color:var(--text2);">${it.sub}</td>
+      <td style="padding:9px 8px;text-align:right;font-weight:700;color:${clr};">${sinal}R$${fmtR(Math.abs(it.valor))}</td>
+    </tr>`;
+  });
+  listaEl.innerHTML=html+'</tbody></table>';
+}
+
+function finDRESetPeriodo(tipo){
+  const now=new Date();
+  let ini,fim;
+  if(tipo==='mes'){
+    ini=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+    const last=new Date(now.getFullYear(),now.getMonth()+1,0);
+    fim=`${last.getFullYear()}-${String(last.getMonth()+1).padStart(2,'0')}-${String(last.getDate()).padStart(2,'0')}`;
+  } else {
+    ini=`${now.getFullYear()}-01-01`;fim=`${now.getFullYear()}-12-31`;
+  }
+  const iEl=document.getElementById('dre-ini');const fEl=document.getElementById('dre-fim');
+  if(iEl)iEl.value=ini;if(fEl)fEl.value=fim;
+  renderFinDRE();
+}
+
+function renderFinDRE(){
+  const ini=document.getElementById('dre-ini')?.value||'';
+  const fim=document.getElementById('dre-fim')?.value||'';
+  const wrap=document.getElementById('fin-dre-wrap');if(!wrap)return;
+  const fmtR=v=>(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  const vF=finVendas.filter(v=>(!ini||v.dvenda>=ini)&&(!fim||v.dvenda<=fim));
+  const gF=finGastos.filter(g=>(!ini||g.data>=ini)&&(!fim||g.data<=fim));
+
+  const receitaBruta=vF.reduce((s,v)=>s+(v.total||0),0);
+  const impostos=vF.reduce((s,v)=>s+(v.impostos||0),0);
+  const receitaLiquida=receitaBruta-impostos;
+  const opex=gF.filter(g=>g.class!=='capex').reduce((s,g)=>s+(g.valor||0),0);
+  const capex=gF.filter(g=>g.class==='capex').reduce((s,g)=>s+(g.valor||0),0);
+  const ebitda=receitaLiquida-opex;
+  const resultado=ebitda-capex;
+
+  // Agrupamento OPEX por tipo
+  const opexByTipo={};
+  gF.filter(g=>g.class!=='capex').forEach(g=>{const t=g.tipo||'Outros';opexByTipo[t]=(opexByTipo[t]||0)+g.valor;});
+  const capexByTipo={};
+  gF.filter(g=>g.class==='capex').forEach(g=>{const t=g.tipo||'Outros';capexByTipo[t]=(capexByTipo[t]||0)+g.valor;});
+
+  const rowStyle='display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);';
+  const sepStyle='display:flex;justify-content:space-between;padding:12px 16px;border-bottom:2px solid var(--border);background:var(--surface2,#f8fafc);font-weight:700;font-size:13px;';
+  const subStyle='display:flex;justify-content:space-between;padding:7px 16px 7px 28px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);';
+  const totalStyle='display:flex;justify-content:space-between;padding:14px 16px;font-weight:800;font-size:14px;';
+
+  let html=`<div style="font-size:11px;font-weight:700;color:var(--text2);padding:10px 16px;letter-spacing:.05em;border-bottom:2px solid var(--border);">DEMONSTRAÇÃO DO RESULTADO DO EXERCÍCIO</div>`;
+
+  html+=`<div style="${sepStyle}"><span>RECEITA BRUTA</span><span style="color:var(--accent);">R$ ${fmtR(receitaBruta)}</span></div>`;
+  html+=`<div style="${subStyle}"><span>Venda de pescado (${vF.length} venda${vF.length!==1?'s':''})</span><span>R$ ${fmtR(receitaBruta)}</span></div>`;
+  html+=`<div style="${rowStyle}"><span style="font-size:12px;color:var(--text2);">(-) Impostos (4%)</span><span style="font-size:12px;color:#ef4444;">(R$ ${fmtR(impostos)})</span></div>`;
+  html+=`<div style="${sepStyle}"><span>RECEITA LÍQUIDA</span><span style="color:var(--accent);">R$ ${fmtR(receitaLiquida)}</span></div>`;
+
+  html+=`<div style="${sepStyle}"><span>DESPESAS OPEX</span><span style="color:#ef4444;">(R$ ${fmtR(opex)})</span></div>`;
+  Object.entries(opexByTipo).sort((a,b)=>b[1]-a[1]).forEach(([t,v])=>{
+    html+=`<div style="${subStyle}"><span>${t}</span><span>(R$ ${fmtR(v)})</span></div>`;
+  });
+
+  const ebitdaClr=ebitda>=0?'#22c55e':'#ef4444';
+  html+=`<div style="${sepStyle};background:var(--accent-dim,#eff6ff);"><span>EBITDA</span><span style="color:${ebitdaClr};">R$ ${fmtR(ebitda)}</span></div>`;
+
+  if(capex>0){
+    html+=`<div style="${sepStyle}"><span>DESPESAS CAPEX</span><span style="color:#f59e0b;">(R$ ${fmtR(capex)})</span></div>`;
+    Object.entries(capexByTipo).sort((a,b)=>b[1]-a[1]).forEach(([t,v])=>{
+      html+=`<div style="${subStyle}"><span>${t}</span><span>(R$ ${fmtR(v)})</span></div>`;
+    });
+  }
+
+  const resClr=resultado>=0?'#22c55e':'#ef4444';
+  html+=`<div style="${totalStyle};background:${resultado>=0?'#f0fdf4':'#fef2f2'};border-top:2px solid ${resClr};"><span>RESULTADO LÍQUIDO</span><span style="color:${resClr};">R$ ${fmtR(resultado)}</span></div>`;
+
+  wrap.innerHTML=html;
+}
+
+function onRealtimeFinanceiro(row, eventType, table){
+  const id=row?.id;if(!id)return;
+  if(table==='financeiro_vendas'){
+    if(eventType==='DELETE')finVendas=finVendas.filter(x=>x.id!==id);
+    else{const v=row.data||row;if(!v)return;const idx=finVendas.findIndex(x=>x.id===id);if(idx>=0)finVendas[idx]=v;else finVendas.push(v);}
+    localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));
+  } else {
+    if(eventType==='DELETE')finGastos=finGastos.filter(x=>x.id!==id);
+    else{const g=row.data||row;if(!g)return;const idx=finGastos.findIndex(x=>x.id===id);if(idx>=0)finGastos[idx]=g;else finGastos.push(g);}
+    localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));
+  }
+  const finEl=document.getElementById('modulo-financeiro');
+  if(!finEl||finEl.style.display==='none')return;
+  const activeNav=document.querySelector('.fin-nav.active')?.id?.replace('fnav-','');
+  if(activeNav==='vendas')renderFinVendasHist();
+  else if(activeNav==='gastos')renderFinGastosHist();
+  else if(activeNav==='painel')renderFinPainel();
+  else if(activeNav==='dre')renderFinDRE();
+  showSyncBadge('↻ Financeiro atualizado');
+}
+
+// ============================================================
 // MÓDULO ESTOQUES
 // ============================================================
 
@@ -7647,6 +8244,7 @@ function renderEstoquePainel(){
 
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
+  const today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const prev=new Date(now);prev.setDate(prev.getDate()-1);
   const yesterday=`${prev.getFullYear()}-${pad(prev.getMonth()+1)}-${pad(prev.getDate())}`;
   const prev2=new Date(now);prev2.setDate(prev2.getDate()-2);
@@ -7672,9 +8270,9 @@ function renderEstoquePainel(){
     let saldoD1,entradaD1=0,consumoD1,saldoHoje,consumoPeriodo=null;
 
     if(item.isRacao){
-      // D-1 = saldo no início de ontem (fim de anteontem); Hoje = fim de ontem = D-1 + entradas - consumo D-1
+      // D-1 = saldo no início de ontem (fim de anteontem); Hoje = saldo acumulado até agora (inclusive hoje)
       saldoD1  =racaoSaldoAte(item.id,item.racaoNome,dayBeforeYest);
-      saldoHoje=racaoSaldoAte(item.id,item.racaoNome,yesterday);
+      saldoHoje=racaoSaldoAte(item.id,item.racaoNome,today);
       entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'&&m.date===yesterday)
         .reduce((s,m)=>s+m.qtd,0);
       const consumoD1G=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===yesterday)
@@ -7697,7 +8295,7 @@ function renderEstoquePainel(){
       saldoD1  =movs.filter(m=>m.date<=dayBeforeYest).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       entradaD1=movs.filter(m=>m.date===yesterday&&m.tipo==='entrada').reduce((s,m)=>s+m.qtd,0);
       consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
-      saldoHoje=movs.filter(m=>m.date<=yesterday).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+      saldoHoje=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       if(temFiltro){
         consumoPeriodo=movs.filter(m=>m.tipo==='saida'&&(!ini||m.date>=ini)&&(!fim||m.date<=fim))
           .reduce((s,m)=>s+m.qtd,0);
@@ -7732,7 +8330,7 @@ function renderEstoquePainel(){
       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#16a34a;">Entrada D-1</th>
       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--danger);">Consumo D-1</th>
       ${thPeriodo}
-      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Estoque Hoje</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Saldo Atual</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
@@ -7947,7 +8545,7 @@ async function renderMetas() {
   let bonusTotal = 0;
 
   let html = `
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <table style="width:100%;min-width:520px;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="background:var(--bg);">
           <th style="padding:12px 16px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Indicador</th>
