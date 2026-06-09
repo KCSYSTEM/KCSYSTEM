@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.1 — Caixinha</title>
+<title>KC System v6.2</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -411,7 +411,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.1</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.2</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -891,6 +891,27 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
   </div>
 
+  <!-- VIEW GRAFICOS -->
+  <div id="fview-graficos" class="fview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header">
+      <div><div class="view-title">Gráficos</div><div class="view-sub">Evolução mensal</div></div>
+    </div>
+    <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:14px;">
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <div style="padding:10px 14px;border-bottom:1.5px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);">VENDAS POR MÊS</div>
+        <div id="fin-graf-vendas" style="padding:12px 8px 4px;"></div>
+      </div>
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <div style="padding:10px 14px;border-bottom:1.5px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);">GASTOS POR MÊS</div>
+        <div id="fin-graf-gastos" style="padding:12px 8px 4px;"></div>
+      </div>
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <div style="padding:10px 14px;border-bottom:1.5px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);">LUCRO POR MÊS</div>
+        <div id="fin-graf-lucro" style="padding:12px 8px 4px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- VIEW CAIXINHA -->
   <div id="fview-caixinha" class="fview" style="flex:1;overflow-y:auto;display:none;">
     <div class="view-header">
@@ -907,11 +928,12 @@ input[type="number"]{-moz-appearance:textfield;}
 
   <!-- Nav abas — rodapé -->
   <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
-    <button onclick="showFinanceiroView('painel')" id="fnav-painel" class="fin-nav active" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">📊 Painel</button>
-    <button onclick="showFinanceiroView('vendas')" id="fnav-vendas" class="fin-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💰 Vendas</button>
-    <button onclick="showFinanceiroView('gastos')" id="fnav-gastos" class="fin-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💸 Gastos</button>
-    <button onclick="showFinanceiroView('caixinha')" id="fnav-caixinha" class="fin-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💵 Caixinha</button>
-    <button onclick="showFinanceiroView('dre')" id="fnav-dre" class="fin-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📈 DRE</button>
+    <button onclick="showFinanceiroView('painel')" id="fnav-painel" class="fin-nav active" style="flex:1;padding:8px 2px;font-size:10px;font-weight:700;border:none;background:none;color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">📊 Painel</button>
+    <button onclick="showFinanceiroView('vendas')" id="fnav-vendas" class="fin-nav" style="flex:1;padding:8px 2px;font-size:10px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💰 Vendas</button>
+    <button onclick="showFinanceiroView('gastos')" id="fnav-gastos" class="fin-nav" style="flex:1;padding:8px 2px;font-size:10px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💸 Gastos</button>
+    <button onclick="showFinanceiroView('caixinha')" id="fnav-caixinha" class="fin-nav" style="flex:1;padding:8px 2px;font-size:10px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">💵 Caixa</button>
+    <button onclick="showFinanceiroView('graficos')" id="fnav-graficos" class="fin-nav" style="flex:1;padding:8px 2px;font-size:10px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📉 Graf.</button>
+    <button onclick="showFinanceiroView('dre')" id="fnav-dre" class="fin-nav" style="flex:1;padding:8px 2px;font-size:10px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📈 DRE</button>
   </div>
 </div>
 
@@ -7407,7 +7429,7 @@ let finGastos = [];
 let _finVendaEditId = null;
 let _finGastoEditId = null;
 let _finPainelFiltro = 'tudo';
-let _finTiposGasto = ['Salários','Transporte','Bonificação por resultado','Prestador de serviço','Ração','Material de consumo','Peças e manutenção corretiva','Arrendamento'];
+let _finTiposGasto = ['Salários','Transporte','Bonificação por resultado','Prestador de serviço','Ração','Material de consumo','Peças e manutenção corretiva','Arrendamento','Imposto'];
 
 function showFinanceiroView(v){
   document.querySelectorAll('.fview').forEach(el=>{el.style.display='none';});
@@ -7424,6 +7446,7 @@ function showFinanceiroView(v){
   else if(v==='gastos'){_finPopulateRespSelect();_finPopulateTipoSelect();renderFinGastosHist();}
   else if(v==='painel'){renderFinPainel();}
   else if(v==='caixinha'){renderFinCaixinha();}
+  else if(v==='graficos'){renderFinGraficos();}
   else if(v==='dre'){renderFinDRE();}
 }
 
@@ -7794,16 +7817,17 @@ function renderFinDRE(){
   const gF=finGastos.filter(g=>(!ini||g.data>=ini)&&(!fim||g.data<=fim));
 
   const receitaBruta=vF.reduce((s,v)=>s+(v.total||0),0);
-  const impostos=vF.reduce((s,v)=>s+(v.impostos||0),0);
+  const gImpostos=gF.filter(g=>g.tipo==='Imposto');
+  const impostos=gImpostos.reduce((s,g)=>s+(g.valor||0),0);
   const receitaLiquida=receitaBruta-impostos;
-  const opex=gF.filter(g=>g.class!=='capex').reduce((s,g)=>s+(g.valor||0),0);
+  const opex=gF.filter(g=>g.class!=='capex'&&g.tipo!=='Imposto').reduce((s,g)=>s+(g.valor||0),0);
   const capex=gF.filter(g=>g.class==='capex').reduce((s,g)=>s+(g.valor||0),0);
   const ebitda=receitaLiquida-opex;
   const resultado=ebitda-capex;
 
   // Agrupamento OPEX por tipo
   const opexByTipo={};
-  gF.filter(g=>g.class!=='capex').forEach(g=>{const t=g.tipo||'Outros';opexByTipo[t]=(opexByTipo[t]||0)+g.valor;});
+  gF.filter(g=>g.class!=='capex'&&g.tipo!=='Imposto').forEach(g=>{const t=g.tipo||'Outros';opexByTipo[t]=(opexByTipo[t]||0)+g.valor;});
   const capexByTipo={};
   gF.filter(g=>g.class==='capex').forEach(g=>{const t=g.tipo||'Outros';capexByTipo[t]=(capexByTipo[t]||0)+g.valor;});
 
@@ -7816,7 +7840,7 @@ function renderFinDRE(){
 
   html+=`<div style="${sepStyle}"><span>RECEITA BRUTA</span><span style="color:var(--accent);">R$ ${fmtR(receitaBruta)}</span></div>`;
   html+=`<div style="${subStyle}"><span>Venda de alevinos (${vF.length} venda${vF.length!==1?'s':''})</span><span>R$ ${fmtR(receitaBruta)}</span></div>`;
-  html+=`<div style="${rowStyle}"><span style="font-size:12px;color:var(--text2);">(-) Impostos (4%)</span><span style="font-size:12px;color:#ef4444;">(R$ ${fmtR(impostos)})</span></div>`;
+  if(impostos>0)html+=`<div style="${rowStyle}"><span style="font-size:12px;color:var(--text2);">(-) Impostos (${gImpostos.length} lançamento${gImpostos.length!==1?'s':''})</span><span style="font-size:12px;color:#ef4444;">(R$ ${fmtR(impostos)})</span></div>`;
   html+=`<div style="${sepStyle}"><span>RECEITA LÍQUIDA</span><span style="color:var(--accent);">R$ ${fmtR(receitaLiquida)}</span></div>`;
 
   html+=`<div style="${sepStyle}"><span>DESPESAS OPEX</span><span style="color:#ef4444;">(R$ ${fmtR(opex)})</span></div>`;
@@ -7842,6 +7866,7 @@ function renderFinDRE(){
 
 function renderFinCaixinha(){
   const pad2=n=>String(n).padStart(2,'0');
+  const fmtR=v=>(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const fmtData=d=>{if(!d)return'—';const[y,m,dia]=d.split('-');return`${pad2(dia)}/${pad2(m)}/${y}`;};
   const entradas=finVendas.filter(v=>v.fpag==='Dinheiro');
   const saidas=finGastos.filter(g=>g.fpag==='Dinheiro');
@@ -7899,8 +7924,74 @@ function onRealtimeFinanceiro(row, eventType, table){
   else if(activeNav==='gastos')renderFinGastosHist();
   else if(activeNav==='painel')renderFinPainel();
   else if(activeNav==='caixinha')renderFinCaixinha();
+  else if(activeNav==='graficos')renderFinGraficos();
   else if(activeNav==='dre')renderFinDRE();
   showSyncBadge('↻ Financeiro atualizado');
+}
+
+// ============================================================
+// MÓDULO FINANCEIRO — GRÁFICOS
+// ============================================================
+function _finBarChart(data,color,negColor){
+  if(!data.length)return'<div style="text-align:center;color:var(--text2);font-size:13px;padding:24px 0;">Sem dados</div>';
+  const fmtV=v=>{const a=Math.abs(v);if(a>=1000000)return(v/1000000).toFixed(1)+'M';if(a>=1000)return(v/1000).toFixed(1)+'k';return v.toFixed(0);};
+  const W=360,H=180,pL=52,pB=28,pT=18,pR=6;
+  const pw=W-pL-pR,ph=H-pT-pB;
+  const vals=data.map(d=>d.value);
+  const maxV=Math.max(...vals,0);
+  const minV=Math.min(...vals,0);
+  const range=maxV-minV||1;
+  const zeroY=pT+ph*(maxV/range);
+  const gap=pw/data.length;
+  const bw=Math.max(3,gap*0.65);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;overflow:visible">`;
+  // grid
+  [0,0.25,0.5,0.75,1].forEach(f=>{
+    const gy=(pT+ph*f).toFixed(1);
+    svg+=`<line x1="${pL}" y1="${gy}" x2="${W-pR}" y2="${gy}" stroke="var(--border)" stroke-width="${f===1?1.5:0.6}"/>`;
+    if(f===0||f===0.5||f===1){
+      const val=maxV-range*f;
+      svg+=`<text x="${pL-4}" y="${(+gy+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--text2)">${fmtV(val)}</text>`;
+    }
+  });
+  // zero line quando há valores negativos
+  if(minV<0)svg+=`<line x1="${pL}" y1="${zeroY.toFixed(1)}" x2="${W-pR}" y2="${zeroY.toFixed(1)}" stroke="var(--text2)" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+  // eixo esquerdo
+  svg+=`<line x1="${pL}" y1="${pT}" x2="${pL}" y2="${pT+ph}" stroke="var(--border)" stroke-width="1.5"/>`;
+  data.forEach((d,i)=>{
+    const cx=pL+gap*(i+0.5);
+    const x=(cx-bw/2).toFixed(1);
+    const bh=Math.abs(d.value)/range*ph;
+    const y=(d.value>=0?zeroY-bh:zeroY).toFixed(1);
+    const c=d.value>=0?(color||'#3b82f6'):(negColor||'#ef4444');
+    if(bh>0)svg+=`<rect x="${x}" y="${y}" width="${bw.toFixed(1)}" height="${Math.max(bh,1).toFixed(1)}" rx="2" fill="${c}" opacity="0.85"/>`;
+    if(bh>15){
+      const lY=(d.value>=0?+y-3:+y+bh+9).toFixed(1);
+      svg+=`<text x="${cx.toFixed(1)}" y="${lY}" text-anchor="middle" font-size="8" font-weight="700" fill="${c}">${fmtV(d.value)}</text>`;
+    }
+    svg+=`<text x="${cx.toFixed(1)}" y="${(pT+ph+14).toFixed(1)}" text-anchor="middle" font-size="8" fill="var(--text2)">${d.label}</text>`;
+  });
+  svg+=`</svg>`;
+  return svg;
+}
+
+function renderFinGraficos(){
+  const MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const fmtYM=ym=>{const[y,m]=ym.split('-');return`${MN[+m-1]}/${y.slice(2)}`;};
+  const months={};
+  finVendas.forEach(v=>{if(!v.data)return;const ym=v.data.slice(0,7);if(!months[ym])months[ym]={v:0,g:0};months[ym].v+=(v.total||0);});
+  finGastos.forEach(g=>{if(!g.data)return;const ym=g.data.slice(0,7);if(!months[ym])months[ym]={v:0,g:0};months[ym].g+=(g.valor||0);});
+  const sorted=Object.keys(months).sort();
+  const mk=(field,alt)=>sorted.map(ym=>({label:fmtYM(ym),value:months[ym][field]??alt(ym)}));
+  const vendData=mk('v',()=>0);
+  const gastData=mk('g',()=>0);
+  const lucData=sorted.map(ym=>({label:fmtYM(ym),value:(months[ym].v||0)-(months[ym].g||0)}));
+  const vEl=document.getElementById('fin-graf-vendas');
+  const gEl=document.getElementById('fin-graf-gastos');
+  const lEl=document.getElementById('fin-graf-lucro');
+  if(vEl)vEl.innerHTML=_finBarChart(vendData,'#3b82f6');
+  if(gEl)gEl.innerHTML=_finBarChart(gastData,'#f97316');
+  if(lEl)lEl.innerHTML=_finBarChart(lucData,'#22c55e','#ef4444');
 }
 
 // ============================================================
