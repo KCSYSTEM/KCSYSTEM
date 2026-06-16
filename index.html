@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.7</title>
+<title>KC System v6.9</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -411,7 +411,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.7</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.9</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2934,7 +2934,7 @@ function onRealtimeTank(tank){
 async function refreshRecordsFromSupabase(){
   if(!currentUser)return;
   try{
-    const rows=await sbGet('tank_records','select=id,tank_id,tank_name,date,username,user_name,timestamp,data,racao_lancada,aditivos&order=timestamp.desc&limit=5000');
+    const rows=await sbGet('tank_records','select=*&order=timestamp.desc&limit=5000');
     if(!rows||!rows.length)return;
     let updated=false;
     rows.forEach(row=>{
@@ -7964,7 +7964,8 @@ function onRealtimeFinanceiro(row, eventType, table){
 function _finBarChart(data,color,negColor){
   if(!data.length)return'<div style="text-align:center;color:var(--text2);font-size:13px;padding:24px 0;">Sem dados</div>';
   const fmtV=v=>{const a=Math.abs(v);if(a>=1000000)return(v/1000000).toFixed(1)+'M';if(a>=1000)return(v/1000).toFixed(1)+'k';return v.toFixed(0);};
-  const W=360,H=180,pL=52,pB=28,pT=18,pR=6;
+  const rotateX=data.length>8;
+  const W=360,H=180,pL=44,pB=rotateX?46:26,pT=18,pR=6;
   const pw=W-pL-pR,ph=H-pT-pB;
   const vals=data.map(d=>d.value);
   const maxV=Math.max(...vals,0);
@@ -7974,19 +7975,19 @@ function _finBarChart(data,color,negColor){
   const gap=pw/data.length;
   const bw=Math.max(3,gap*0.65);
   let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;overflow:visible">`;
-  // grid
+  // grid — padrão do módulo Operação
   [0,0.25,0.5,0.75,1].forEach(f=>{
     const gy=(pT+ph*f).toFixed(1);
-    svg+=`<line x1="${pL}" y1="${gy}" x2="${W-pR}" y2="${gy}" stroke="var(--border)" stroke-width="${f===1?1.5:0.6}"/>`;
+    svg+=`<line x1="${pL}" y1="${gy}" x2="${W-pR}" y2="${gy}" stroke="#e2e8f0" stroke-width="${f===1?1.5:0.6}"/>`;
     if(f===0||f===0.5||f===1){
       const val=maxV-range*f;
-      svg+=`<text x="${pL-4}" y="${(+gy+3).toFixed(1)}" text-anchor="end" font-size="9" fill="var(--text2)">${fmtV(val)}</text>`;
+      svg+=`<text x="${pL-4}" y="${(+gy+3).toFixed(1)}" text-anchor="end" font-size="7" fill="#8a9db5">${fmtV(val)}</text>`;
     }
   });
   // zero line quando há valores negativos
-  if(minV<0)svg+=`<line x1="${pL}" y1="${zeroY.toFixed(1)}" x2="${W-pR}" y2="${zeroY.toFixed(1)}" stroke="var(--text2)" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+  if(minV<0)svg+=`<line x1="${pL}" y1="${zeroY.toFixed(1)}" x2="${W-pR}" y2="${zeroY.toFixed(1)}" stroke="#8a9db5" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
   // eixo esquerdo
-  svg+=`<line x1="${pL}" y1="${pT}" x2="${pL}" y2="${pT+ph}" stroke="var(--border)" stroke-width="1.5"/>`;
+  svg+=`<line x1="${pL}" y1="${pT}" x2="${pL}" y2="${pT+ph}" stroke="#e2e8f0" stroke-width="1.5"/>`;
   data.forEach((d,i)=>{
     const cx=pL+gap*(i+0.5);
     const x=(cx-bw/2).toFixed(1);
@@ -7996,9 +7997,13 @@ function _finBarChart(data,color,negColor){
     if(bh>0)svg+=`<rect x="${x}" y="${y}" width="${bw.toFixed(1)}" height="${Math.max(bh,1).toFixed(1)}" rx="2" fill="${c}" opacity="0.85"/>`;
     if(bh>15){
       const lY=(d.value>=0?+y-3:+y+bh+9).toFixed(1);
-      svg+=`<text x="${cx.toFixed(1)}" y="${lY}" text-anchor="middle" font-size="8" font-weight="700" fill="${c}">${fmtV(d.value)}</text>`;
+      svg+=`<text x="${cx.toFixed(1)}" y="${lY}" text-anchor="middle" font-size="7" font-weight="700" fill="${c}">${fmtV(d.value)}</text>`;
     }
-    svg+=`<text x="${cx.toFixed(1)}" y="${(pT+ph+14).toFixed(1)}" text-anchor="middle" font-size="8" fill="var(--text2)">${d.label}</text>`;
+    if(rotateX){
+      svg+=`<text transform="rotate(-45,${cx.toFixed(1)},${(pT+ph+12).toFixed(1)})" x="${cx.toFixed(1)}" y="${(pT+ph+12).toFixed(1)}" text-anchor="end" font-size="7" fill="#8a9db5">${d.label}</text>`;
+    } else {
+      svg+=`<text x="${cx.toFixed(1)}" y="${(pT+ph+12).toFixed(1)}" text-anchor="middle" font-size="7" fill="#8a9db5">${d.label}</text>`;
+    }
   });
   svg+=`</svg>`;
   return svg;
