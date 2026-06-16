@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.4</title>
+<title>KC System v6.5</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -411,7 +411,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.4</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.5</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -7456,9 +7456,9 @@ async function loadFinanceiroFromSupabase(){
     const [rv,rg]=await Promise.all([sbGet('financeiro_vendas','select=id,data'),sbGet('financeiro_gastos','select=id,data')]);
     if(rv!=null){finVendas=rv.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));}
     if(rg!=null){finGastos=rg.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));}
-    // tipos de gasto customizados
+    // tipos de gasto: merge defaults + customizados salvos
     const tiposStr=localStorage.getItem('kc_fin_tipos');
-    if(tiposStr){try{_finTiposGasto=JSON.parse(tiposStr);}catch(e){}}
+    if(tiposStr){try{const saved=JSON.parse(tiposStr);saved.forEach(t=>{if(t&&!_finTiposGasto.includes(t))_finTiposGasto.push(t);});_finTiposGasto.sort();}catch(e){}}
   }catch(e){
     const vs=localStorage.getItem('kc_fin_vendas');const gs=localStorage.getItem('kc_fin_gastos');
     if(vs)try{finVendas=JSON.parse(vs);}catch(e){}
@@ -7744,6 +7744,14 @@ function finPainelFiltro(f){
   renderFinPainel();
 }
 
+let _finPainelSort={col:'data',dir:'desc'};
+
+function finPainelSetSort(col){
+  if(_finPainelSort.col===col){_finPainelSort.dir=_finPainelSort.dir==='asc'?'desc':'asc';}
+  else{_finPainelSort={col,dir:'desc'};}
+  renderFinPainel();
+}
+
 function renderFinPainel(){
   const ini=document.getElementById('fp-ini')?.value||'';
   const fim=document.getElementById('fp-fim')?.value||'';
@@ -7771,14 +7779,28 @@ function renderFinPainel(){
   let items=[];
   if(_finPainelFiltro!=='gastos')vFiltered.forEach(v=>items.push({tipo:'venda',data:v.dvenda,desc:v.cliente,sub:'Venda de peixe',valor:v.total,obj:v}));
   if(_finPainelFiltro!=='vendas')gFiltered.forEach(g=>items.push({tipo:'gasto',data:g.data,desc:g.tipo||'Gasto',sub:g.nome||'',valor:-g.valor,obj:g}));
-  items.sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+
+  const{col,dir}=_finPainelSort;
+  const mul=dir==='asc'?1:-1;
+  items.sort((a,b)=>{
+    let r;
+    if(col==='valor')r=Math.abs(a.valor)-Math.abs(b.valor);
+    else if(col==='desc')r=(a.desc||'').localeCompare(b.desc||'');
+    else if(col==='sub')r=(a.sub||'').localeCompare(b.sub||'');
+    else r=(a.data||'').localeCompare(b.data||'');
+    return r*mul;
+  });
+
   if(!items.length){listaEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum lançamento no período</div>';return;}
+
+  const arrow=c=>col===c?(dir==='asc'?' ▲':' ▼'):'';
+  const thStyle='padding:10px 8px;color:var(--text2);font-weight:600;cursor:pointer;user-select:none;white-space:nowrap;';
   let html=`<table style="width:100%;min-width:460px;border-collapse:collapse;font-size:12px;">
     <thead><tr style="background:var(--surface2,#f8fafc);">
-      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Data</th>
-      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Descrição</th>
-      <th style="padding:10px 8px;text-align:left;color:var(--text2);font-weight:600;">Detalhe</th>
-      <th style="padding:10px 8px;text-align:right;color:var(--text2);font-weight:600;">Valor</th>
+      <th style="${thStyle}text-align:left;" onclick="finPainelSetSort('data')">Data${arrow('data')}</th>
+      <th style="${thStyle}text-align:left;" onclick="finPainelSetSort('desc')">Descrição${arrow('desc')}</th>
+      <th style="${thStyle}text-align:left;" onclick="finPainelSetSort('sub')">Detalhe${arrow('sub')}</th>
+      <th style="${thStyle}text-align:right;" onclick="finPainelSetSort('valor')">Valor${arrow('valor')}</th>
     </tr></thead><tbody>`;
   items.forEach(it=>{
     const clr=it.tipo==='venda'?'var(--accent)':'#ef4444';
