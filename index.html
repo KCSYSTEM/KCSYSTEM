@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.11</title>
+<title>KC System v6.12</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -921,7 +921,13 @@ input[type="number"]{-moz-appearance:textfield;}
     <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:12px;">
       <div id="fin-caixinha-saldo" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:24px 16px;text-align:center;"></div>
       <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
-        <div style="padding:12px 14px;border-bottom:1.5px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;">MOVIMENTOS EM DINHEIRO</div>
+        <div style="padding:12px 14px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;flex:1 1 auto;">MOVIMENTOS EM DINHEIRO</span>
+          <input type="date" id="caixa-from" onchange="renderFinCaixinha()" style="flex:1 1 100px;min-width:100px;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:5px 8px;color:var(--text);font-size:11px;outline:none;">
+          <span style="color:var(--text3);font-size:11px;">até</span>
+          <input type="date" id="caixa-to" onchange="renderFinCaixinha()" style="flex:1 1 100px;min-width:100px;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:5px 8px;color:var(--text);font-size:11px;outline:none;">
+          <button onclick="document.getElementById('caixa-from').value='';document.getElementById('caixa-to').value='';renderFinCaixinha();" style="background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:5px 9px;font-size:11px;color:var(--text2);cursor:pointer;">✕</button>
+        </div>
         <div id="fin-caixinha-list"></div>
       </div>
     </div>
@@ -6223,6 +6229,9 @@ function renderCharts(){
   cont.innerHTML='';
   if(!val){cont.innerHTML='<div style="padding:30px 13px;text-align:center;color:var(--text3);font-size:13px;">Selecione um tanque acima para ver os gráficos.</div>';return;}
 
+  const chartFrom=document.getElementById('chart-date-from')?.value||'';
+  const chartTo=document.getElementById('chart-date-to')?.value||'';
+
   // Modo Total: soma todos os tanques por data
   if(val==='__total__'){
     const titulo=document.createElement('div');
@@ -6233,7 +6242,9 @@ function renderCharts(){
     // Agrega por data
     const byDate={};
     tanks.filter(t=>!t.empty).forEach(t=>{
-      const off=getOfficialRecords(t.id,null);
+      let off=getOfficialRecords(t.id,null);
+      if(chartFrom)off=off.filter(r=>r.date>=chartFrom);
+      if(chartTo)off=off.filter(r=>r.date<=chartTo);
       off.forEach(r=>{
         if(!byDate[r.date])byDate[r.date]={date:r.date,racaoIdealG:0,racaoG:0,qty:0,mort:0};
         const d=byDate[r.date];
@@ -6273,8 +6284,6 @@ function renderCharts(){
   let off=hapaNum?getOfficialRecords(tid,hapaNum):getOfficialRecords(tid,null);
 
   // Filtro de data
-  const chartFrom=document.getElementById('chart-date-from')?.value||'';
-  const chartTo=document.getElementById('chart-date-to')?.value||'';
   if(chartFrom)off=off.filter(r=>r.date>=chartFrom);
   if(chartTo)off=off.filter(r=>r.date<=chartTo);
 
@@ -7923,10 +7932,13 @@ function renderFinCaixinha(){
     ...saidas.map(g=>({tipo:'saida',data:g.data||g.criadoEm?.slice(0,10)||'',desc:g.tipo||(g.nome?`${g.nome}`:'Gasto'),valor:g.valor||0})),
     ...finCaixaAjustes.map(a=>({tipo:a.tipo,data:a.data||a.criadoEm?.slice(0,10)||'',desc:a.obs||'Ajuste de caixa',valor:a.valor||0})),
   ].sort((a,b)=>b.data.localeCompare(a.data));
+  const caixaFrom=document.getElementById('caixa-from')?.value||'';
+  const caixaTo=document.getElementById('caixa-to')?.value||'';
+  const movsVis=movs.filter(m=>(!caixaFrom||m.data>=caixaFrom)&&(!caixaTo||m.data<=caixaTo));
   const listEl=document.getElementById('fin-caixinha-list');
   if(!listEl)return;
-  if(!movs.length){listEl.innerHTML=`<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px;">Nenhum movimento em dinheiro registrado</div>`;return;}
-  listEl.innerHTML=movs.map((m,i)=>{
+  if(!movsVis.length){listEl.innerHTML=`<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px;">${movs.length?'Nenhum movimento no período selecionado':'Nenhum movimento em dinheiro registrado'}</div>`;return;}
+  listEl.innerHTML=movsVis.map((m,i)=>{
     const cor=m.tipo==='entrada'?'#22c55e':'#ef4444';
     const sinal=m.tipo==='entrada'?'+':'-';
     const zebra=i%2===0?'':'background:var(--surface2,#f8fafc);';
