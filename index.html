@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.12</title>
+<title>KC System v6.15</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -354,6 +354,7 @@ input[type="number"]{-moz-appearance:textfield;}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -411,7 +412,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.11</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.15</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1367,22 +1368,33 @@ let confirmCallback=null;
 
 // ===== SUPABASE =====
 const SB_URL='https://fsxoyytkmzqonrgfapgm.supabase.co';
-
 const SB_KEY='sb_publishable_hc1kFz6iao7_YRfTnlB6xw_4gYcLE3A';
-function sbHeaders(){return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};}
+
+// Cliente principal (sessão persistida no localStorage)
+const _sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true}});
+// Cliente auxiliar para criar usuários sem afetar a sessão do admin logado
+const _sbAdmin=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+
+async function sbHeaders(){
+  const {data:{session}}=await _sb.auth.getSession();
+  const token=session?.access_token||SB_KEY;
+  return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+token};
+}
 
 async function sbGet(table,filters=''){
   try{
-    const r=await fetch(`${SB_URL}/rest/v1/${table}?${filters}&limit=10000`,{headers:sbHeaders()});
+    const qs=filters+(filters.includes('limit=')?'':'&limit=10000');
+    const r=await fetch(`${SB_URL}/rest/v1/${table}?${qs}`,{headers:await sbHeaders()});
     if(!r.ok)throw new Error(await r.text());
     return await r.json();
   }catch(e){console.warn('sbGet error',table,e);return null;}
 }
 async function sbUpsert(table,rows){
   try{
+    const h=await sbHeaders();
     const r=await fetch(`${SB_URL}/rest/v1/${table}`,{
       method:'POST',
-      headers:{...sbHeaders(),'Prefer':'resolution=merge-duplicates'},
+      headers:{...h,'Prefer':'resolution=merge-duplicates'},
       body:JSON.stringify(Array.isArray(rows)?rows:[rows])
     });
     if(!r.ok)throw new Error(await r.text());
@@ -1391,7 +1403,7 @@ async function sbUpsert(table,rows){
 }
 async function sbDelete(table,id){
   try{
-    const r=await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:sbHeaders()});
+    const r=await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:await sbHeaders()});
     if(!r.ok)throw new Error(await r.text());
     return true;
   }catch(e){console.warn('sbDelete error',table,e);return false;}
@@ -1402,8 +1414,13 @@ function todayStr(){const d=new Date();return`${d.getFullYear()}-${d.getMonth()+
 function saveSession(u){localStorage.setItem('kc_session',JSON.stringify({username:u,day:todayStr()}));}
 function loadSession(){try{const s=JSON.parse(localStorage.getItem('kc_session'));if(s&&s.day===todayStr()&&USERS[s.username])return s.username;}catch(e){}return null;}
 function clearSession(){localStorage.removeItem('kc_session');}
+async function _carregarPerfil(uid){
+  const rows=await sbGet('perfis',`select=*&id=eq.${uid}`);
+  return rows?.[0]||null;
+}
 function scheduleMidnightLogout(){const now=new Date(),mid=new Date(now);mid.setHours(23,59,59,999);setTimeout(()=>{clearSession();forceLogout();},mid-now+1000);}
 function forceLogout(){
+  _sb.auth.signOut().catch(()=>{});
   stopRealtime();
   _pontoDetalheUser=null;
   currentUser=null;closeSheet();
@@ -3182,8 +3199,14 @@ function hideSyncStatus(){
 
 // ===== AUTH =====
 function isAdmin(){return currentUser?.role==='admin';}
-async function enterApp(u){
-  currentUser={username:u,...USERS[u]};
+async function enterApp(u,perfil){
+  if(perfil){
+    currentUser={username:perfil.username,name:perfil.nome,role:perfil.role};
+  }else{
+    await loadUsers();
+    currentUser={username:u,...USERS[u]};
+    saveSession(u);
+  }
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   const initials=currentUser.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -3235,16 +3258,32 @@ function _loadFromLocalStorage(){
 }
 
 async function doLogin(){
-  const u=document.getElementById('login-user').value.trim().toLowerCase(),p=document.getElementById('login-pass').value;
+  const u=document.getElementById('login-user').value.trim().toLowerCase();
+  const p=document.getElementById('login-pass').value;
+  // Tenta Supabase Auth (email real ou sintético username@kcsystem.farm)
+  const email=u.includes('@')?u:`${u}@kcsystem.farm`;
+  const {data,error}=await _sb.auth.signInWithPassword({email,password:p});
+  if(data?.session){
+    const perfil=await _carregarPerfil(data.user.id);
+    if(perfil){await enterApp(null,perfil);return;}
+  }
+  // Fallback: sistema legado (usuários ainda não migrados)
   await loadUsers();
-  if(USERS[u]&&USERS[u].pass===p){saveSession(u);enterApp(u);}
-  else{document.getElementById('login-error').style.display='block';setTimeout(()=>document.getElementById('login-error').style.display='none',3000);}
+  if(USERS[u]&&USERS[u].pass===p){saveSession(u);enterApp(u);return;}
+  document.getElementById('login-error').style.display='block';
+  setTimeout(()=>document.getElementById('login-error').style.display='none',3000);
 }
-function doLogout(){clearSession();forceLogout();}
+async function doLogout(){await _sb.auth.signOut();clearSession();forceLogout();}
 document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
-  (async function tryAutoLogin(){await loadUsers();const u=loadSession();if(u)enterApp(u);})();
+  (async function tryAutoLogin(){
+    // Tenta sessão Supabase primeiro
+    const {data:{session}}=await _sb.auth.getSession();
+    if(session){const perfil=await _carregarPerfil(session.user.id);if(perfil){await enterApp(null,perfil);return;}}
+    // Fallback legado
+    await loadUsers();const u=loadSession();if(u)enterApp(u);
+  })();
   const pd=document.getElementById('painel-date');if(pd&&!pd.value)pd.value=new Date().toISOString().split('T')[0];
   const ld=document.getElementById('lanc-date');if(ld&&!ld.value)ld.value=new Date().toISOString().split('T')[0];
 });
@@ -4149,7 +4188,8 @@ function saveEditUser(){
   saveUsers();renderUsersList();closeEditUser();
   showToast('Usuário atualizado ✓','ok');
 }
-function createUser(){
+async function createUser(){
+  if(!isAdmin()){showToast('Acesso restrito','error');return;}
   const login=document.getElementById('new-user-login').value.trim().toLowerCase().replace(/\s/g,'');
   const name=document.getElementById('new-user-name').value.trim();
   const pass=document.getElementById('new-user-pass').value;
@@ -4157,7 +4197,12 @@ function createUser(){
   if(!login){showToast('Digite o login','error');return;}
   if(!name){showToast('Digite o nome','error');return;}
   if(pass.length<4){showToast('Senha deve ter no mínimo 4 caracteres','error');return;}
-  if(USERS[login]){showToast('Este login já existe','error');return;}
+  const email=`${login}@kcsystem.farm`;
+  const {data,error}=await _sbAdmin.auth.signUp({email,password:pass});
+  if(error||!data?.user){showToast('Erro ao criar conta: '+(error?.message||'desconhecido'),'error');return;}
+  const ok=await sbUpsert('perfis',[{id:data.user.id,username:login,nome:name,role}]);
+  if(!ok){showToast('Conta criada mas perfil não salvo — tente novamente','error');return;}
+  // Mantém no legado durante transição
   USERS[login]={pass,name,role};
   saveUsers();renderUsersList();
   document.getElementById('new-user-login').value='';
@@ -4168,7 +4213,9 @@ function createUser(){
 function deleteUser(login){
   if(DEFAULT_USERS[login]){showToast('Usuários padrão não podem ser removidos','error');return;}
   if(login===currentUser?.username){showToast('Não é possível remover seu próprio usuário','error');return;}
-  showConfirm('Remover usuário',`Deseja remover o acesso de @${login}? Esta ação não pode ser desfeita.`,()=>{
+  showConfirm('Remover usuário',`Deseja remover o acesso de @${login}? Esta ação não pode ser desfeita.`,async()=>{
+    const rows=await sbGet('perfis',`select=id&username=eq.${encodeURIComponent(login)}`);
+    if(rows?.length)await sbDelete('perfis',rows[0].id);
     delete USERS[login];saveUsers();renderUsersList();showToast('Usuário removido','ok');
   });
 }
@@ -6257,10 +6304,10 @@ function renderCharts(){
     const sorted=Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date));
     if(!sorted.length){cont.innerHTML+='<div style="padding:30px;text-align:center;color:var(--text3);">Sem dados.</div>';return;}
     const labels=sorted.map(r=>formatDate(r.date));
-    const ideal=sorted.map(r=>r.racaoIdealG||null);
-    const real=sorted.map(r=>r.racaoG||null);
-    const qty=sorted.map(r=>r.qty||null);
-    const mort=sorted.map(r=>r.mort||null);
+    const ideal=sorted.map(r=>r.racaoIdealG??null);
+    const real=sorted.map(r=>r.racaoG??null);
+    const qty=sorted.map(r=>r.qty??null);
+    const mort=sorted.map(r=>r.mort??null);
     if(!ideal.every(v=>v===null)||!real.every(v=>v===null))
       cont.appendChild(makeSVGDualChart('Ração Total','kg',labels,ideal.map(v=>v?v/1000:null),'#1a3a6b',real.map(v=>v?v/1000:null),'#16a34a','Ideal','Real'));
     if(!qty.every(v=>v===null))cont.appendChild(makeSVGChart('Qtd. Peixes Total','un',labels,qty,'#0891b2'));
@@ -8709,9 +8756,18 @@ async function fetchMetasAuto(ano, mes) {
       totalAlevinos += m.qtd_total || 0;
   });
 
-  // Pesar ração: % de dias em que todos os tanques ativos tiveram racaoLancada===true
+  // Pesar ração: % de dias em que todos os tanques ativos tiveram racaoLancada===true.
+  // "Ativo" = não-vazio E teve pelo menos um racaoLancada=true no mês — exclui tanques
+  // cadastrados mas fora do circuito de ração (matrizes, etc.) que nunca teriam o flag.
   let pesarRacaoPct = null;
-  const activeTanksIds = tanks.filter(t => !t.empty).map(t => t.id);
+  const tanksComRacaoNoMes = new Set(
+    records
+      .filter(r => r.date?.startsWith(mesPrefix) && r.racaoLancada === true)
+      .map(r => r.tankId)
+  );
+  const activeTanksIds = tanks
+    .filter(t => !t.empty && tanksComRacaoNoMes.has(t.id))
+    .map(t => t.id);
   if (activeTanksIds.length > 0) {
     const hoje = new Date();
     const ehMesAtual = ano === hoje.getFullYear() && mes === (hoje.getMonth() + 1);
@@ -8727,9 +8783,9 @@ async function fetchMetasAuto(ano, mes) {
   }
 
   return {
-    qtd_ovos:        totalOvos     > 0 ? Math.round(totalOvos)     : null,
-    producao_larvas: totalLarvas   > 0 ? Math.round(totalLarvas)   : null,
-    qtd_alevinos:    totalAlevinos > 0 ? Math.round(totalAlevinos) : null,
+    qtd_ovos:        Math.round(totalOvos),
+    producao_larvas: Math.round(totalLarvas),
+    qtd_alevinos:    Math.round(totalAlevinos),
     pesar_racao:     pesarRacaoPct,
   };
 }
