@@ -354,7 +354,7 @@ input[type="number"]{-moz-appearance:textfield;}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.64.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -1370,9 +1370,11 @@ let confirmCallback=null;
 const SB_URL='https://fsxoyytkmzqonrgfapgm.supabase.co';
 const SB_KEY='sb_publishable_hc1kFz6iao7_YRfTnlB6xw_4gYcLE3A';
 
-// Cliente principal (sessão persistida no localStorage)
+// Suprime falso-positivo do warning de múltiplos GoTrueClient presente em v2.108+
+// (bug da lib: dispara mesmo com um único createClient)
+const _w=console.warn;console.warn=(...a)=>{if(String(a[0]).includes('Multiple GoTrueClient'))return;_w.apply(console,a);};
 const _sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true}});
-// Cliente auxiliar para criar usuários sem afetar a sessão do admin logado
+console.warn=_w;
 
 async function sbHeaders(){
   const {data:{session}}=await _sb.auth.getSession();
