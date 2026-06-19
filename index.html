@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.27</title>
+<title>KC System v6.28</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -413,7 +413,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.27</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.28</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1265,6 +1265,27 @@ input[type="number"]{-moz-appearance:textfield;}
 
 <div id="toast"></div>
 
+<!-- Popup de solicitação de novo usuário -->
+<div id="new-user-request-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:370px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
+    <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">📋 Novo Usuário</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:18px;">O cadastro de novos usuários é realizado pelo operador do sistema. Envie as informações abaixo via WhatsApp:</div>
+    <div style="background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:14px;color:var(--text);line-height:2;">
+      <div>👤 Login: <strong id="nur-login" style="color:var(--accent);"></strong></div>
+      <div>📝 Nome: <strong id="nur-name"></strong></div>
+      <div>🔖 Perfil: <strong id="nur-role"></strong></div>
+    </div>
+    <a id="nur-wa-link" href="#" target="_blank" rel="noopener"
+       style="display:flex;align-items:center;justify-content:center;gap:10px;background:#25D366;color:#fff;border-radius:12px;padding:14px;font-size:15px;font-weight:700;text-decoration:none;margin-bottom:10px;">
+      <span style="font-size:20px;">📱</span> Enviar via WhatsApp
+    </a>
+    <button onclick="document.getElementById('new-user-request-overlay').style.display='none'"
+            style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:transparent;color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;">
+      Fechar
+    </button>
+  </div>
+</div>
+
 <!-- Popup de troca forçada de senha -->
 <div id="forced-pwd-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
@@ -1296,6 +1317,7 @@ input[type="number"]{-moz-appearance:textfield;}
 <script>
 // Cache de perfis: username -> {id, name, role}
 let perfisCache={};
+let auditLogs=[];
 
 async function loadPerfis(){
   const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours');
@@ -1380,6 +1402,7 @@ let confirmCallback=null;
 // ===== SUPABASE =====
 const SB_URL='https://fsxoyytkmzqonrgfapgm.supabase.co';
 const SB_KEY='sb_publishable_hc1kFz6iao7_YRfTnlB6xw_4gYcLE3A';
+const KC_OPERATOR_WA='5511999999999'; // WhatsApp do operador (país+DDD+número, sem +)
 
 // Suprime falso-positivo do warning de múltiplos GoTrueClient presente em v2.108+
 // (bug da lib: dispara mesmo com um único createClient)
@@ -1435,6 +1458,10 @@ async function sbSoftDelete(table,id){
     if(!r.ok)throw new Error(await r.text());
     return true;
   }catch(e){console.warn('sbSoftDelete error',table,e);return false;}
+}
+
+async function logAudit(acao,descricao){
+  try{await sbUpsert('audit_log',[{acao,descricao,username:currentUser?.username||'?'}]);}catch(_){}
 }
 
 // ===== SESSÃO =====
@@ -2732,7 +2759,7 @@ function buildMatrizCard(t){
   header.innerHTML=`
     <div style="font-size:22px;">🧬</div>
     <div>
-      <div style="font-size:16px;font-weight:800;color:#fff;">${t.name}</div>
+      <div style="font-size:16px;font-weight:800;color:#fff;">${esc(t.name)}</div>
       <div style="font-size:11px;color:rgba(255,255,255,0.6);">${hasHapas?hapaNames.length+' hapas':'Sem hapas configurados'}</div>
     </div>`;
   wrap.appendChild(header);
@@ -2810,7 +2837,7 @@ function buildMatrizCard(t){
     <svg viewBox="0 0 ${svgW} ${svgH+60}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;border-radius:12px;">
       <rect width="${svgW}" height="${svgH+60}" rx="12" fill="#0d1f35"/>
       <rect x="4" y="4" width="${svgW-8}" height="${svgH+52}" rx="10" fill="rgba(34,81,160,0.25)"/>
-      <text x="${svgW/2}" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="rgba(255,255,255,0.8)">${t.name}</text>
+      <text x="${svgW/2}" y="26" text-anchor="middle" font-size="13" font-weight="700" fill="rgba(255,255,255,0.8)">${esc(t.name)}</text>
       ${hapaSvg}
       ${totalPeixes!=null?`
         <rect x="${pad}" y="${svgH+4}" width="${svgW-pad*2}" height="48" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
@@ -3422,6 +3449,7 @@ function _loadFromLocalStorage(){
   }));
 }
 
+const _loginAttempts={count:0,lockedUntil:0};
 function isWithinWorkingHours(){
   const now=new Date();
   const day=now.getDay(); // 0=Dom, 6=Sáb
@@ -3436,6 +3464,12 @@ function _showLoginError(msg,ms=3000){
   setTimeout(()=>{el.style.display='none';el.textContent='Usuário ou senha incorretos';},ms);
 }
 async function doLogin(){
+  const now=Date.now();
+  if(_loginAttempts.lockedUntil>now){
+    const secs=Math.ceil((_loginAttempts.lockedUntil-now)/1000);
+    _showLoginError(`Muitas tentativas. Aguarde ${secs}s.`,Math.min(_loginAttempts.lockedUntil-now,6000));
+    return;
+  }
   const u=document.getElementById('login-user').value.trim().toLowerCase();
   const p=document.getElementById('login-pass').value;
   const email=u.includes('@')?u:`${u}@kcsystem.farm`;
@@ -3443,6 +3477,7 @@ async function doLogin(){
   if(data?.session){
     const perfil=await _carregarPerfil(data.user.id);
     if(perfil){
+      _loginAttempts.count=0;
       if(perfil.restrict_hours&&!isWithinWorkingHours()){
         await _sb.auth.signOut();
         _showLoginError('Você está fora do horário de expediente (Seg–Sáb, 7h–18h).',6000);
@@ -3451,7 +3486,14 @@ async function doLogin(){
       await enterApp(null,perfil);return;
     }
   }
-  _showLoginError('Usuário ou senha incorretos');
+  _loginAttempts.count++;
+  if(_loginAttempts.count>=5){
+    _loginAttempts.lockedUntil=Date.now()+5*60*1000;
+    _loginAttempts.count=0;
+    _showLoginError('Acesso bloqueado por 5 minutos. Muitas tentativas incorretas.',6000);
+  } else {
+    _showLoginError(`Usuário ou senha incorretos (${_loginAttempts.count}/5)`);
+  }
 }
 async function doLogout(){await _sb.auth.signOut();clearSession();forceLogout();}
 document.addEventListener('DOMContentLoaded',function(){
@@ -3482,7 +3524,7 @@ function showView(v){
   document.querySelectorAll('.bottom-nav .nav-item').forEach(el=>el.classList.remove('active'));
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
   if(v==='manejos')renderManejos();
-  if(v==='history')renderGlobalHistory();
+  if(v==='history')loadAuditLog();
   if(v==='tanques')renderTankView();
   if(v==='settings')renderSettings();
   if(v==='graficos'){populateChartTankSelect();renderCharts();}
@@ -3657,7 +3699,7 @@ function renderGroupTanks(g){
       const params=isEmpty
         ?`<div class="tank-card-species" style="color:#b0bec5;">vazio</div>`
         :`<div class="tank-card-species" style="color:var(--ok);font-weight:600;">ativo</div>`;
-      return`<div class="tank-card circle-large ${isEmpty?'empty':s}" onclick="openTank('${t.id}')"><div class="tank-card-top" style="justify-content:center;gap:8px;"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div>${params}</div>`;
+      return`<div class="tank-card circle-large ${isEmpty?'empty':s}" onclick="openTank('${t.id}')"><div class="tank-card-top" style="justify-content:center;gap:8px;"><div class="tank-card-name">${esc(t.name)}</div><div class="tank-status-dot"></div></div>${params}</div>`;
     }).join('')+'</div>';
   }
   return`<div class="tanks-grid${g.paired?' paired':''}">` + gt.map(t=>tankCardHtml(t)).join('') + '</div>';
@@ -3670,7 +3712,7 @@ function tankCardHtml(t){
     ?`<div class="tank-card-species" style="color:#b0bec5;">vazio</div>`
     :`<div class="tank-card-species" style="color:var(--ok);font-weight:600;">ativo</div>`;
   return`<div class="tank-card ${s}${isCircle?' circle-shape':''}" onclick="openTank('${t.id}')">
-    <div class="tank-card-top"><div class="tank-card-name">${t.name}</div><div class="tank-status-dot"></div></div>
+    <div class="tank-card-top"><div class="tank-card-name">${esc(t.name)}</div><div class="tank-status-dot"></div></div>
     ${statusLabel}
   </div>`;
 }
@@ -4106,7 +4148,7 @@ function hPText(label,val){
 function buildConfigForm(){
   const t=activeTank;
   const admin=isAdmin();
-  const opts=GROUPS.map(g=>`<option value="${g.id}" ${t.groupId===g.id?'selected':''}>${g.name}</option>`).join('');
+  const opts=GROUPS.map(g=>`<option value="${g.id}" ${t.groupId===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
   const hapasOn=!!(t.hapaNames&&t.hapaNames.length>0);
   const hapaQty=hapasOn?t.hapaNames.length:'';
 
@@ -4119,8 +4161,8 @@ function buildConfigForm(){
     </div>`).join(''):'';
 
   return`<div class="form-section"><div class="form-section-title">Dados do tanque</div>
-    <div class="config-field"><label>Nome</label><input type="text" id="cfg-name" value="${t.name}"></div>
-    <div class="config-field"><label>Espécie</label><input type="text" id="cfg-species" value="${t.species}"></div>
+    <div class="config-field"><label>Nome</label><input type="text" id="cfg-name" value="${esc(t.name)}"></div>
+    <div class="config-field"><label>Espécie</label><input type="text" id="cfg-species" value="${esc(t.species||'')}"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="config-field"><label>Volume (m³)</label><input type="number" id="cfg-vol" value="${t.volume}" inputmode="decimal"></div>
       <div class="config-field"><label>Forma</label><select id="cfg-shape"><option value="rect" ${t.shape==='rect'?'selected':''}>Retangular</option><option value="circle" ${t.shape==='circle'?'selected':''}>Circular</option></select></div>
@@ -4356,6 +4398,7 @@ async function forcePasswordReset(login){
     perfisCache[login]={...u,mustChangePwd:true};
     renderUsersList();
     showToast(`${u.name} deverá trocar a senha no próximo login ✓`,'ok');
+    logAudit('senha_resetada',`Troca de senha solicitada para @${login}`);
   }
 }
 async function toggleRestrictHours(login){
@@ -4402,6 +4445,22 @@ async function saveEditUser(){
   renderUsersList();closeEditUser();
   showToast('Usuário atualizado ✓','ok');
 }
+function showNewUserRequest(){
+  const login=document.getElementById('new-user-login').value.trim().toLowerCase().replace(/\s/g,'');
+  const name=document.getElementById('new-user-name').value.trim();
+  const role=document.getElementById('new-user-role').value;
+  if(!login){showToast('Digite o login','error');return;}
+  if(!name){showToast('Digite o nome','error');return;}
+  const roleLabel={'admin':'Administrador','supervisor':'Supervisor','usuario':'Usuário'}[role]||role;
+  const msg=`Olá! Preciso cadastrar um novo usuário no KC System:%0A%0ALogin: @${login}%0ANome: ${encodeURIComponent(name)}%0APerfil: ${encodeURIComponent(roleLabel)}`;
+  document.getElementById('nur-login').textContent=login;
+  document.getElementById('nur-name').textContent=name;
+  document.getElementById('nur-role').textContent=roleLabel;
+  document.getElementById('nur-wa-link').href=`https://wa.me/${KC_OPERATOR_WA}?text=${msg}`;
+  const ov=document.getElementById('new-user-request-overlay');
+  ov.style.display='flex';
+  logAudit('novo_usuario_solicitado',`Solicitação de novo usuário: @${login} (${name})`);
+}
 async function createUser(){
   if(!isAdmin()){showToast('Acesso restrito','error');return;}
   const login=document.getElementById('new-user-login').value.trim().toLowerCase().replace(/\s/g,'');
@@ -4412,7 +4471,6 @@ async function createUser(){
   if(!name){showToast('Digite o nome','error');return;}
   if(pass.length<8){showToast('Senha deve ter no mínimo 8 caracteres','error');return;}
   const email=`${login}@kcsystem.farm`;
-  // Cria via REST direto para não instanciar segundo GoTrueClient nem sobrescrever sessão do admin
   const signupRes=await fetch(`${SB_URL}/auth/v1/signup`,{
     method:'POST',
     headers:{'Content-Type':'application/json','apikey':SB_KEY},
@@ -4420,7 +4478,13 @@ async function createUser(){
   });
   const signupJson=await signupRes.json();
   if(!signupRes.ok||!signupJson?.id){
-    showToast('Erro ao criar conta: '+(signupJson?.msg||signupJson?.error_description||'desconhecido'),'error');return;
+    const msg=(signupJson?.msg||signupJson?.error_description||'').toLowerCase();
+    if(msg.includes('signup')||msg.includes('sign up')||msg.includes('disabled')){
+      showNewUserRequest();
+    } else {
+      showToast('Erro ao criar conta: '+(signupJson?.msg||signupJson?.error_description||'desconhecido'),'error');
+    }
+    return;
   }
   const newUserId=signupJson.id;
   const ok=await sbUpsert('perfis',[{id:newUserId,username:login,nome:name,role}]);
@@ -4431,6 +4495,7 @@ async function createUser(){
   document.getElementById('new-user-name').value='';
   document.getElementById('new-user-pass').value='';
   showToast(`Usuário ${name} criado ✓`,'ok');
+  logAudit('usuario_criado',`Usuário @${login} (${name}) criado`);
 }
 function deleteUser(login){
   if(login===currentUser?.username){showToast('Não é possível remover seu próprio usuário','error');return;}
@@ -4438,10 +4503,16 @@ function deleteUser(login){
     const u=perfisCache[login];
     if(u)await sbDelete('perfis',u.id);
     delete perfisCache[login];renderUsersList();showToast('Usuário removido','ok');
+    logAudit('usuario_removido',`Usuário @${login} removido`);
   });
 }
 
 // ===== GLOBAL HISTORY =====
+async function loadAuditLog(){
+  const rows=await sbGet('audit_log','select=*&order=created_at.desc&limit=200');
+  auditLogs=rows||[];
+  renderGlobalHistory();
+}
 function renderGlobalHistory(){
   const el=document.getElementById('global-history-list');
   const FIELD_LABELS={
@@ -4473,11 +4544,11 @@ function renderGlobalHistory(){
     const faseLbl = {coleta:'Coleta',larva:'Larva',povoamento:'Povoamento',transferencia:'Transferência'}[m.fase]||m.fase;
     const icon    = {coleta:'🥚',larva:'🦠',povoamento:'🐟',transferencia:'🚛'}[m.fase]||'🔄';
     const destStr = (m.destinos||[]).map(d=>{
-      const tn=tanks.find(t=>t.id===d.tanque_id)?.name||d.tanque_id||'';
+      const tn=esc(tanks.find(t=>t.id===d.tanque_id)?.name||d.tanque_id||'');
       return tn+(d.qtd?` (${fNum(d.qtd)})`:'')+( d.peso_g?` ${d.peso_g}g`:'');
     }).filter(Boolean).join(', ');
-    const origStr = (m.origens||[]).map(o=>o.lote_id+(o.qtd?` (${fNum(o.qtd)})`:'')).join(', ');
-    const desc = `${icon} ${faseLbl} · Lote: ${m.lote_id} · ${fNum(m.qtd_total)} un`
+    const origStr = (m.origens||[]).map(o=>esc(o.lote_id||'')+(o.qtd?` (${fNum(o.qtd)})`:'')).join(', ');
+    const desc = `${icon} ${faseLbl} · Lote: ${esc(m.lote_id)} · ${fNum(m.qtd_total)} un`
       +(origStr?` · Origem: ${origStr}`:'')
       +(destStr?` · Destino: ${destStr}`:'')
       +(m.obs?` · ${esc(m.obs)}`:'');
@@ -4565,9 +4636,16 @@ function renderGlobalHistory(){
     </div>
   </div>`}));
 
-  const allEntries=[...recordLines,...manejoHtmlLines].sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
+  const auditHtmlLines=auditLogs.map(l=>({ts:l.created_at,html:`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);background:rgba(107,114,128,0.04);">
+    <div style="flex-shrink:0;width:7px;height:7px;border-radius:50%;background:#6b7280;margin-top:5px;"></div>
+    <div style="flex:1;min-width:0;font-size:13px;color:var(--text);">
+      <span style="color:var(--text3);font-size:11px;">${l.created_at?formatDate(l.created_at.slice(0,10))+' · '+formatTime(l.created_at):'—'}&nbsp;·&nbsp;<strong style="color:var(--text2);">@${esc(l.username||'?')}</strong></span><br>
+      <span style="color:#6b7280;font-weight:600;">🔒 ${esc(l.descricao||l.acao)}</span>
+    </div>
+  </div>`}));
+  const allEntries=[...recordLines,...manejoHtmlLines,...auditHtmlLines].sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
   if(!allEntries.length){el.innerHTML='<div class="history-empty">Nenhum registro ainda.</div>';return;}
-  el.innerHTML=allEntries.slice(0,150).map(e=>e.html).join('');
+  el.innerHTML=allEntries.slice(0,200).map(e=>e.html).join('');
 }
 
 // ===== LANÇAMENTOS =====
@@ -5564,7 +5642,7 @@ function renderPainel(){
 
     if(isEmpty){
       let row=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:#e8edf2;border-radius:8px;border:1px solid #c8d3de;opacity:0.7;">`;
-      row+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:#7a8fa3;display:flex;align-items:center;gap:4px;">${t.name}<span style="font-size:9px;background:#b0bec5;color:#fff;border-radius:6px;padding:1px 5px;">VAZIO</span></div>`;
+      row+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:#7a8fa3;display:flex;align-items:center;gap:4px;">${esc(t.name)}<span style="font-size:9px;background:#b0bec5;color:#fff;border-radius:6px;padding:1px 5px;">VAZIO</span></div>`;
       cols.forEach(()=>{row+=`<div style="padding:6px 2px;text-align:center;font-size:13px;color:#b0bec5;">—</div>`;});
       return row+`</div>`;
     }
@@ -5633,7 +5711,7 @@ function renderPainel(){
       rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:1px;background:${rowBg};border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;">`;
       rows+=`<div onclick="togglePainelHapas('${expandId}')" style="display:flex;align-items:center;justify-content:center;cursor:pointer;padding-left:4px;">
         <span id="btn-${expandId}" style="font-size:14px;font-weight:700;color:var(--accent);line-height:1;user-select:none;">＋</span></div>`;
-      rows+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${t.name}${hapaBadge}</div>`;
+      rows+=`<div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;flex-wrap:wrap;gap:2px;">${esc(t.name)}${hapaBadge}</div>`;
       cols.forEach(c=>{
         const isPrev=(c.k==='qty'&&cVals._qtyPrev)||(c.k==='bio'&&cVals._bioPrev);
         rows+=renderCell(cVals[c.k],c.lk,isPrev,c.k);
@@ -5696,7 +5774,7 @@ function renderPainel(){
       if(vals._ideal&&vals._real!=null)vals._pct=Math.round((vals._real*1000)/(vals._ideal*1000)*100);
       const rowBg=rec?'#fff':'#f8fafc';
       rows+=`<div style="display:grid;grid-template-columns:24px 110px repeat(${cols.length},1fr);gap:2px;margin-bottom:2px;background:${rowBg};border-radius:8px;border:1px solid var(--border);">`;
-      rows+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${t.name}</div>`;
+      rows+=`<div></div><div style="padding:8px 6px;font-size:11px;font-weight:700;color:var(--text);">${esc(t.name)}</div>`;
       cols.forEach(c=>{
         const isPrev=(c.k==='qty'&&vals._qtyPrev)||(c.k==='bio'&&vals._bioPrev);
         rows+=renderCell(vals[c.k],c.lk,isPrev,c.k);
@@ -5983,7 +6061,7 @@ function renderAguaTankChips(){
     return`<div onclick="toggleAguaTank('${t.id}')"
       style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ${color};
       background:${sel?color:'transparent'};color:${sel?'#fff':color};transition:all 0.15s;white-space:nowrap;">
-      ${t.name}
+      ${esc(t.name)}
     </div>`;
   }).join('');
 }
@@ -6033,7 +6111,7 @@ function renderAguaCharts(){
 
     const block=document.createElement('div');block.className='chart-block';
     // Legenda
-    const legend=selTanks.map((t,i)=>`<div style="display:flex;align-items:center;gap:4px;font-size:11px;"><div style="width:14px;height:3px;background:${COLORS[i%COLORS.length]};border-radius:2px;"></div>${t.name}</div>`).join('');
+    const legend=selTanks.map((t,i)=>`<div style="display:flex;align-items:center;gap:4px;font-size:11px;"><div style="width:14px;height:3px;background:${COLORS[i%COLORS.length]};border-radius:2px;"></div>${esc(t.name)}</div>`).join('');
     block.innerHTML=`
       <div class="chart-title">${p.label}</div>
       <div class="chart-sub">${p.unit}</div>
@@ -6930,11 +7008,13 @@ async function saveManejo(m){
 }
 
 async function deleteManejo(id){
+  const _dm=manejos.find(x=>x.id===id);
   showConfirm('Excluir manejo','Este manejo será removido do pipeline. É possível recuperá-lo pela Lixeira nas Configurações.',async()=>{
     await sbSoftDelete('manejos',id);
     manejos=manejos.filter(m=>m.id!==id);
     renderManejos();
     showToast('Manejo removido','ok');
+    logAudit('manejo_excluido',`Manejo ${_dm?.lote_id||id} excluído`);
   });
 }
 
@@ -6958,7 +7038,7 @@ async function renderLixeira(){
     return`<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:8px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <div>
-          <div style="font-size:13px;font-weight:700;color:var(--text);">${fase} — ${lote}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${esc(fase)} — ${esc(String(lote))}</div>
           <div style="font-size:12px;color:var(--text2);margin-top:3px;">Qtd: ${qtd} &nbsp;·&nbsp; Data: ${data} &nbsp;·&nbsp; Excluído em: ${quando}</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px;">
@@ -6983,6 +7063,7 @@ async function recoverManejo(id){
   renderManejos();
   renderLixeira();
   showToast('Manejo recuperado ✓','ok');
+  logAudit('manejo_recuperado',`Manejo ${id} recuperado da Lixeira`);
 }
 
 function hardDeleteManejo(id){
@@ -6990,6 +7071,7 @@ function hardDeleteManejo(id){
     await sbDelete('manejos',id);
     renderLixeira();
     showToast('Manejo excluído permanentemente','ok');
+    logAudit('manejo_excluido_permanente',`Manejo ${id} excluído permanentemente`);
   });
 }
 
@@ -7451,7 +7533,7 @@ function editManejoFase(manejoId){
   const lotesManejo = manejos.map(x=>x.lote_id).filter(Boolean);
   const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===m.fase?'selected':''}>${v.icon} ${v.label}</option>`).join('');
-  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
 
   const html=`
   <div id="manejo-overlay" onclick="if(event.target===this)closeManejoForm()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;">
@@ -7582,7 +7664,7 @@ function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
 
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===faseSugerida?'selected':''}>${v.icon} ${v.label}</option>`).join('');
   const origensOpts = todosLotesOrigem.map(l=>`<option value="${l}" ${l===loteOrigemSugerido?'selected':''}>${l}</option>`).join('');
-  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
 
   const html=`
   <div id="manejo-overlay" onclick="if(event.target===this)closeManejoForm()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;display:flex;align-items:flex-end;justify-content:center;">
@@ -7694,7 +7776,7 @@ function addOrigemRow(loteDefault=''){
 }
 
 function addDestinoRow(){
-  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
   const id = 'dest_'+Date.now();
   const row = document.createElement('div');
   row.style.cssText='display:flex;gap:6px;align-items:center;';
@@ -7709,7 +7791,7 @@ function addDestinoRow(){
 }
 
 function addTamanhoRow(){
-  const tankOpts = tanks.filter(t=>t.groupId==='geo-elevada').sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const tankOpts = tanks.filter(t=>t.groupId==='geo-elevada').sort((a,b)=>(a.name||'').localeCompare(b.name||'','pt-BR')).map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
   const id = 'tam_'+Date.now();
   const row = document.createElement('div');
   row.style.cssText='display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
