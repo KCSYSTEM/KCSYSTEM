@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.26</title>
+<title>KC System v6.27</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -413,7 +413,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.26</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.27</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1298,9 +1298,9 @@ input[type="number"]{-moz-appearance:textfield;}
 let perfisCache={};
 
 async function loadPerfis(){
-  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password');
+  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours');
   perfisCache={};
-  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password};});
+  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password,restrictHours:r.restrict_hours};});
 }
 const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70},goradosPct:{max:20}};
 function esc(s){const e=document.createElement('span');e.textContent=s==null?'':String(s);return e.innerHTML;}
@@ -3072,7 +3072,7 @@ function onRealtimePerfil(data,type){
   if(type==='DELETE'){
     delete perfisCache[data.username];
   } else {
-    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role,mustChangePwd:data.must_change_password};
+    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role,mustChangePwd:data.must_change_password,restrictHours:data.restrict_hours};
   }
 }
 
@@ -3422,6 +3422,19 @@ function _loadFromLocalStorage(){
   }));
 }
 
+function isWithinWorkingHours(){
+  const now=new Date();
+  const day=now.getDay(); // 0=Dom, 6=Sáb
+  if(day===0)return false;
+  const mins=now.getHours()*60+now.getMinutes();
+  return mins>=7*60&&mins<18*60;
+}
+function _showLoginError(msg,ms=3000){
+  const el=document.getElementById('login-error');
+  el.textContent=msg;
+  el.style.display='block';
+  setTimeout(()=>{el.style.display='none';el.textContent='Usuário ou senha incorretos';},ms);
+}
 async function doLogin(){
   const u=document.getElementById('login-user').value.trim().toLowerCase();
   const p=document.getElementById('login-pass').value;
@@ -3429,10 +3442,16 @@ async function doLogin(){
   const {data}=await _sb.auth.signInWithPassword({email,password:p});
   if(data?.session){
     const perfil=await _carregarPerfil(data.user.id);
-    if(perfil){await enterApp(null,perfil);return;}
+    if(perfil){
+      if(perfil.restrict_hours&&!isWithinWorkingHours()){
+        await _sb.auth.signOut();
+        _showLoginError('Você está fora do horário de expediente (Seg–Sáb, 7h–18h).',6000);
+        return;
+      }
+      await enterApp(null,perfil);return;
+    }
   }
-  document.getElementById('login-error').style.display='block';
-  setTimeout(()=>document.getElementById('login-error').style.display='none',3000);
+  _showLoginError('Usuário ou senha incorretos');
 }
 async function doLogout(){await _sb.auth.signOut();clearSession();forceLogout();}
 document.addEventListener('DOMContentLoaded',function(){
@@ -3445,7 +3464,10 @@ document.addEventListener('DOMContentLoaded',function(){
     const {error:refreshErr,data:refreshData}=await _sb.auth.refreshSession();
     if(refreshErr||!refreshData?.session)return;
     const perfil=await _carregarPerfil(refreshData.session.user.id);
-    if(perfil){await enterApp(null,perfil);return;}
+    if(perfil){
+      if(perfil.restrict_hours&&!isWithinWorkingHours()){await _sb.auth.signOut();return;}
+      await enterApp(null,perfil);return;
+    }
   })();
   const pd=document.getElementById('painel-date');if(pd&&!pd.value)pd.value=new Date().toISOString().split('T')[0];
   const ld=document.getElementById('lanc-date');if(ld&&!ld.value)ld.value=new Date().toISOString().split('T')[0];
@@ -4304,15 +4326,17 @@ function renderUsersList(){
     const roleColor=ROLE_COLOR[u.role]||'var(--text2)';
     const roleBg=ROLE_BG[u.role]||'var(--accent-dim)';
     const pwdPending=u.mustChangePwd;
+    const hrOn=u.restrictHours;
     return`<div class="user-item">
       <div class="user-item-avatar">${initials}</div>
       <div class="user-item-info">
         <div class="user-item-name">${esc(u.name)}</div>
-        <div class="user-item-login">@${u.login}${pwdPending?'&nbsp;<span style="font-size:10px;background:#fef9c3;color:#a16207;border-radius:5px;padding:1px 5px;font-weight:700;">troca pendente</span>':''}</div>
+        <div class="user-item-login">@${u.login}${pwdPending?'&nbsp;<span style="font-size:10px;background:#fef9c3;color:#a16207;border-radius:5px;padding:1px 5px;font-weight:700;">troca pendente</span>':''}${hrOn?'&nbsp;<span style="font-size:10px;background:#fce7f3;color:#be185d;border-radius:5px;padding:1px 5px;font-weight:700;">horário restrito</span>':''}</div>
         <span class="user-item-role" style="color:${roleColor};background:${roleBg};">${ROLE_LABEL[u.role]||u.role}</span>
       </div>
       <div class="user-item-actions">
         <button class="user-action-btn" onclick="forcePasswordReset('${u.login}')" title="${pwdPending?'Troca de senha já solicitada':'Solicitar troca de senha'}" style="background:${pwdPending?'#fef9c3':'#f0f9ff'};color:${pwdPending?'#a16207':'#0369a1'};border:1px solid ${pwdPending?'#fde047':'#bae6fd'};border-radius:8px;width:34px;height:34px;font-size:15px;cursor:pointer;">🔑</button>
+        <button class="user-action-btn" onclick="toggleRestrictHours('${u.login}')" title="${hrOn?'Desativar restrição de horário':'Ativar restrição de horário (Seg–Sáb 7h–18h)'}" style="background:${hrOn?'#fce7f3':'#f0fdf4'};color:${hrOn?'#be185d':'#166534'};border:1px solid ${hrOn?'#fbcfe8':'#bbf7d0'};border-radius:8px;width:34px;height:34px;font-size:15px;cursor:pointer;">🕐</button>
         <button class="user-action-btn edit" onclick="openEditUser('${u.login}')" title="Editar">✏️</button>
         ${u.login!==currentUser?.username
           ?`<button class="user-action-btn del" onclick="deleteUser('${u.login}')" title="Excluir">🗑️</button>`
@@ -4332,6 +4356,17 @@ async function forcePasswordReset(login){
     perfisCache[login]={...u,mustChangePwd:true};
     renderUsersList();
     showToast(`${u.name} deverá trocar a senha no próximo login ✓`,'ok');
+  }
+}
+async function toggleRestrictHours(login){
+  const u=perfisCache[login];
+  if(!u)return;
+  const newVal=!u.restrictHours;
+  const ok=await sbUpsert('perfis',[{id:u.id,username:login,nome:u.name,role:u.role,restrict_hours:newVal}]);
+  if(ok){
+    perfisCache[login]={...u,restrictHours:newVal};
+    renderUsersList();
+    showToast(newVal?`Restrição de horário ativada para ${u.name}`:`Restrição de horário desativada para ${u.name}`,'ok');
   }
 }
 
