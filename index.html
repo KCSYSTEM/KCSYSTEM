@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.22</title>
+<title>KC System v6.23</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -353,7 +353,8 @@ input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0
 input[type="number"]{-moz-appearance:textfield;}
 
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://fsxoyytkmzqonrgfapgm.supabase.co wss://fsxoyytkmzqonrgfapgm.supabase.co; img-src 'self' data:; font-src 'self'; object-src 'none';">
+<script src="xlsx.full.min.js"></script>
 <script src="supabase.min.js"></script>
 </head>
 <body>
@@ -412,7 +413,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.22</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.23</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -647,7 +648,7 @@ input[type="number"]{-moz-appearance:textfield;}
           <div style="display:grid;gap:8px;">
             <div class="config-field"><label>Login (sem espaços)</label><input type="text" id="new-user-login" placeholder="ex: joao.silva" autocomplete="off"></div>
             <div class="config-field"><label>Nome completo</label><input type="text" id="new-user-name" placeholder="ex: João Silva"></div>
-            <div class="config-field"><label>Senha</label><input type="password" id="new-user-pass" placeholder="mínimo 4 caracteres" autocomplete="new-password"></div>
+            <div class="config-field"><label>Senha</label><input type="password" id="new-user-pass" placeholder="mínimo 8 caracteres" autocomplete="new-password"></div>
             <div class="config-field"><label>Perfil</label>
               <select id="new-user-role">
                 <option value="usuario">Usuário</option>
@@ -1274,6 +1275,7 @@ async function loadPerfis(){
   if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role};});
 }
 const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70},goradosPct:{max:20}};
+function esc(s){const e=document.createElement('span');e.textContent=s==null?'':String(s);return e.innerHTML;}
 
 // Converte gramas para kg com formatação
 function gToKg(g,dec=2){
@@ -1413,7 +1415,11 @@ async function _carregarPerfil(uid){
   const rows=await sbGet('perfis',`select=*&id=eq.${uid}`);
   return rows?.[0]||null;
 }
-function scheduleMidnightLogout(){const now=new Date(),mid=new Date(now);mid.setHours(23,59,59,999);setTimeout(()=>{clearSession();forceLogout();},mid-now+1000);}
+let _sessionTimer=null;
+function scheduleSessionTimeout(){
+  clearTimeout(_sessionTimer);
+  _sessionTimer=setTimeout(()=>{showToast('Sessão encerrada após 8 horas. Faça login novamente.','error');forceLogout();},8*60*60*1000);
+}
 function forceLogout(){
   _sb.auth.signOut().catch(()=>{});
   stopRealtime();
@@ -3296,7 +3302,7 @@ async function enterApp(u,perfil){
   // Primeiro renderiza com dados do localStorage para não travar a tela
   loadLimits();
   _loadFromLocalStorage();
-  currentGroupId=null;renderTankView();updateMapSub();scheduleMidnightLogout();
+  currentGroupId=null;renderTankView();updateMapSub();scheduleSessionTimeout();
   populateChartTankSelect();
 
   // Depois sincroniza com Supabase em background
@@ -3701,7 +3707,7 @@ function buildRegistroFormForDate(date){
     <div class="form-field"><label>Tratos Ideal/dia ${admBadge}</label><input type="number" id="reg-tratos-ideal" placeholder="3" inputmode="numeric" value="${lastTratosIdeal}"${lock('reg-tratos-ideal')}></div>
     <div class="form-field"><label>Tratos Real/dia ${opBadge}</label><input type="number" id="reg-tratos" placeholder="—" inputmode="numeric" value="${lastTratosReal}"></div>
   </div></div>
-  <div class="form-section"><div class="form-section-title">Observações</div><div class="form-field full"><textarea id="reg-obs" placeholder="Anotações...">${src?.obs||''}</textarea></div></div>
+  <div class="form-section"><div class="form-section-title">Observações</div><div class="form-field full"><textarea id="reg-obs" placeholder="Anotações...">${esc(src?.obs)}</textarea></div></div>
   <button class="btn-save" onclick="saveRecord()">Salvar Registro</button><div style="height:14px;"></div>`;
 }
 
@@ -4175,7 +4181,7 @@ function closeCfgPage(silent=false){
 function renderRacaoList(){
   const el=document.getElementById('racao-list');
   if(!racoes.length){el.innerHTML='<div style="padding:16px 0;color:var(--text3);font-size:13px;">Nenhuma ração cadastrada.</div>';return;}
-  el.innerHTML=racoes.map((r,i)=>`<div class="racao-item"><div class="racao-item-name">${r.nome}</div><div class="racao-item-kg">${r.kg!=null?Math.round(r.kg*1000)+'g':'—'}</div><button class="racao-item-del" onclick="deleteRacao(${i})">✕</button></div>`).join('');
+  el.innerHTML=racoes.map((r,i)=>`<div class="racao-item"><div class="racao-item-name">${esc(r.nome)}</div><div class="racao-item-kg">${r.kg!=null?Math.round(r.kg*1000)+'g':'—'}</div><button class="racao-item-del" onclick="deleteRacao(${i})">✕</button></div>`).join('');
 }
 function addRacao(){
   const nome=document.getElementById('new-racao-nome').value.trim();
@@ -4211,7 +4217,7 @@ function renderUsersList(){
     return`<div class="user-item">
       <div class="user-item-avatar">${initials}</div>
       <div class="user-item-info">
-        <div class="user-item-name">${u.name}</div>
+        <div class="user-item-name">${esc(u.name)}</div>
         <div class="user-item-login">@${u.login}</div>
         <span class="user-item-role" style="color:${roleColor};background:${roleBg};">${ROLE_LABEL[u.role]||u.role}</span>
       </div>
@@ -4247,7 +4253,7 @@ async function saveEditUser(){
   const role=document.getElementById('edit-user-role').value;
   if(!name){showToast('Nome não pode ser vazio','error');return;}
   if(pass){
-    if(pass.length<4){showToast('Senha muito curta (mín. 4 caracteres)','error');return;}
+    if(pass.length<8){showToast('Senha muito curta (mín. 8 caracteres)','error');return;}
     if(editingUserLogin!==currentUser?.username){showToast('Só é possível alterar a própria senha','error');return;}
     const {error}=await _sb.auth.updateUser({password:pass});
     if(error){showToast('Erro ao alterar senha: '+error.message,'error');return;}
@@ -4266,7 +4272,7 @@ async function createUser(){
   const role=document.getElementById('new-user-role').value;
   if(!login){showToast('Digite o login','error');return;}
   if(!name){showToast('Digite o nome','error');return;}
-  if(pass.length<4){showToast('Senha deve ter no mínimo 4 caracteres','error');return;}
+  if(pass.length<8){showToast('Senha deve ter no mínimo 8 caracteres','error');return;}
   const email=`${login}@kcsystem.farm`;
   // Cria via REST direto para não instanciar segundo GoTrueClient nem sobrescrever sessão do admin
   const signupRes=await fetch(`${SB_URL}/auth/v1/signup`,{
@@ -4336,7 +4342,7 @@ function renderGlobalHistory(){
     const desc = `${icon} ${faseLbl} · Lote: ${m.lote_id} · ${fNum(m.qtd_total)} un`
       +(origStr?` · Origem: ${origStr}`:'')
       +(destStr?` · Destino: ${destStr}`:'')
-      +(m.obs?` · ${m.obs}`:'');
+      +(m.obs?` · ${esc(m.obs)}`:'');
     manejoLines.push({
       ts:m.timestamp||m.data+'T00:00:00',
       date:m.data, user:m.username||'—',
@@ -7345,7 +7351,7 @@ function editManejoFase(manejoId){
     </div>
 
     <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">OBSERVAÇÕES</label>
-    <textarea id="mf-obs" rows="2" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);resize:none;margin-bottom:16px;">${m.obs||''}</textarea>
+    <textarea id="mf-obs" rows="2" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);resize:none;margin-bottom:16px;">${esc(m.obs)}</textarea>
 
     <div style="display:flex;gap:8px;">
       <button onclick="deleteManejo('${manejoId}')" style="flex:0 0 auto;background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:10px;padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;">🗑️</button>
@@ -8155,7 +8161,7 @@ function renderFinCaixinha(){
     return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${zebra}border-bottom:1px solid var(--border);">`+
       `<div style="width:9px;height:9px;border-radius:50%;background:${cor};flex-shrink:0;"></div>`+
       `<div style="flex:1;min-width:0;">`+
-        `<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.desc}</div>`+
+        `<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(m.desc)}</div>`+
         `<div style="font-size:11px;color:var(--text2);">${fmtData(m.data)}</div>`+
       `</div>`+
       `<div style="font-size:14px;font-weight:700;color:${cor};white-space:nowrap;">${sinal}R$ ${fmtR(m.valor)}</div>`+
@@ -8338,7 +8344,7 @@ function renderEstoqueItens(){
     </tr>`).join('');
   const manualRows=estoqueItens.map((item,i)=>`
     <tr style="border-top:1px solid var(--border);${(racoes.length+i)%2===1?'background:var(--surface2);':''}">
-      <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}</td>
+      <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${esc(item.nome)}</td>
       <td style="padding:11px 14px;font-size:12px;color:var(--text2);">${item.unidade||'un'}</td>
       <td style="padding:11px 14px;text-align:center;">
         <button onclick="deleteEstoqueItem('${item.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Remover">×</button>
@@ -8402,7 +8408,7 @@ function renderEstoqueMovHist(){
       const label=m.tipo==='entrada'?'Entrada':'Saída';
       return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
         <td style="padding:9px 12px;font-size:12px;color:var(--text2);">${m.date?m.date.split('-').reverse().join('-'):'—'}</td>
-        <td style="padding:9px 12px;font-size:12px;color:var(--text);">${nomeItem}${m.obs?`<div style="font-size:10px;color:var(--text3);">${m.obs}</div>`:''}</td>
+        <td style="padding:9px 12px;font-size:12px;color:var(--text);">${esc(nomeItem)}${m.obs?`<div style="font-size:10px;color:var(--text3);">${esc(m.obs)}</div>`:''}</td>
         <td style="padding:9px 12px;text-align:center;"><span style="font-size:11px;font-weight:700;color:${cor};background:${m.tipo==='entrada'?'rgba(22,163,74,0.1)':'rgba(220,38,38,0.1)'};border-radius:6px;padding:2px 8px;">${label}</span></td>
         <td style="padding:9px 12px;text-align:right;font-size:13px;font-weight:700;color:${cor};">${m.tipo==='entrada'?'+':'-'}${m.qtd}</td>
         <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
@@ -8585,7 +8591,7 @@ function renderEstoqueGrafico(){
   container.innerHTML=`
     <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;margin-bottom:12px;">
       <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--border);">
-        <div style="font-size:14px;font-weight:700;color:var(--text);">${item.nome} <span style="font-size:11px;font-weight:500;color:var(--text3);">(${item.unidade||'un'})</span></div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);">${esc(item.nome)} <span style="font-size:11px;font-weight:500;color:var(--text3);">(${esc(item.unidade)||'un'})</span></div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
           <div style="font-size:12px;color:var(--text2);">Estoque atual: <span style="font-weight:800;color:${corSaldo};">${parseFloat(lastSaldo.toFixed(2))} ${item.unidade||'un'}</span></div>
           ${zeroDate?`<div style="font-size:12px;color:var(--text2);">Projeção zero: <span style="font-weight:800;color:#ef4444;">${fmtMonthShort(zeroDate)}</span></div>`:'<div style="font-size:12px;color:#22c55e;font-weight:600;">✓ Sem previsão de falta</div>'}
@@ -8788,7 +8794,7 @@ function renderEstoquePainel(){
       ?`<td style="padding:12px 10px;text-align:center;font-size:13px;font-weight:700;color:${consumoPeriodo>0?'var(--danger)':'var(--text3)'};">${consumoPeriodo>0?'-'+fmt(consumoPeriodo):'—'}</td>`:'';
 
     return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
-      <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${item.nome}${badge}</td>
+      <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${esc(item.nome)}${badge}</td>
       <td style="padding:10px 8px;text-align:center;font-size:12px;color:var(--text2);">${unidade}</td>
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${fmt(saldoD1)}</td>
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${entradaD1>0?'#16a34a':'var(--text3)'};">${entradaD1>0?'+'+fmt(entradaD1):'—'}</td>
