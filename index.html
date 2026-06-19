@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.17</title>
+<title>KC System v6.18</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -412,7 +412,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.17</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.18</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1995,92 +1995,88 @@ function renderColetaGraficos(){
     _card5.querySelector(`#${_gd5.id}`).appendChild(wr5);
   }
 
-  // ── Gráfico 6: Eficiência do Pipeline por Coleta ──
+  // ── Gráficos 6–9: Eficiência do Pipeline por Coleta (um gráfico por série) ──
   const _pipe6=buildPipeline();
   const _loteEntries6=Object.values(_pipe6)
     .filter(p=>(!grafFrom||p.data_inicio>=grafFrom)&&(!grafTo||p.data_inicio<=grafTo))
     .sort((a,b)=>a.data_inicio.localeCompare(b.data_inicio));
   if(_loteEntries6.length){
     const _lotes6=_loteEntries6.map(p=>p.lote_coleta);
-    const _seriesDef6=[
-      {label:'Larva',         color:'#7c3aed',fa:'larva',        fp:'coleta'},
-      {label:'Povoamento',    color:'#2563eb',fa:'povoamento',   fp:'larva'},
-      {label:'Transferência', color:'#16a34a',fa:'transferencia',fp:'povoamento'},
-      {label:'Venda',         color:'#d97706',fa:'venda',        fp:'transferencia'},
+    const _grafPipeline=[
+      {id:'gcol-6', label:'% Larva / Ovos bons',             color:'#7c3aed',fa:'larva',        fp:'coleta'},
+      {id:'gcol-7', label:'% Povoamento / Larva',            color:'#2563eb',fa:'povoamento',   fp:'larva'},
+      {id:'gcol-8', label:'% Transferência / Povoamento',    color:'#16a34a',fa:'transferencia',fp:'povoamento'},
+      {id:'gcol-9', label:'% Venda / Transferência',         color:'#d97706',fa:'venda',        fp:'transferencia'},
     ];
-    const _series6=_seriesDef6.map(sd=>({
-      label:sd.label,color:sd.color,
-      vals:_loteEntries6.map(p=>{
+    _grafPipeline.forEach(gd=>{
+      const vals=_loteEntries6.map(p=>{
         const ff=p.fases;
         let prevQtd;
-        if(sd.fp==='coleta'){
+        if(gd.fp==='coleta'){
           prevQtd=ff.filter(f=>f.fase==='coleta').reduce((s,i)=>s+(i.ovosBons||0),0)||null;
         } else {
-          const pf=ff.filter(f=>f.fase===sd.fp);
+          const pf=ff.filter(f=>f.fase===gd.fp);
           prevQtd=pf.length?(pf.reduce((s,i)=>s+(i.qtd_total||0),0)||null):null;
         }
-        const cf=ff.filter(f=>f.fase===sd.fa);
+        const cf=ff.filter(f=>f.fase===gd.fa);
         if(!prevQtd||!cf.length)return null;
         return Math.round(cf.reduce((s,i)=>s+(i.qtd_total||0),0)/prevQtd*100);
-      })
-    }));
-    const _card6=document.createElement('div');
-    _card6.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;';
-    _card6.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">Eficiência do Pipeline por Coleta</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">% em relação à etapa anterior · Larva/Ovos bons · Pov/Larva · Transf/Pov · Venda/Transf</div>
-      <div id="gcol-6"></div>`;
-    cont.appendChild(_card6);
-    const W6=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),H6=160;
-    const n6=_lotes6.length,rot6=n6>10;
-    const pad6={t:10,b:rot6?62:30,l:38,r:10};
-    const iW6=W6-pad6.l-pad6.r,iH6=H6-pad6.t-pad6.b;
-    const sY6=v=>pad6.t+iH6-v/100*iH6;
-    const sX6=i=>pad6.l+(n6===1?iW6/2:i/(n6-1)*iW6);
-    let p6='';
-    [0,25,50,75,100].forEach(v=>{
-      const y=sY6(v);
-      p6+=`<line x1="${pad6.l}" y1="${y}" x2="${W6-pad6.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
-      p6+=`<text x="${pad6.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${v}%</text>`;
-    });
-    const ml6=Math.min(8,n6),st6=Math.max(1,Math.ceil(n6/ml6));
-    _lotes6.forEach((lote,i)=>{
-      if(i%st6!==0&&i!==n6-1)return;
-      const x=sX6(i);
-      if(rot6){p6+=`<text transform="rotate(-45,${x},${H6-pad6.b+12})" x="${x}" y="${H6-pad6.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${lote}</text>`;}
-      else{p6+=`<text x="${x}" y="${H6-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${lote}</text>`;}
-    });
-    _series6.forEach(s=>{
-      const pts=s.vals.map((v,i)=>v!=null?`${sX6(i).toFixed(1)},${sY6(v).toFixed(1)}`:null);
+      });
+      const card=document.createElement('div');
+      card.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;';
+      card.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">${gd.label}</div><div id="${gd.id}"></div>`;
+      cont.appendChild(card);
+      const W=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),H=160;
+      const n=_lotes6.length,rot=n>10;
+      const pad={t:10,b:rot?62:30,l:38,r:10};
+      const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
+      const allV=vals.filter(v=>v!=null);
+      const maxV=allV.length?Math.max(...allV)*1.1:100;
+      const sY=v=>pad.t+iH-(v/maxV)*iH;
+      const sX=i=>pad.l+(n===1?iW/2:i/(n-1)*iW);
+      let svg='';
+      [0,0.25,0.5,0.75,1].forEach(f=>{
+        const val=maxV*f,y=sY(val);
+        svg+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+        svg+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${Math.round(val)}%</text>`;
+      });
+      const ml=Math.min(8,n),st=Math.max(1,Math.ceil(n/ml));
+      _lotes6.forEach((lote,i)=>{
+        if(i%st!==0&&i!==n-1)return;
+        const x=sX(i);
+        if(rot){svg+=`<text transform="rotate(-45,${x},${H-pad.b+12})" x="${x}" y="${H-pad.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${lote}</text>`;}
+        else{svg+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${lote}</text>`;}
+      });
+      const pts=vals.map((v,i)=>v!=null?`${sX(i).toFixed(1)},${sY(v).toFixed(1)}`:null);
       let d2='';let fr=true;
       pts.forEach(p=>{if(p){d2+=(fr?`M${p}`:`L${p}`);fr=false;}else{fr=true;}});
-      if(!d2)return;
-      p6+=`<path d="${d2}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
-      pts.forEach((p,i)=>{
-        if(!p||s.vals[i]==null)return;
-        const cx=sX6(i),cy=sY6(s.vals[i]);
-        p6+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="transparent" data-i="${i}" data-v="${s.vals[i]}" data-label="${s.label}" data-color="${s.color}" class="gcol-dot-6"/>`;
-        p6+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${s.color}" pointer-events="none"/>`;
+      if(d2){
+        svg+=`<path d="${d2}" fill="none" stroke="${gd.color}" stroke-width="2"/>`;
+        pts.forEach((p,i)=>{
+          if(!p||vals[i]==null)return;
+          const cx=sX(i),cy=sY(vals[i]);
+          svg+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="transparent" data-i="${i}" data-v="${vals[i]}" data-color="${gd.color}" class="gcol-dot-pip"/>`;
+          svg+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="${gd.color}" pointer-events="none"/>`;
+        });
+      }
+      const wr=document.createElement('div');wr.style.cssText='position:relative;';
+      wr.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;">${svg}</svg>`;
+      const tip=document.createElement('div');
+      tip.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+      wr.appendChild(tip);
+      wr.addEventListener('mouseover',function(e){
+        const dot=e.target.closest('.gcol-dot-pip');if(!dot)return;
+        const i=parseInt(dot.getAttribute('data-i')),v=parseFloat(dot.getAttribute('data-v')),color=dot.getAttribute('data-color');
+        tip.style.display='block';tip.style.borderLeft=`3px solid ${color}`;
+        tip.textContent=`${_lotes6[i]}: ${v}%`;
+        const rect=wr.querySelector('svg').getBoundingClientRect(),dotRect=dot.getBoundingClientRect();
+        tip.style.left=`${Math.min(dotRect.left-rect.left+dotRect.width/2,rect.width-130)}px`;
+        tip.style.top=`${dotRect.top-rect.top-36}px`;
       });
+      wr.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot-pip'))return;tip.style.display='none';});
+      wr.addEventListener('mouseleave',()=>tip.style.display='none');
+      card.querySelector(`#${gd.id}`).appendChild(wr);
     });
-    const leg6=_series6.map(s=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:${s.color};"></span>${s.label}</span>`).join('');
-    const wr6=document.createElement('div');wr6.style.cssText='position:relative;';
-    wr6.innerHTML=`<div style="margin-bottom:6px;">${leg6}</div><svg viewBox="0 0 ${W6} ${H6}" style="width:100%;display:block;">${p6}</svg>`;
-    const tip6=document.createElement('div');
-    tip6.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
-    wr6.appendChild(tip6);
-    wr6.addEventListener('mouseover',function(e){
-      const dot=e.target.closest('.gcol-dot-6');if(!dot)return;
-      const i=parseInt(dot.getAttribute('data-i')),v=parseFloat(dot.getAttribute('data-v'));
-      const label=dot.getAttribute('data-label'),color=dot.getAttribute('data-color');
-      tip6.style.display='block';tip6.style.borderLeft=`3px solid ${color}`;
-      tip6.textContent=`${_lotes6[i]} · ${label}: ${v}%`;
-      const rect=wr6.querySelector('svg').getBoundingClientRect(),dotRect=dot.getBoundingClientRect();
-      tip6.style.left=`${Math.min(dotRect.left-rect.left+dotRect.width/2,rect.width-160)}px`;
-      tip6.style.top=`${dotRect.top-rect.top-36}px`;
-    });
-    wr6.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot-6'))return;tip6.style.display='none';});
-    wr6.addEventListener('mouseleave',()=>tip6.style.display='none');
-    _card6.querySelector('#gcol-6').appendChild(wr6);
   }
 }
 
