@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.18</title>
+<title>KC System v6.22</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -354,7 +354,7 @@ input[type="number"]{-moz-appearance:textfield;}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.min.js"></script>
 </head>
 <body>
 
@@ -412,7 +412,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.18</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.22</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -592,6 +592,13 @@ input[type="number"]{-moz-appearance:textfield;}
             </div>
             <div class="cfg-menu-arrow">▶</div>
           </div>
+          <div class="cfg-menu-item" onclick="openCfgPage('lixeira')">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#fee2e2;">🗑️</div>
+              <div><div class="cfg-menu-label">Lixeira</div><div class="cfg-menu-sub">Recuperar manejos excluídos recentemente</div></div>
+            </div>
+            <div class="cfg-menu-arrow">›</div>
+          </div>
         </div>
       </div>
       <!-- Página: parâmetros -->
@@ -649,6 +656,17 @@ input[type="number"]{-moz-appearance:textfield;}
             </div>
             <button class="btn-save" onclick="createUser()">Criar Usuário</button>
           </div>
+        </div>
+      </div>
+      <!-- Página: lixeira -->
+      <div id="cfg-page-lixeira" style="display:none;">
+        <div class="cfg-back-bar">
+          <button class="cfg-back-btn" onclick="closeCfgPage()">‹ Configurações</button>
+          <div class="cfg-page-title">Lixeira</div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Manejos Excluídos</div>
+          <div id="lixeira-list"></div>
         </div>
       </div>
     </div>
@@ -1247,50 +1265,13 @@ input[type="number"]{-moz-appearance:textfield;}
 <div id="toast"></div>
 
 <script>
-// Usuários padrão fixos (nunca apagados)
-const DEFAULT_USERS={
-  'lucas':  {pass:'010722', name:'Lucas',  role:'admin'},
-  'giovana':{pass:'893458', name:'Giovana',role:'admin'},
-  'kiko':   {pass:'347650', name:'Kiko',   role:'usuario'},
-  'bili':   {pass:'092347', name:'Bili',   role:'usuario'},
-};
-let USERS={...DEFAULT_USERS};
+// Cache de perfis: username -> {id, name, role}
+let perfisCache={};
 
-async function loadUsers(){
-  // 1. Tenta carregar do Supabase
-  try{
-    const rows=await sbGet('users','select=id,data');
-    if(rows&&rows.length){
-      const extra={};
-      rows.forEach(r=>{if(r.data&&r.id)extra[r.id]=r.data;});
-      USERS={...DEFAULT_USERS,...extra};
-      localStorage.setItem('kc_users',JSON.stringify(extra));
-      return;
-    }
-  }catch(e){}
-  // 2. Fallback: localStorage
-  try{const u=JSON.parse(localStorage.getItem('kc_users'));if(u)USERS={...DEFAULT_USERS,...u};}catch(e){}
-}
-
-async function saveUsers(){
-  // Salva apenas os criados dinamicamente (exclui padrões)
-  const extra={};
-  Object.entries(USERS).forEach(([k,v])=>{if(!DEFAULT_USERS[k])extra[k]=v;});
-  localStorage.setItem('kc_users',JSON.stringify(extra));
-  // Sincroniza com Supabase: upsert de cada usuário extra
-  try{
-    const rows=Object.entries(extra).map(([id,data])=>({id,data}));
-    if(rows.length)await sbUpsert('users',rows);
-    // Remove usuários deletados do Supabase
-    const allSb=await sbGet('users','select=id');
-    if(allSb){
-      for(const row of allSb){
-        if(!extra[row.id]){
-          await sbDelete('users',row.id);
-        }
-      }
-    }
-  }catch(e){console.warn('saveUsers Supabase error',e);}
+async function loadPerfis(){
+  const rows=await sbGet('perfis','select=id,username,nome,role');
+  perfisCache={};
+  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role};});
 }
 const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70},goradosPct:{max:20}};
 
@@ -1382,10 +1363,12 @@ async function sbHeaders(){
   return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+token};
 }
 
+function _sbAbort(){const ac=new AbortController();setTimeout(()=>ac.abort(),15000);return ac.signal;}
+
 async function sbGet(table,filters=''){
   try{
     const qs=filters+(filters.includes('limit=')?'':'&limit=10000');
-    const r=await fetch(`${SB_URL}/rest/v1/${table}?${qs}`,{headers:await sbHeaders()});
+    const r=await fetch(`${SB_URL}/rest/v1/${table}?${qs}`,{headers:await sbHeaders(),signal:_sbAbort()});
     if(!r.ok)throw new Error(await r.text());
     return await r.json();
   }catch(e){console.warn('sbGet error',table,e);return null;}
@@ -1396,7 +1379,8 @@ async function sbUpsert(table,rows){
     const r=await fetch(`${SB_URL}/rest/v1/${table}`,{
       method:'POST',
       headers:{...h,'Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify(Array.isArray(rows)?rows:[rows])
+      body:JSON.stringify(Array.isArray(rows)?rows:[rows]),
+      signal:_sbAbort()
     });
     if(!r.ok)throw new Error(await r.text());
     return true;
@@ -1404,16 +1388,26 @@ async function sbUpsert(table,rows){
 }
 async function sbDelete(table,id){
   try{
-    const r=await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:await sbHeaders()});
+    const r=await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:await sbHeaders(),signal:_sbAbort()});
     if(!r.ok)throw new Error(await r.text());
     return true;
   }catch(e){console.warn('sbDelete error',table,e);return false;}
 }
+async function sbSoftDelete(table,id){
+  try{
+    const h=await sbHeaders();
+    const r=await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,{
+      method:'PATCH',
+      headers:h,
+      body:JSON.stringify({deleted_at:new Date().toISOString()}),
+      signal:_sbAbort()
+    });
+    if(!r.ok)throw new Error(await r.text());
+    return true;
+  }catch(e){console.warn('sbSoftDelete error',table,e);return false;}
+}
 
 // ===== SESSÃO =====
-function todayStr(){const d=new Date();return`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;}
-function saveSession(u){localStorage.setItem('kc_session',JSON.stringify({username:u,day:todayStr()}));}
-function loadSession(){try{const s=JSON.parse(localStorage.getItem('kc_session'));if(s&&s.day===todayStr()&&USERS[s.username])return s.username;}catch(e){}return null;}
 function clearSession(){localStorage.removeItem('kc_session');}
 async function _carregarPerfil(uid){
   const rows=await sbGet('perfis',`select=*&id=eq.${uid}`);
@@ -2752,6 +2746,7 @@ function buildMatrizCard(t){
 let _realtimeWs=null;
 let _realtimeReconnectTimer=null;
 let _realtimeHeartbeat=null;
+let _realtimeBackoff=5000;
 
 function togglePainelHapas(expandId){
   const el=document.getElementById(expandId);
@@ -2763,7 +2758,8 @@ function togglePainelHapas(expandId){
 }
 
 function startRealtime(){
-  if(_realtimeWs&&_realtimeWs.readyState===WebSocket.OPEN)return;
+  if(_realtimeWs&&(_realtimeWs.readyState===WebSocket.OPEN||_realtimeWs.readyState===WebSocket.CONNECTING))return;
+  if(_realtimeWs){_realtimeWs.onclose=null;_realtimeWs.onerror=null;try{_realtimeWs.close();}catch(e){}}
 
   const wsUrl=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SB_KEY+'&vsn=1.0.0';
 
@@ -2776,6 +2772,7 @@ function startRealtime(){
   }
 
   _realtimeWs.onopen=()=>{
+    _realtimeBackoff=5000;
     console.log('Realtime conectado ✓');
 
     // Envia join nos canais de dados
@@ -2811,9 +2808,9 @@ function startRealtime(){
       topic:'realtime:public:users',
       event:'phx_join',
       payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
-        {event:'INSERT',schema:'public',table:'users'},
-        {event:'UPDATE',schema:'public',table:'users'},
-        {event:'DELETE',schema:'public',table:'users'},
+        {event:'INSERT',schema:'public',table:'perfis'},
+        {event:'UPDATE',schema:'public',table:'perfis'},
+        {event:'DELETE',schema:'public',table:'perfis'},
       ]}},
       ref:'3'
     };
@@ -2911,8 +2908,8 @@ function startRealtime(){
         if(table==='tanks'&&row.data){
           onRealtimeTank(row.data);
         }
-        if(table==='users'){
-          onRealtimeUser(row.id||row.data?.id,row.data,eventType);
+        if(table==='perfis'){
+          onRealtimePerfil(row.data,eventType);
         }
         if(table==='estoque_mov'){
           onRealtimeEstoqueMov(row,eventType);
@@ -2929,7 +2926,7 @@ function startRealtime(){
 
   _realtimeWs.onclose=()=>{
     clearInterval(_realtimeHeartbeat);
-    console.warn('Realtime desconectado, reconectando em 5s...');
+    console.warn(`Realtime desconectado, reconectando em ${_realtimeBackoff/1000}s...`);
     scheduleRealtimeReconnect();
   };
 
@@ -2940,9 +2937,11 @@ function startRealtime(){
 
 function scheduleRealtimeReconnect(){
   clearTimeout(_realtimeReconnectTimer);
+  const delay=_realtimeBackoff;
+  _realtimeBackoff=Math.min(_realtimeBackoff*2,60000);
   _realtimeReconnectTimer=setTimeout(()=>{
     if(currentUser)startRealtime();
-  },5000);
+  },delay);
 }
 
 function stopRealtime(){
@@ -2979,16 +2978,13 @@ function onRealtimeRecord(rec){
   showSyncBadge(`↻ ${rec.tankName||'Tanque'} atualizado por ${rec.user||'usuário'}`);
 }
 
-function onRealtimeUser(id,data,type){
-  if(!id)return;
-  if(type==='DELETE'||!data){
-    delete USERS[id];
+function onRealtimePerfil(data,type){
+  if(!data?.username)return;
+  if(type==='DELETE'){
+    delete perfisCache[data.username];
   } else {
-    if(!DEFAULT_USERS[id])USERS[id]=data;
+    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role};
   }
-  localStorage.setItem('kc_users',JSON.stringify(
-    Object.fromEntries(Object.entries(USERS).filter(([k])=>!DEFAULT_USERS[k]))
-  ));
 }
 
 function _refreshEstoqueViews(){
@@ -3146,7 +3142,7 @@ async function load(){
 
   // ── 5. Manejos ────────────────────────────────────────────
   try{
-    const sbMan=await sbGet('manejos','select=data&order=id.asc');
+    const sbMan=await sbGet('manejos','select=data&order=id.asc&deleted_at=is.null');
     if(sbMan&&sbMan.length) manejos=sbMan.map(r=>r.data).filter(Boolean);
   }catch(e){console.warn('load manejos error',e);}
 
@@ -3285,13 +3281,7 @@ function hideSyncStatus(){
 // ===== AUTH =====
 function isAdmin(){return currentUser?.role==='admin';}
 async function enterApp(u,perfil){
-  if(perfil){
-    currentUser={username:perfil.username,name:perfil.nome,role:perfil.role};
-  }else{
-    await loadUsers();
-    currentUser={username:u,...USERS[u]};
-    saveSession(u);
-  }
+  currentUser={username:perfil.username,name:perfil.nome,role:perfil.role};
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   const initials=currentUser.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -3310,7 +3300,7 @@ async function enterApp(u,perfil){
   populateChartTankSelect();
 
   // Depois sincroniza com Supabase em background
-  try{await load();}catch(e){console.warn('load error',e);}
+  try{await Promise.all([load(),loadPerfis()]);}catch(e){console.warn('load error',e);}
   renderTankView();updateMapSub();populateChartTankSelect();
   // SEMPRE re-renderiza coleta após load, independente do módulo ativo
   renderColetaPainel();renderColetaGraficos();
@@ -3345,16 +3335,12 @@ function _loadFromLocalStorage(){
 async function doLogin(){
   const u=document.getElementById('login-user').value.trim().toLowerCase();
   const p=document.getElementById('login-pass').value;
-  // Tenta Supabase Auth (email real ou sintético username@kcsystem.farm)
   const email=u.includes('@')?u:`${u}@kcsystem.farm`;
-  const {data,error}=await _sb.auth.signInWithPassword({email,password:p});
+  const {data}=await _sb.auth.signInWithPassword({email,password:p});
   if(data?.session){
     const perfil=await _carregarPerfil(data.user.id);
     if(perfil){await enterApp(null,perfil);return;}
   }
-  // Fallback: sistema legado (usuários ainda não migrados)
-  await loadUsers();
-  if(USERS[u]&&USERS[u].pass===p){saveSession(u);enterApp(u);return;}
   document.getElementById('login-error').style.display='block';
   setTimeout(()=>document.getElementById('login-error').style.display='none',3000);
 }
@@ -3363,11 +3349,8 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
   document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
   (async function tryAutoLogin(){
-    // Tenta sessão Supabase primeiro
     const {data:{session}}=await _sb.auth.getSession();
     if(session){const perfil=await _carregarPerfil(session.user.id);if(perfil){await enterApp(null,perfil);return;}}
-    // Fallback legado
-    await loadUsers();const u=loadSession();if(u)enterApp(u);
   })();
   const pd=document.getElementById('painel-date');if(pd&&!pd.value)pd.value=new Date().toISOString().split('T')[0];
   const ld=document.getElementById('lanc-date');if(ld&&!ld.value)ld.value=new Date().toISOString().split('T')[0];
@@ -4177,8 +4160,9 @@ function openCfgPage(page){
   document.getElementById('cfg-page-'+page).style.display='block';
   document.getElementById('main').scrollTop=0;
   if(page==='racoes')renderRacaoList();
-  if(page==='usuarios')renderUsersList();
+  if(page==='usuarios'){loadPerfis().then(renderUsersList);}
   if(page==='parametros')renderParamsForm();
+  if(page==='lixeira')renderLixeira();
 }
 function closeCfgPage(silent=false){
   currentCfgPage=null;
@@ -4219,9 +4203,8 @@ let editingUserLogin=null;
 
 function renderUsersList(){
   const el=document.getElementById('users-list');
-  const all=Object.entries(USERS).map(([login,u])=>({login,...u}));
+  const all=Object.entries(perfisCache).map(([login,u])=>({login,...u}));
   el.innerHTML=all.map(u=>{
-    const isDefault=!!DEFAULT_USERS[u.login];
     const initials=u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const roleColor=ROLE_COLOR[u.role]||'var(--text2)';
     const roleBg=ROLE_BG[u.role]||'var(--accent-dim)';
@@ -4234,7 +4217,7 @@ function renderUsersList(){
       </div>
       <div class="user-item-actions">
         <button class="user-action-btn edit" onclick="openEditUser('${u.login}')" title="Editar">✏️</button>
-        ${!isDefault
+        ${u.login!==currentUser?.username
           ?`<button class="user-action-btn del" onclick="deleteUser('${u.login}')" title="Excluir">🗑️</button>`
           :`<div style="width:34px;"></div>`
         }
@@ -4245,32 +4228,34 @@ function renderUsersList(){
 
 function openEditUser(login){
   editingUserLogin=login;
-  const u=USERS[login];
+  const u=perfisCache[login];
   document.getElementById('edit-user-title').textContent=`Editar: ${u.name}`;
   document.getElementById('edit-user-name').value=u.name;
   document.getElementById('edit-user-pass').value='';
   document.getElementById('edit-user-role').value=u.role;
-  // Bloqueia mudança de perfil para usuários padrão
-  document.getElementById('edit-user-role').disabled=!!DEFAULT_USERS[login];
+  document.getElementById('edit-user-role').disabled=false;
   document.getElementById('edit-user-overlay').classList.add('show');
 }
 function closeEditUser(){
   document.getElementById('edit-user-overlay').classList.remove('show');
   editingUserLogin=null;
 }
-function saveEditUser(){
+async function saveEditUser(){
   if(!editingUserLogin)return;
   const name=document.getElementById('edit-user-name').value.trim();
   const pass=document.getElementById('edit-user-pass').value;
   const role=document.getElementById('edit-user-role').value;
   if(!name){showToast('Nome não pode ser vazio','error');return;}
-  USERS[editingUserLogin].name=name;
   if(pass){
     if(pass.length<4){showToast('Senha muito curta (mín. 4 caracteres)','error');return;}
-    USERS[editingUserLogin].pass=pass;
+    if(editingUserLogin!==currentUser?.username){showToast('Só é possível alterar a própria senha','error');return;}
+    const {error}=await _sb.auth.updateUser({password:pass});
+    if(error){showToast('Erro ao alterar senha: '+error.message,'error');return;}
   }
-  if(!DEFAULT_USERS[editingUserLogin])USERS[editingUserLogin].role=role;
-  saveUsers();renderUsersList();closeEditUser();
+  const u=perfisCache[editingUserLogin];
+  await sbUpsert('perfis',[{id:u.id,username:editingUserLogin,nome:name,role}]);
+  perfisCache[editingUserLogin]={...u,name,role};
+  renderUsersList();closeEditUser();
   showToast('Usuário atualizado ✓','ok');
 }
 async function createUser(){
@@ -4296,21 +4281,19 @@ async function createUser(){
   const newUserId=signupJson.id;
   const ok=await sbUpsert('perfis',[{id:newUserId,username:login,nome:name,role}]);
   if(!ok){showToast('Conta criada mas perfil não salvo — tente novamente','error');return;}
-  // Mantém no legado durante transição
-  USERS[login]={pass,name,role};
-  saveUsers();renderUsersList();
+  perfisCache[login]={id:newUserId,name,role};
+  renderUsersList();
   document.getElementById('new-user-login').value='';
   document.getElementById('new-user-name').value='';
   document.getElementById('new-user-pass').value='';
   showToast(`Usuário ${name} criado ✓`,'ok');
 }
 function deleteUser(login){
-  if(DEFAULT_USERS[login]){showToast('Usuários padrão não podem ser removidos','error');return;}
   if(login===currentUser?.username){showToast('Não é possível remover seu próprio usuário','error');return;}
   showConfirm('Remover usuário',`Deseja remover o acesso de @${login}? Esta ação não pode ser desfeita.`,async()=>{
-    const rows=await sbGet('perfis',`select=id&username=eq.${encodeURIComponent(login)}`);
-    if(rows?.length)await sbDelete('perfis',rows[0].id);
-    delete USERS[login];saveUsers();renderUsersList();showToast('Usuário removido','ok');
+    const u=perfisCache[login];
+    if(u)await sbDelete('perfis',u.id);
+    delete perfisCache[login];renderUsersList();showToast('Usuário removido','ok');
   });
 }
 
@@ -5737,14 +5720,7 @@ async function _doImportBackup(backup){
     }
     showSaveProgress(4, totalSteps);
 
-    // 5. Usuários
-    if(backup.users?.length){
-      backup.users.forEach(u=>{
-        const {login,...data} = u;
-        if(login) USERS[login] = data;
-      });
-      await saveUsers();
-    }
+    // 5. Usuários (migrados para Supabase Auth — backup legado ignorado)
 
     // 6. Parâmetros de alerta
     if(backup.limits){
@@ -5771,8 +5747,6 @@ async function _doImportBackup(backup){
 
 function exportBackup(){
   const date=new Date().toISOString().split('T')[0];
-  // Usuários: inclui todos (DEFAULT + extras), sem expor senhas de forma insegura — são as mesmas já no sistema
-  const usersBackup = Object.entries(USERS).map(([login,u])=>({login,...u}));
   const backup={
     version:3,
     exportedAt:new Date().toISOString(),
@@ -5781,14 +5755,13 @@ function exportBackup(){
     tanks,          // configuração de tanques (hapas, nome, status, etc.)
     racoes,         // tabela de rações
     manejos,        // pipeline de produção de alevinos
-    users:usersBackup, // usuários e senhas
     limits:JSON.parse(JSON.stringify(LIMITS)), // parâmetros de alerta
     meta:{
       totalRecords:records.length,
       totalTanks:tanks.length,
       totalRacoes:racoes.length,
       totalManejos:manejos.length,
-      totalUsers:usersBackup.length,
+      totalUsers:Object.keys(perfisCache).length,
       dateRange:{
         from:records.length?records.reduce((min,r)=>r.date<min?r.date:min,records[0].date):null,
         to:records.length?records.reduce((max,r)=>r.date>max?r.date:max,records[0].date):null,
@@ -6682,7 +6655,7 @@ const FASES = {
 // ─── Load / Save ────────────────────────────────────────
 async function loadManejos(){
   try{
-    const res = await sbGet('manejos','select=data&order=id.asc');
+    const res = await sbGet('manejos','select=data&order=id.asc&deleted_at=is.null');
     if(res&&res.length) manejos = res.map(r=>r.data).filter(Boolean);
     // Limpa duplicatas existentes — mantém só o mais recente por fase+lote_raiz
     await _limparManejosDuplicados();
@@ -6813,9 +6786,67 @@ async function saveManejo(m){
 }
 
 async function deleteManejo(id){
-  await sbDelete('manejos',id);
-  manejos = manejos.filter(m=>m.id!==id);
+  showConfirm('Excluir manejo','Este manejo será removido do pipeline. É possível recuperá-lo pela Lixeira nas Configurações.',async()=>{
+    await sbSoftDelete('manejos',id);
+    manejos=manejos.filter(m=>m.id!==id);
+    renderManejos();
+    showToast('Manejo removido','ok');
+  });
+}
+
+const _FASE_LABEL={coleta:'Coleta',larva:'Larva',povoamento:'Povoamento',transferencia:'Transferência',transferência:'Transferência',venda:'Venda'};
+
+async function renderLixeira(){
+  const el=document.getElementById('lixeira-list');
+  el.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">Carregando...</div>';
+  const rows=await sbGet('manejos','select=id,data,deleted_at&deleted_at=not.is.null&order=deleted_at.desc');
+  if(!rows||rows.length===0){
+    el.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">Nenhum manejo excluído.</div>';
+    return;
+  }
+  el.innerHTML=rows.map(r=>{
+    const m=r.data||{};
+    const fase=_FASE_LABEL[m.fase]||m.fase||'—';
+    const lote=m.lote_id||r.id;
+    const qtd=m.qtd_total!=null?Number(m.qtd_total).toLocaleString('pt-BR'):'—';
+    const data=m.date||'—';
+    const quando=r.deleted_at?new Date(r.deleted_at).toLocaleDateString('pt-BR'):'—';
+    return`<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${fase} — ${lote}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px;">Qtd: ${qtd} &nbsp;·&nbsp; Data: ${data} &nbsp;·&nbsp; Excluído em: ${quando}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;margin-top:2px;">
+          <button onclick="recoverManejo('${r.id}')" style="padding:6px 10px;background:#dcfce7;color:#16a34a;border:1px solid #86efac;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Recuperar</button>
+          <button onclick="hardDeleteManejo('${r.id}')" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">Excluir</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function recoverManejo(id){
+  const h=await sbHeaders();
+  const r=await fetch(`${SB_URL}/rest/v1/manejos?id=eq.${encodeURIComponent(id)}`,{
+    method:'PATCH',headers:h,
+    body:JSON.stringify({deleted_at:null}),
+    signal:_sbAbort()
+  });
+  if(!r.ok){showToast('Erro ao recuperar manejo','error');return;}
+  const rows=await sbGet('manejos','select=data&order=id.asc&deleted_at=is.null');
+  if(rows)manejos=rows.map(r=>r.data).filter(Boolean);
   renderManejos();
+  renderLixeira();
+  showToast('Manejo recuperado ✓','ok');
+}
+
+function hardDeleteManejo(id){
+  showConfirm('Excluir permanentemente','Este manejo será removido definitivamente. Esta ação não pode ser desfeita.',async()=>{
+    await sbDelete('manejos',id);
+    renderLixeira();
+    showToast('Manejo excluído permanentemente','ok');
+  });
 }
 
 // ─── Filtro de período ───────────────────────────────────
@@ -7663,7 +7694,7 @@ function _finPopulateRespSelect(){
   const sel=document.getElementById('fg-resp');if(!sel)return;
   const prev=sel.value;
   sel.innerHTML='<option value="">Selecione...</option><option value="encarregado">Encarregado</option><option value="supervisor">Supervisor</option>';
-  Object.values(USERS||{}).forEach(u=>{
+  Object.values(perfisCache).forEach(u=>{
     const opt=document.createElement('option');opt.value=u.name;opt.textContent=u.name;sel.appendChild(opt);
   });
   if(prev)sel.value=prev;
@@ -9338,7 +9369,7 @@ function showImportPopup(periodo, resumoPorUser) {
   document.getElementById('import-popup-overlay')?.remove();
   const mesesNomes=['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const linhas = Object.entries(resumoPorUser).map(([u, count]) => {
-    const nome = (USERS[u] || PONTO_EXTRA_USERS[u] || {name:u}).name;
+    const nome = (perfisCache[u] || PONTO_EXTRA_USERS[u] || {name:u}).name;
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">
       <span style="font-size:13px;color:var(--text);">👤 ${nome}</span>
       <span style="font-size:13px;font-weight:700;color:var(--accent);">${count} batida${count!==1?'s':''}</span>
@@ -9585,7 +9616,7 @@ function renderPonto() {
   resumoCards.innerHTML = '';
 
   usersToShow.forEach(uname => {
-    const uInfo = PONTO_EXTRA_USERS[uname] || PONTO_EXTRA_USERS[uname.toLowerCase()] || USERS[uname] || { name: uname };
+    const uInfo = PONTO_EXTRA_USERS[uname] || PONTO_EXTRA_USERS[uname.toLowerCase()] || perfisCache[uname] || { name: uname };
     const uKey = uname.toLowerCase();
     const uDados = pontoData[uname] || pontoData[uKey] || {};
 
@@ -9648,7 +9679,7 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
   _pontoDetalheUser = uname;
   const detalheEl = document.getElementById('ponto-detalhe');
   if (!detalheEl) return;
-  const uInfo = PONTO_EXTRA_USERS[uname] || PONTO_EXTRA_USERS[uname.toLowerCase()] || USERS[uname] || { name: uname };
+  const uInfo = PONTO_EXTRA_USERS[uname] || PONTO_EXTRA_USERS[uname.toLowerCase()] || perfisCache[uname] || { name: uname };
   const uKey = uname.toLowerCase();
   const uDados = pontoData[uname] || pontoData[uKey] || {};
   const atestadosUser = pontoAtestados[uname] || pontoAtestados[uKey] || {};
