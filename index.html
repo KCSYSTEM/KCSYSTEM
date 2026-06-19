@@ -6860,11 +6860,14 @@ function buildPipeline(){
   manejos.filter(m=>!m.overridden).forEach(m=>{
     const roots = getRootLotes(m.id);
     const multiRoot = roots.length > 1;
+    if(m.fase==='venda') console.log('[DBG-venda]', m.lote_id, 'qtd_total:', m.qtd_total, 'roots:', JSON.stringify(roots), 'multiRoot:', multiRoot);
     roots.forEach(rootLote=>{
       if(!pipeline[rootLote]) return;
       const existing = pipeline[rootLote].fases.find(f=>f.id===m.id);
       if(!existing){
-        const faseObj = multiRoot ? {...m, qtd_total: getQtdProporcionalParaRoot(m, rootLote)} : m;
+        const qtdProp = multiRoot ? getQtdProporcionalParaRoot(m, rootLote) : m.qtd_total;
+        if(m.fase==='venda') console.log('  [DBG-venda →]', rootLote, 'qtdProp:', qtdProp);
+        const faseObj = multiRoot ? {...m, qtd_total: qtdProp} : m;
         pipeline[rootLote].fases.push(faseObj);
       }
     });
