@@ -7004,14 +7004,28 @@ function _getRootsDeOrigem(loteId){
   return getRootLotes(prev.id);
 }
 
-// Fração proporcional do qtd_total de um manejo atribuível a um determinado lote raiz
+// Fração proporcional do qtd_total de um manejo atribuível a um determinado lote raiz.
+// Quando uma origem rastreia para múltiplos roots, proporcionaliza recursivamente.
 function getQtdProporcionalParaRoot(m, rootLote){
   if(!m.origens?.length) return m.qtd_total;
   const totalOrigemQtd = m.origens.reduce((s,o) => s + (o.qtd||0), 0);
   if(totalOrigemQtd === 0) return m.qtd_total;
-  const qtdDesteRoot = m.origens
-    .filter(o => _getRootsDeOrigem(o.lote_id).includes(rootLote))
-    .reduce((s,o) => s + (o.qtd||0), 0);
+  let qtdDesteRoot = 0;
+  m.origens.forEach(o => {
+    const origemRoots = _getRootsDeOrigem(o.lote_id);
+    if(!origemRoots.includes(rootLote)) return;
+    if(origemRoots.length === 1){
+      qtdDesteRoot += o.qtd || 0;
+    } else {
+      // Origem pertence a vários roots: herda a proporção calculada no manejo anterior
+      const prevManejo = manejos.find(x => x.lote_id === o.lote_id && !x.overridden);
+      if(prevManejo && prevManejo.qtd_total){
+        qtdDesteRoot += (o.qtd || 0) * getQtdProporcionalParaRoot(prevManejo, rootLote) / prevManejo.qtd_total;
+      } else {
+        qtdDesteRoot += (o.qtd || 0) / origemRoots.length;
+      }
+    }
+  });
   if(qtdDesteRoot === 0) return 0;
   return Math.round(m.qtd_total * qtdDesteRoot / totalOrigemQtd);
 }
