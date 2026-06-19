@@ -354,7 +354,7 @@ input[type="number"]{-moz-appearance:textfield;}
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.64.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -1373,7 +1373,6 @@ const SB_KEY='sb_publishable_hc1kFz6iao7_YRfTnlB6xw_4gYcLE3A';
 // Cliente principal (sessão persistida no localStorage)
 const _sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true}});
 // Cliente auxiliar para criar usuários sem afetar a sessão do admin logado
-const _sbAdmin=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
 
 async function sbHeaders(){
   const {data:{session}}=await _sb.auth.getSession();
@@ -4198,9 +4197,18 @@ async function createUser(){
   if(!name){showToast('Digite o nome','error');return;}
   if(pass.length<4){showToast('Senha deve ter no mínimo 4 caracteres','error');return;}
   const email=`${login}@kcsystem.farm`;
-  const {data,error}=await _sbAdmin.auth.signUp({email,password:pass});
-  if(error||!data?.user){showToast('Erro ao criar conta: '+(error?.message||'desconhecido'),'error');return;}
-  const ok=await sbUpsert('perfis',[{id:data.user.id,username:login,nome:name,role}]);
+  // Cria via REST direto para não instanciar segundo GoTrueClient nem sobrescrever sessão do admin
+  const signupRes=await fetch(`${SB_URL}/auth/v1/signup`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SB_KEY},
+    body:JSON.stringify({email,password:pass})
+  });
+  const signupJson=await signupRes.json();
+  if(!signupRes.ok||!signupJson?.id){
+    showToast('Erro ao criar conta: '+(signupJson?.msg||signupJson?.error_description||'desconhecido'),'error');return;
+  }
+  const newUserId=signupJson.id;
+  const ok=await sbUpsert('perfis',[{id:newUserId,username:login,nome:name,role}]);
   if(!ok){showToast('Conta criada mas perfil não salvo — tente novamente','error');return;}
   // Mantém no legado durante transição
   USERS[login]={pass,name,role};
@@ -5078,7 +5086,7 @@ async function injectBioQty2604(){
     // Envia ao Supabase em lotes de 200
     for(let i=0;i<newRecs.length;i+=200){
       const chunk=newRecs.slice(i,i+200);
-      await sbUpsert('records',chunk.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r})));
+      await sbUpsert('tank_records',chunk.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r})));
     }
     localStorage.setItem('kc_records',JSON.stringify(records));
     console.log(`injectBioQty2604: ${newRecs.length} registros inseridos.`);
@@ -5224,7 +5232,7 @@ async function injectQualidadeAgua(){
   if(newRecs.length){
     const rows=newRecs.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r}));
     for(let i=0;i<rows.length;i+=200){
-      await sbUpsert('records',rows.slice(i,i+200));
+      await sbUpsert('tank_records',rows.slice(i,i+200));
     }
     localStorage.setItem('kc_records',JSON.stringify(records));
     console.log(`injectQualidadeAgua: ${newRecs.length} registros processados.`);
@@ -5594,7 +5602,7 @@ async function _doImportBackup(backup){
       // Upsert em lotes
       const batchSize = 100;
       for(let i=0; i<rows.length; i+=batchSize){
-        await sbUpsert('records', rows.slice(i, i+batchSize));
+        await sbUpsert('tank_records', rows.slice(i, i+batchSize));
       }
       // Atualiza local
       backup.records.forEach(r=>{
@@ -5974,7 +5982,7 @@ async function injectHistoricalData(){
     newRecs.forEach(r=>records.push(r));
     // Envia ao Supabase em lote
     const rows=newRecs.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r}));
-    await sbUpsert('records',rows);
+    await sbUpsert('tank_records',rows);
   }
 
   await inject('tank_geo-elevada_40','Tanque 40','tq40',[
