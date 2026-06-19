@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.23</title>
+<title>KC System v6.25</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -353,7 +353,7 @@ input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0
 input[type="number"]{-moz-appearance:textfield;}
 
 </style>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://fsxoyytkmzqonrgfapgm.supabase.co wss://fsxoyytkmzqonrgfapgm.supabase.co; img-src 'self' data:; font-src 'self' data:; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://fsxoyytkmzqonrgfapgm.supabase.co wss://fsxoyytkmzqonrgfapgm.supabase.co https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' data: https:; object-src 'none';">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -413,7 +413,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.23</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.25</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1265,14 +1265,42 @@ input[type="number"]{-moz-appearance:textfield;}
 
 <div id="toast"></div>
 
+<!-- Popup de troca forçada de senha -->
+<div id="forced-pwd-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:38px;margin-bottom:8px;">🔐</div>
+      <div style="font-size:17px;font-weight:800;color:var(--text);">Crie uma nova senha</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.4;">Por segurança, defina uma senha forte antes de continuar.</div>
+    </div>
+    <div style="display:grid;gap:12px;">
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Nova senha</label>
+        <input type="password" id="fpwd-new" placeholder="••••••••" oninput="checkForcedPwd()" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Confirmar senha</label>
+        <input type="password" id="fpwd-confirm" placeholder="••••••••" oninput="checkForcedPwd()" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+      </div>
+      <div style="display:grid;gap:6px;padding:12px;background:var(--bg);border-radius:10px;">
+        <div id="fpwd-c1" style="font-size:12px;color:var(--text3);">○ Mínimo 8 caracteres</div>
+        <div id="fpwd-c2" style="font-size:12px;color:var(--text3);">○ Pelo menos uma letra maiúscula</div>
+        <div id="fpwd-c3" style="font-size:12px;color:var(--text3);">○ Pelo menos um caractere especial (!@#$%&*...)</div>
+        <div id="fpwd-c4" style="font-size:12px;color:var(--text3);">○ Senhas coincidem</div>
+      </div>
+      <button id="fpwd-btn" onclick="saveForcedPwd()" disabled style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:not-allowed;opacity:0.4;transition:opacity 0.2s;">Salvar senha</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // Cache de perfis: username -> {id, name, role}
 let perfisCache={};
 
 async function loadPerfis(){
-  const rows=await sbGet('perfis','select=id,username,nome,role');
+  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password');
   perfisCache={};
-  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role};});
+  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password};});
 }
 const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70},goradosPct:{max:20}};
 function esc(s){const e=document.createElement('span');e.textContent=s==null?'':String(s);return e.innerHTML;}
@@ -1430,6 +1458,49 @@ function forceLogout(){
   document.getElementById('login-user').value='';
   document.getElementById('login-pass').value='';
   showToast('Sessão encerrada. Faça login.','error');
+}
+
+const _FPWD_LABELS=['Mínimo 8 caracteres','Pelo menos uma letra maiúscula','Pelo menos um caractere especial (!@#$%&*...)','Senhas coincidem'];
+function showForcedPwdPopup(){
+  const el=document.getElementById('forced-pwd-overlay');
+  if(el){el.style.display='flex';document.getElementById('fpwd-new').value='';document.getElementById('fpwd-confirm').value='';checkForcedPwd();}
+}
+function checkForcedPwd(){
+  const pwd=document.getElementById('fpwd-new').value;
+  const conf=document.getElementById('fpwd-confirm').value;
+  const results=[
+    pwd.length>=8,
+    /[A-Z]/.test(pwd),
+    /[!@#$%^&*()\-_=+\[\]{};:'",.<>?/\\|`~]/.test(pwd),
+    pwd.length>0&&pwd===conf,
+  ];
+  results.forEach((ok,i)=>{
+    const el=document.getElementById('fpwd-c'+(i+1));
+    if(!el)return;
+    el.textContent=(ok?'✓ ':'○ ')+_FPWD_LABELS[i];
+    el.style.color=ok?'#16a34a':pwd.length>0?'#dc2626':'var(--text3)';
+  });
+  const allOk=results.every(Boolean);
+  const btn=document.getElementById('fpwd-btn');
+  if(btn){btn.disabled=!allOk;btn.style.opacity=allOk?'1':'0.4';btn.style.cursor=allOk?'pointer':'not-allowed';}
+}
+async function saveForcedPwd(){
+  const pwd=document.getElementById('fpwd-new').value;
+  const btn=document.getElementById('fpwd-btn');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  const {error}=await _sb.auth.updateUser({password:pwd});
+  if(error){
+    showToast('Erro ao salvar: '+error.message,'error');
+    if(btn){btn.disabled=false;btn.textContent='Salvar senha';}
+    return;
+  }
+  const p=perfisCache[currentUser?.username];
+  if(p){
+    await sbUpsert('perfis',[{id:p.id,username:currentUser.username,nome:p.name,role:p.role,must_change_password:false}]);
+    perfisCache[currentUser.username]={...p,mustChangePwd:false};
+  }
+  document.getElementById('forced-pwd-overlay').style.display='none';
+  showToast('Senha atualizada com sucesso ✓','ok');
 }
 
 // ===== STORAGE (Supabase + localStorage fallback) =====
@@ -2989,7 +3060,7 @@ function onRealtimePerfil(data,type){
   if(type==='DELETE'){
     delete perfisCache[data.username];
   } else {
-    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role};
+    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role,mustChangePwd:data.must_change_password};
   }
 }
 
@@ -3319,6 +3390,7 @@ async function enterApp(u,perfil){
   renderTankView();updateMapSub();populateChartTankSelect();
   renderColetaPainel();
   startRealtime(); // inicia sync em tempo real
+  if(perfil?.must_change_password)showForcedPwdPopup();
 }
 
 function _loadFromLocalStorage(){
@@ -4214,14 +4286,16 @@ function renderUsersList(){
     const initials=u.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const roleColor=ROLE_COLOR[u.role]||'var(--text2)';
     const roleBg=ROLE_BG[u.role]||'var(--accent-dim)';
+    const pwdPending=u.mustChangePwd;
     return`<div class="user-item">
       <div class="user-item-avatar">${initials}</div>
       <div class="user-item-info">
         <div class="user-item-name">${esc(u.name)}</div>
-        <div class="user-item-login">@${u.login}</div>
+        <div class="user-item-login">@${u.login}${pwdPending?'&nbsp;<span style="font-size:10px;background:#fef9c3;color:#a16207;border-radius:5px;padding:1px 5px;font-weight:700;">troca pendente</span>':''}</div>
         <span class="user-item-role" style="color:${roleColor};background:${roleBg};">${ROLE_LABEL[u.role]||u.role}</span>
       </div>
       <div class="user-item-actions">
+        <button class="user-action-btn" onclick="forcePasswordReset('${u.login}')" title="${pwdPending?'Troca de senha já solicitada':'Solicitar troca de senha'}" style="background:${pwdPending?'#fef9c3':'#f0f9ff'};color:${pwdPending?'#a16207':'#0369a1'};border:1px solid ${pwdPending?'#fde047':'#bae6fd'};border-radius:8px;width:34px;height:34px;font-size:15px;cursor:pointer;">🔑</button>
         <button class="user-action-btn edit" onclick="openEditUser('${u.login}')" title="Editar">✏️</button>
         ${u.login!==currentUser?.username
           ?`<button class="user-action-btn del" onclick="deleteUser('${u.login}')" title="Excluir">🗑️</button>`
@@ -4230,6 +4304,18 @@ function renderUsersList(){
       </div>
     </div>`;
   }).join('');
+}
+
+async function forcePasswordReset(login){
+  const u=perfisCache[login];
+  if(!u)return;
+  if(u.mustChangePwd){showToast(`${u.name} já tem troca de senha pendente`,'error');return;}
+  const ok=await sbUpsert('perfis',[{id:u.id,username:login,nome:u.name,role:u.role,must_change_password:true}]);
+  if(ok){
+    perfisCache[login]={...u,mustChangePwd:true};
+    renderUsersList();
+    showToast(`${u.name} deverá trocar a senha no próximo login ✓`,'ok');
+  }
 }
 
 function openEditUser(login){
@@ -9259,18 +9345,17 @@ const PONTO_NAME_MAP = {
   'everson g':  'bili',
   'everson':    'bili',
   'giovana':    'giovana',
+  'didi':       'jhonathan',
   'jhonatan':   'jhonathan',
   'jhonathan':  'jhonathan',
   'nilson':     'rodrigo',
   'nilsom':     'rodrigo',
 };
 
-// Colaboradores que aparecem só no ponto (sem login no sistema)
+// Nomes reais para exibição no ponto (sobrepõe perfisCache onde o apelido difere do nome do relógio)
 const PONTO_EXTRA_USERS = {
-  'jhonathan': { name: 'Jhonathan' },
-  'rodrigo':   { name: 'Rodrigo' },
-  'kiko':      { name: 'Luiz Henrique' },
-  'bili':      { name: 'Everson' },
+  'kiko':  { name: 'Luiz Henrique' },
+  'bili':  { name: 'Everson' },
 };
 
 // pontoData: { [username]: { [YYYY-MM-DD]: { batidas: ['HH:MM',...] } } }
