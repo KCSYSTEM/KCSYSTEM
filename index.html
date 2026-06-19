@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.15</title>
+<title>KC System v6.16</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -412,7 +412,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.15</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.16</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -6859,10 +6859,14 @@ function buildPipeline(){
   // Adiciona fases de manejos — ignora os arquivados (overridden)
   manejos.filter(m=>!m.overridden).forEach(m=>{
     const roots = getRootLotes(m.id);
+    const multiRoot = roots.length > 1;
     roots.forEach(rootLote=>{
       if(!pipeline[rootLote]) return;
       const existing = pipeline[rootLote].fases.find(f=>f.id===m.id);
-      if(!existing) pipeline[rootLote].fases.push(m);
+      if(!existing){
+        const faseObj = multiRoot ? {...m, qtd_total: getQtdProporcionalParaRoot(m, rootLote)} : m;
+        pipeline[rootLote].fases.push(faseObj);
+      }
     });
   });
 
@@ -6991,6 +6995,25 @@ function getRootLotes(manejoId, _obj=null){
     else{ roots.push(...getRootLotes(prevManejo.id)); }
   });
   return [...new Set(roots)];
+}
+
+// Traça um lote_id até suas coletas raiz (análogo a getRootLotes mas por lote_id)
+function _getRootsDeOrigem(loteId){
+  const prev = manejos.find(x => x.lote_id === loteId && !x.overridden);
+  if(!prev) return [loteId];
+  return getRootLotes(prev.id);
+}
+
+// Fração proporcional do qtd_total de um manejo atribuível a um determinado lote raiz
+function getQtdProporcionalParaRoot(m, rootLote){
+  if(!m.origens?.length) return m.qtd_total;
+  const totalOrigemQtd = m.origens.reduce((s,o) => s + (o.qtd||0), 0);
+  if(totalOrigemQtd === 0) return m.qtd_total;
+  const qtdDesteRoot = m.origens
+    .filter(o => _getRootsDeOrigem(o.lote_id).includes(rootLote))
+    .reduce((s,o) => s + (o.qtd||0), 0);
+  if(qtdDesteRoot === 0) return 0;
+  return Math.round(m.qtd_total * qtdDesteRoot / totalOrigemQtd);
 }
 
 // ─── Render card pipeline ───────────────────────────────
