@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.29</title>
+<title>KC System v6.30</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -413,7 +413,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.29</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.30</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2875,6 +2875,8 @@ let _realtimeWs=null;
 let _realtimeReconnectTimer=null;
 let _realtimeHeartbeat=null;
 let _realtimeBackoff=5000;
+let _realtimeTokenCheck=null;
+let _realtimeAuthToken=null;
 
 function togglePainelHapas(expandId){
   const el=document.getElementById(expandId);
@@ -2885,9 +2887,17 @@ function togglePainelHapas(expandId){
   if(btn)btn.textContent=open?'－':'＋';
 }
 
-function startRealtime(){
+async function startRealtime(){
   if(_realtimeWs&&(_realtimeWs.readyState===WebSocket.OPEN||_realtimeWs.readyState===WebSocket.CONNECTING))return;
   if(_realtimeWs){_realtimeWs.onclose=null;_realtimeWs.onerror=null;try{_realtimeWs.close();}catch(e){}}
+
+  // Exige um token de sessão válido — sem ele, o Realtime conectaria como anon
+  // e o RLS (restrito a "authenticated") bloquearia ou, pior, dependendo da
+  // configuração do projeto, vazaria dados sem exigir login algum.
+  const {data:{session}}=await _sb.auth.getSession();
+  const token=session?.access_token;
+  if(!token){scheduleRealtimeReconnect();return;}
+  _realtimeAuthToken=token;
 
   const wsUrl=SB_URL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SB_KEY+'&vsn=1.0.0';
 
@@ -2907,7 +2917,7 @@ function startRealtime(){
     const joinRecords={
       topic:'realtime:public:tank_records',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'tank_records'},
         {event:'UPDATE',schema:'public',table:'tank_records'},
         {event:'DELETE',schema:'public',table:'tank_records'},
@@ -2917,7 +2927,7 @@ function startRealtime(){
     const joinColetaRecords={
       topic:'realtime:public:coleta_records',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'coleta_records'},
         {event:'UPDATE',schema:'public',table:'coleta_records'},
       ]}},
@@ -2926,7 +2936,7 @@ function startRealtime(){
     const joinTanks={
       topic:'realtime:public:tanks',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'tanks'},
         {event:'UPDATE',schema:'public',table:'tanks'},
       ]}},
@@ -2935,7 +2945,7 @@ function startRealtime(){
     const joinUsers={
       topic:'realtime:public:users',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'perfis'},
         {event:'UPDATE',schema:'public',table:'perfis'},
         {event:'DELETE',schema:'public',table:'perfis'},
@@ -2945,7 +2955,7 @@ function startRealtime(){
     const joinEstoqueMov={
       topic:'realtime:public:estoque_mov',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'estoque_mov'},
         {event:'UPDATE',schema:'public',table:'estoque_mov'},
         {event:'DELETE',schema:'public',table:'estoque_mov'},
@@ -2955,7 +2965,7 @@ function startRealtime(){
     const joinEstoqueItens={
       topic:'realtime:public:estoque_itens',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'estoque_itens'},
         {event:'UPDATE',schema:'public',table:'estoque_itens'},
         {event:'DELETE',schema:'public',table:'estoque_itens'},
@@ -2965,7 +2975,7 @@ function startRealtime(){
     const joinFinVendas={
       topic:'realtime:public:financeiro_vendas',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'financeiro_vendas'},
         {event:'UPDATE',schema:'public',table:'financeiro_vendas'},
         {event:'DELETE',schema:'public',table:'financeiro_vendas'},
@@ -2975,7 +2985,7 @@ function startRealtime(){
     const joinFinGastos={
       topic:'realtime:public:financeiro_gastos',
       event:'phx_join',
-      payload:{config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
+      payload:{access_token:token,config:{broadcast:{self:false},presence:{key:''},postgres_changes:[
         {event:'INSERT',schema:'public',table:'financeiro_gastos'},
         {event:'UPDATE',schema:'public',table:'financeiro_gastos'},
         {event:'DELETE',schema:'public',table:'financeiro_gastos'},
@@ -2997,6 +3007,18 @@ function startRealtime(){
         _realtimeWs.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'}));
       }
     },25000);
+
+    // O JWT expira (~1h); o supabase-js renova sozinho em background.
+    // Verifica periodicamente e reconecta para o Realtime usar sempre um token válido.
+    clearInterval(_realtimeTokenCheck);
+    _realtimeTokenCheck=setInterval(async()=>{
+      const {data:{session:s}}=await _sb.auth.getSession();
+      if(s?.access_token&&s.access_token!==_realtimeAuthToken){
+        console.log('Token de sessão renovado — reconectando Realtime');
+        stopRealtime();
+        startRealtime();
+      }
+    },10*60*1000);
   };
 
   _realtimeWs.onmessage=(ev)=>{
@@ -3074,6 +3096,7 @@ function scheduleRealtimeReconnect(){
 
 function stopRealtime(){
   clearInterval(_realtimeHeartbeat);
+  clearInterval(_realtimeTokenCheck);
   clearTimeout(_realtimeReconnectTimer);
   if(_realtimeWs){_realtimeWs.close();_realtimeWs=null;}
 }
@@ -3858,7 +3881,7 @@ function buildRegistroFormForDate(date){
   const lastPh=src?.ph??'';
   const lastMort=src?.mort??0;
 
-  const racaoOpts=racoes.map(r=>`<option value="${r.nome}" ${(lastRacaoNome===r.nome||(r.id&&lastRacaoNome===r.id))?'selected':''}>${r.nome}${r.kg?' ('+Math.round(r.kg*1000)+'g/copo)':''}</option>`).join('');
+  const racaoOpts=racoes.map(r=>`<option value="${esc(r.nome)}" ${(lastRacaoNome===r.nome||(r.id&&lastRacaoNome===r.id))?'selected':''}>${esc(r.nome)}${r.kg?' ('+Math.round(r.kg*1000)+'g/copo)':''}</option>`).join('');
 
   const existsBanner=existing?`<div class="rec-exists-banner">⚠️ Já existe registro para este dia. Os dados foram carregados. Salvar vai sobreescrever.</div>`:'';
 
@@ -4849,7 +4872,7 @@ function renderLancamentos(){
     const disabledStyle='background:#d0d8e4;border-color:#b0bcc8;color:#7a8fa3;cursor:not-allowed;';
     const lastRecForRacao=lastRec(r.tankId);
     const racaoAtual=dayRec?.racao||lastRecForRacao?.racao||'';
-    const racaoOpts=racoes.map(rc=>`<option value="${rc.nome}" ${(racaoAtual===rc.nome||racaoAtual===(rc.id||rc.nome))?'selected':''}>${rc.nome}</option>`).join('');
+    const racaoOpts=racoes.map(rc=>`<option value="${esc(rc.nome)}" ${(racaoAtual===rc.nome||racaoAtual===(rc.id||rc.nome))?'selected':''}>${esc(rc.nome)}</option>`).join('');
     const aditivosAtual=dayRec?.aditivos||lastRecForRacao?.aditivos||[];
     const aditivosChk=['biofish','polygain','aquasan','lothar'].map(a=>`
       <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--text2);white-space:nowrap;">
@@ -8083,8 +8106,8 @@ function renderFinVendasHist(){
     const atrasoStr=v.diasAtraso!=null?(v.diasAtraso>0?`<span style="color:#ef4444;">${v.diasAtraso}d</span>`:v.diasAtraso===0?'No dia':`<span style="color:#22c55e;">${Math.abs(v.diasAtraso)}d antes</span>`):'—';
     html+=`<tr style="border-top:1px solid var(--border);">
       <td style="padding:9px 8px;color:var(--text);">${fmtD(v.dvenda)}</td>
-      <td style="padding:9px 8px;color:var(--text);font-weight:600;">${v.cliente||'—'}</td>
-      <td style="padding:9px 8px;color:var(--text2);font-size:11px;">${v.lote||'—'}</td>
+      <td style="padding:9px 8px;color:var(--text);font-weight:600;">${esc(v.cliente||'—')}</td>
+      <td style="padding:9px 8px;color:var(--text2);font-size:11px;">${esc(v.lote||'—')}</td>
       <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.qtd?Number(v.qtd).toLocaleString('pt-BR',{maximumFractionDigits:3}):'—'}</td>
       <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.vunit?'R$'+fmtR(v.vunit):'—'}</td>
       <td style="padding:9px 8px;text-align:right;color:var(--accent);font-weight:700;">R$${fmtR(v.total)}</td>
@@ -8201,8 +8224,8 @@ function renderFinGastosHist(){
   sorted.forEach(g=>{
     html+=`<tr style="border-top:1px solid var(--border);">
       <td style="padding:9px 8px;color:var(--text);">${fmtD(g.data)}</td>
-      <td style="padding:9px 8px;color:var(--text);">${g.tipo||'—'}${g.reembolso?' <span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:1px 5px;border-radius:4px;font-weight:600;">Reimb.</span>':''}</td>
-      <td style="padding:9px 8px;color:var(--text2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.nome||'—'}</td>
+      <td style="padding:9px 8px;color:var(--text);">${esc(g.tipo||'—')}${g.reembolso?' <span style="font-size:10px;background:#fef9c3;color:#854d0e;padding:1px 5px;border-radius:4px;font-weight:600;">Reimb.</span>':''}</td>
+      <td style="padding:9px 8px;color:var(--text2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(g.nome||'—')}</td>
       <td style="padding:9px 8px;text-align:center;"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;${g.class==='capex'?'background:#dbeafe;color:#1d4ed8;':'background:#dcfce7;color:#15803d;'}">${(g.class||'opex').toUpperCase()}</span></td>
       <td style="padding:9px 8px;text-align:right;color:#ef4444;font-weight:700;">R$${fmtR(g.valor)}</td>
       <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
@@ -8585,7 +8608,7 @@ function renderEstoqueItens(){
   }
   const racaoRows=racoes.map((r,i)=>`
     <tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
-      <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${r.nome}
+      <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${esc(r.nome)}
         <span style="font-size:10px;font-weight:700;background:rgba(22,163,74,0.12);color:#16a34a;border-radius:6px;padding:1px 6px;margin-left:6px;">🌾 Ração</span>
       </td>
       <td style="padding:11px 14px;font-size:12px;color:var(--text2);">kg</td>
@@ -8594,7 +8617,7 @@ function renderEstoqueItens(){
   const manualRows=estoqueItens.map((item,i)=>`
     <tr style="border-top:1px solid var(--border);${(racoes.length+i)%2===1?'background:var(--surface2);':''}">
       <td style="padding:11px 14px;font-size:13px;font-weight:600;color:var(--text);">${esc(item.nome)}</td>
-      <td style="padding:11px 14px;font-size:12px;color:var(--text2);">${item.unidade||'un'}</td>
+      <td style="padding:11px 14px;font-size:12px;color:var(--text2);">${esc(item.unidade||'un')}</td>
       <td style="padding:11px 14px;text-align:center;">
         <button onclick="deleteEstoqueItem('${item.id}')" style="background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 6px;" title="Remover">×</button>
       </td>
@@ -8619,10 +8642,10 @@ function renderEstoqueLancarForm(){
   if(!sel)return;
   const current=sel.value;
   const racaoOpts=racoes.length
-    ?`<optgroup label="🌾 Rações">${racoes.map(r=>`<option value="${_racaoId(r)}" ${_racaoId(r)===current?'selected':''}>${r.nome} (kg)</option>`).join('')}</optgroup>`
+    ?`<optgroup label="🌾 Rações">${racoes.map(r=>`<option value="${_racaoId(r)}" ${_racaoId(r)===current?'selected':''}>${esc(r.nome)} (kg)</option>`).join('')}</optgroup>`
     :'';
   const outraOpts=estoqueItens.length
-    ?`<optgroup label="📦 Outros Itens">${estoqueItens.map(x=>`<option value="${x.id}" ${x.id===current?'selected':''}>${x.nome} (${x.unidade||'un'})</option>`).join('')}</optgroup>`
+    ?`<optgroup label="📦 Outros Itens">${estoqueItens.map(x=>`<option value="${x.id}" ${x.id===current?'selected':''}>${esc(x.nome)} (${esc(x.unidade||'un')})</option>`).join('')}</optgroup>`
     :'';
   sel.innerHTML=`<option value="">Selecione...</option>${racaoOpts}${outraOpts}`;
   const dataEl=document.getElementById('emov-data');
@@ -8820,7 +8843,7 @@ function renderEstoqueGrafico(){
   const ini=document.getElementById('eg-inicio')?.value||def30;
   const fim=document.getElementById('eg-fim')?.value||todayStr;
   const selId=document.getElementById('eg-item')?.value||allItems[0]?.id||'';
-  const itemOpts=allItems.map(it=>`<option value="${it.id}"${it.id===selId?' selected':''}>${it.nome}</option>`).join('');
+  const itemOpts=allItems.map(it=>`<option value="${it.id}"${it.id===selId?' selected':''}>${esc(it.nome)}</option>`).join('');
   filtroEl.innerHTML=`
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--surface);border-radius:12px;border:1.5px solid var(--border);padding:10px 12px;">
       <select id="eg-item" onchange="renderEstoqueGrafico()"
@@ -9626,7 +9649,7 @@ function showImportPopup(periodo, resumoPorUser) {
   const linhas = Object.entries(resumoPorUser).map(([u, count]) => {
     const nome = (perfisCache[u] || PONTO_EXTRA_USERS[u] || {name:u}).name;
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">
-      <span style="font-size:13px;color:var(--text);">👤 ${nome}</span>
+      <span style="font-size:13px;color:var(--text);">👤 ${esc(nome)}</span>
       <span style="font-size:13px;font-weight:700;color:var(--accent);">${count} batida${count!==1?'s':''}</span>
     </div>`;
   }).join('');
