@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.28</title>
+<title>KC System v6.29</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -413,7 +413,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.28</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.29</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1286,6 +1286,17 @@ input[type="number"]{-moz-appearance:textfield;}
   </div>
 </div>
 
+<!-- Popup de lembrete semanal de backup -->
+<div id="backup-reminder-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);text-align:center;">
+    <div style="font-size:40px;margin-bottom:10px;">💾</div>
+    <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;">Backup semanal</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">É segunda-feira! Baixe um backup completo dos dados do sistema para manter uma cópia de segurança local.</div>
+    <button id="backup-reminder-btn" onclick="downloadBackupFromReminder()" style="width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">⬇️ Baixar backup agora</button>
+    <button onclick="document.getElementById('backup-reminder-overlay').style.display='none'" style="width:100%;padding:10px;border:none;background:transparent;color:var(--text3);font-size:13px;cursor:pointer;">Lembrar mais tarde</button>
+  </div>
+</div>
+
 <!-- Popup de troca forçada de senha -->
 <div id="forced-pwd-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
@@ -1320,9 +1331,9 @@ let perfisCache={};
 let auditLogs=[];
 
 async function loadPerfis(){
-  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours');
+  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours,last_backup_at');
   perfisCache={};
-  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password,restrictHours:r.restrict_hours};});
+  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password,restrictHours:r.restrict_hours,lastBackupAt:r.last_backup_at};});
 }
 const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70},goradosPct:{max:20}};
 function esc(s){const e=document.createElement('span');e.textContent=s==null?'':String(s);return e.innerHTML;}
@@ -1540,6 +1551,7 @@ async function saveForcedPwd(){
   }
   document.getElementById('forced-pwd-overlay').style.display='none';
   showToast('Senha atualizada com sucesso ✓','ok');
+  checkBackupReminder(p);
 }
 
 // ===== STORAGE (Supabase + localStorage fallback) =====
@@ -2203,7 +2215,7 @@ async function deleteColetaLote(lote){
     catch(e){erros++;}
   }
   for(const r of toDeleteRec){
-    try{await sbDelete('records',r.id);records=records.filter(x=>x.id!==r.id);}
+    try{await sbDelete('tank_records',r.id);records=records.filter(x=>x.id!==r.id);}
     catch(e){erros++;}
   }
   localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
@@ -3099,7 +3111,7 @@ function onRealtimePerfil(data,type){
   if(type==='DELETE'){
     delete perfisCache[data.username];
   } else {
-    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role,mustChangePwd:data.must_change_password,restrictHours:data.restrict_hours};
+    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role,mustChangePwd:data.must_change_password,restrictHours:data.restrict_hours,lastBackupAt:data.last_backup_at};
   }
 }
 
@@ -3430,6 +3442,7 @@ async function enterApp(u,perfil){
   renderColetaPainel();
   startRealtime(); // inicia sync em tempo real
   if(perfil?.must_change_password)showForcedPwdPopup();
+  else checkBackupReminder(perfil);
 }
 
 function _loadFromLocalStorage(){
@@ -3449,6 +3462,28 @@ function _loadFromLocalStorage(){
   }));
 }
 
+function _mondayOfThisWeek(){
+  const d=new Date();
+  d.setHours(0,0,0,0);
+  const day=d.getDay(); // 0=Dom...6=Sáb
+  d.setDate(d.getDate()+(day===0?-6:1-day));
+  return d;
+}
+function checkBackupReminder(perfil){
+  if(!isAdmin())return;
+  if(new Date().getDay()!==1)return; // só na segunda-feira
+  const lastRaw=perfil?.last_backup_at??perfil?.lastBackupAt;
+  const last=lastRaw?new Date(lastRaw):null;
+  if(last&&last>=_mondayOfThisWeek())return; // este admin já baixou o backup esta semana
+  document.getElementById('backup-reminder-overlay').style.display='flex';
+}
+async function downloadBackupFromReminder(){
+  const btn=document.getElementById('backup-reminder-btn');
+  if(btn){btn.disabled=true;btn.textContent='Gerando...';}
+  await exportBackup();
+  if(btn){btn.disabled=false;btn.textContent='⬇️ Baixar backup agora';}
+  document.getElementById('backup-reminder-overlay').style.display='none';
+}
 const _loginAttempts={count:0,lockedUntil:0};
 function isWithinWorkingHours(){
   const now=new Date();
@@ -4479,7 +4514,7 @@ async function createUser(){
   const signupJson=await signupRes.json();
   if(!signupRes.ok||!signupJson?.id){
     const msg=(signupJson?.msg||signupJson?.error_description||'').toLowerCase();
-    if(msg.includes('signup')||msg.includes('sign up')||msg.includes('disabled')){
+    if(signupRes.status===422||msg.includes('signup')||msg.includes('sign up')||msg.includes('disabled')){
       showNewUserRequest();
     } else {
       showToast('Erro ao criar conta: '+(signupJson?.msg||signupJson?.error_description||'desconhecido'),'error');
@@ -5967,23 +6002,31 @@ async function _doImportBackup(backup){
   }
 }
 
-function exportBackup(){
+const _BACKUP_RAW_TABLES=['tanks','racoes','manejos','tank_records','coleta_records','tank_records_history','coleta_records_history','ponto','metas','estoque_itens','estoque_mov','financeiro_vendas','financeiro_gastos','financeiro_caixa_ajustes','perfis','audit_log'];
+async function exportBackup(){
+  showToast('Gerando backup completo...','ok');
   const date=new Date().toISOString().split('T')[0];
+  // Busca direto do Supabase (select=* sem filtro de deleted_at) para garantir
+  // que todas as tabelas — incluindo itens excluídos via soft-delete — entrem no backup.
+  const rawResults=await Promise.all(_BACKUP_RAW_TABLES.map(t=>sbGet(t,'select=*')));
+  const raw={};
+  _BACKUP_RAW_TABLES.forEach((t,i)=>{raw[t]=rawResults[i]||[];});
   const backup={
-    version:3,
+    version:4,
     exportedAt:new Date().toISOString(),
     exportedBy:currentUser?.username||'desconhecido',
-    records,        // registros de operação, coleta e matrizes
-    tanks,          // configuração de tanques (hapas, nome, status, etc.)
-    racoes,         // tabela de rações
-    manejos,        // pipeline de produção de alevinos
-    limits:JSON.parse(JSON.stringify(LIMITS)), // parâmetros de alerta
+    // Formato legado (usado pelo importBackup do próprio app para mesclar dados)
+    records,tanks,racoes,manejos,
+    limits:JSON.parse(JSON.stringify(LIMITS)),
+    // Dump completo de todas as tabelas do Supabase, incluindo soft-deletados
+    raw,
     meta:{
       totalRecords:records.length,
       totalTanks:tanks.length,
       totalRacoes:racoes.length,
       totalManejos:manejos.length,
       totalUsers:Object.keys(perfisCache).length,
+      tabelas:Object.fromEntries(_BACKUP_RAW_TABLES.map(t=>[t,raw[t].length])),
       dateRange:{
         from:records.length?records.reduce((min,r)=>r.date<min?r.date:min,records[0].date):null,
         to:records.length?records.reduce((max,r)=>r.date>max?r.date:max,records[0].date):null,
@@ -5998,7 +6041,16 @@ function exportBackup(){
   a.download=`kcsystem_backup_${date}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast(`Backup exportado: ${backup.meta.totalRecords} registros · ${manejos.length} manejos · ${usersBackup.length} usuários ✓`,'ok');
+  const totalRaw=Object.values(raw).reduce((s,arr)=>s+arr.length,0);
+  showToast(`Backup completo: ${totalRaw} registros em ${_BACKUP_RAW_TABLES.length} tabelas ✓`,'ok');
+  logAudit('backup_exportado',`Backup completo gerado (${totalRaw} registros em ${_BACKUP_RAW_TABLES.length} tabelas)`);
+  const p=perfisCache[currentUser?.username];
+  if(p){
+    const now=new Date().toISOString();
+    await sbUpsert('perfis',[{id:p.id,username:currentUser.username,nome:p.name,role:p.role,last_backup_at:now}]);
+    perfisCache[currentUser.username]={...p,lastBackupAt:now};
+  }
+  return backup;
 }
 function renderParamsForm(){
   const el=document.getElementById('params-form');
@@ -6909,8 +6961,8 @@ async function triggerLimpezaManejos(){
     '🧹 Limpar Manejos Duplicados',
     `Encontrados ${totalAntigos} lançamento(s) antigo(s) em ${duplicatas.length} grupo(s).
 
-Os mais antigos serão arquivados em records_history.
-Só o mais recente de cada fase permanece.
+Os mais antigos serão movidos para a Lixeira (recuperáveis em Configurações).
+Só o mais recente de cada fase permanece ativo.
 
 Confirmar?`,
     async () => {
@@ -6920,17 +6972,7 @@ Confirmar?`,
         const sorted = grupo.slice().sort((a,b)=>(b.timestamp||b.id).localeCompare(a.timestamp||a.id));
         const [, ...antigos] = sorted;
         for(const ant of antigos){
-          await sbUpsert('records_history',[{
-            id: ant.id,
-            tank_id: 'manejo',
-            tank_name: ant.fase||'manejo',
-            date: ant.data||'',
-            username: ant.username||'',
-            user_name: ant.username||'',
-            timestamp: ant.timestamp||new Date().toISOString(),
-            data: ant
-          }]);
-          await sbDelete('manejos', ant.id);
+          await sbSoftDelete('manejos', ant.id);
           manejos = manejos.filter(x=>x.id!==ant.id);
           done++;
           showSaveProgress(done, totalAntigos);
@@ -6957,12 +6999,7 @@ async function _limparManejosDuplicados(){
     const [, ...antigos] = sorted;
     for(const ant of antigos){
       ant.overridden = true;
-      await sbUpsert('records_history',[{
-        id:ant.id, tank_id:'manejo', tank_name:ant.fase||'manejo',
-        date:ant.data||'', username:ant.username||'', user_name:ant.username||'',
-        timestamp:ant.timestamp||new Date().toISOString(), data:ant
-      }]);
-      await sbDelete('manejos', ant.id);
+      await sbSoftDelete('manejos', ant.id);
       manejos = manejos.filter(x=>x.id!==ant.id);
       console.log('[limpeza manejo duplicado]', ant.id, ant.fase);
     }
@@ -6981,19 +7018,8 @@ async function saveManejo(m){
   );
   for(const ant of anteriores){
     ant.overridden = true;
-    // Arquiva em records_history
-    await sbUpsert('records_history',[{
-      id: ant.id,
-      tank_id: 'manejo',
-      tank_name: ant.fase||'manejo',
-      date: ant.data||'',
-      username: ant.username||'',
-      user_name: ant.username||'',
-      timestamp: ant.timestamp||new Date().toISOString(),
-      data: ant
-    }]);
-    // Remove da tabela manejos
-    await sbDelete('manejos', ant.id);
+    // Move para a Lixeira (soft-delete) em vez de excluir definitivamente
+    await sbSoftDelete('manejos', ant.id);
     manejos = manejos.filter(x=>x.id!==ant.id);
   }
 
@@ -7899,7 +7925,7 @@ function showFinanceiroView(v){
 
 async function loadFinanceiroFromSupabase(){
   try{
-    const [rv,rg,ra]=await Promise.all([sbGet('financeiro_vendas','select=id,data'),sbGet('financeiro_gastos','select=id,data'),sbGet('financeiro_caixa_ajustes','select=id,data')]);
+    const [rv,rg,ra]=await Promise.all([sbGet('financeiro_vendas','select=id,data&deleted_at=is.null'),sbGet('financeiro_gastos','select=id,data&deleted_at=is.null'),sbGet('financeiro_caixa_ajustes','select=id,data')]);
     if(rv!=null){finVendas=rv.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));}
     if(rg!=null){finGastos=rg.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));}
     if(ra!=null){finCaixaAjustes=ra.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_caixa_ajustes',JSON.stringify(finCaixaAjustes));}
@@ -8027,10 +8053,11 @@ async function finSalvarVenda(){
 async function finDeletarVenda(id){
   if(!confirm('Excluir esta venda?'))return;
   try{
-    await sbDelete('financeiro_vendas',id);
+    await sbSoftDelete('financeiro_vendas',id);
     finVendas=finVendas.filter(x=>x.id!==id);
     localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));
     showToast('Venda excluída');renderFinVendasHist();
+    logAudit('financeiro_venda_excluida',`Venda ${id} excluída`);
   }catch(e){showToast('Erro ao excluir','error');}
 }
 
@@ -8148,10 +8175,11 @@ async function finSalvarGasto(){
 async function finDeletarGasto(id){
   if(!confirm('Excluir este gasto?'))return;
   try{
-    await sbDelete('financeiro_gastos',id);
+    await sbSoftDelete('financeiro_gastos',id);
     finGastos=finGastos.filter(x=>x.id!==id);
     localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));
     showToast('Gasto excluído');renderFinGastosHist();
+    logAudit('financeiro_gasto_excluido',`Gasto ${id} excluído`);
   }catch(e){showToast('Erro ao excluir','error');}
 }
 
@@ -8506,14 +8534,14 @@ function showEstoqueView(v){
 
 async function loadEstoqueFromSupabase(){
   try{
-    const rows=await sbGet('estoque_itens','select=id,data');
+    const rows=await sbGet('estoque_itens','select=id,data&deleted_at=is.null');
     if(rows!=null){
       estoqueItens=rows.map(r=>r.data).filter(Boolean);
       localStorage.setItem('kc_estoque_itens',JSON.stringify(estoqueItens));
     }
   }catch(e){console.warn('load estoque_itens error',e);}
   try{
-    const rows=await sbGet('estoque_mov','select=id,data&order=id.desc');
+    const rows=await sbGet('estoque_mov','select=id,data&order=id.desc&deleted_at=is.null');
     if(rows!=null){
       estoqueMov=rows.map(r=>r.data).filter(Boolean);
       localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
@@ -8541,10 +8569,11 @@ async function deleteEstoqueItem(id){
   if(!confirm('Remover este item? Movimentações existentes não serão apagadas.'))return;
   estoqueItens=estoqueItens.filter(x=>x.id!==id);
   localStorage.setItem('kc_estoque_itens',JSON.stringify(estoqueItens));
-  await sbDelete('estoque_itens',id);
+  await sbSoftDelete('estoque_itens',id);
   showToast('Item removido ✓','ok');
   renderEstoqueItens();
   renderEstoqueLancarForm();
+  logAudit('estoque_item_removido',`Item de estoque ${id} removido`);
 }
 
 function renderEstoqueItens(){
@@ -8676,10 +8705,11 @@ async function deleteEstoqueMov(id){
   showConfirm('Excluir lançamento','Deseja excluir este lançamento? Esta ação não pode ser desfeita.',async()=>{
     estoqueMov=estoqueMov.filter(m=>m.id!==id);
     localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
-    await sbDelete('estoque_mov',id);
+    await sbSoftDelete('estoque_mov',id);
     showToast('Lançamento excluído ✓','ok');
     renderEstoqueMovHist();
     renderEstoquePainel();
+    logAudit('estoque_mov_excluido',`Lançamento de estoque ${id} excluído`);
   });
 }
 
