@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.30</title>
+<title>KC System v6.31</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -413,7 +413,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.30</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.31</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1300,27 +1300,36 @@ input[type="number"]{-moz-appearance:textfield;}
 <!-- Popup de troca forçada de senha -->
 <div id="forced-pwd-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:38px;margin-bottom:8px;">🔐</div>
-      <div style="font-size:17px;font-weight:800;color:var(--text);">Crie uma nova senha</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.4;">Por segurança, defina uma senha forte antes de continuar.</div>
+    <div id="fpwd-form-step">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:38px;margin-bottom:8px;">🔐</div>
+        <div style="font-size:17px;font-weight:800;color:var(--text);">Crie uma nova senha</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:6px;line-height:1.4;">Por segurança, defina uma senha forte antes de continuar.</div>
+      </div>
+      <div style="display:grid;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Nova senha</label>
+          <input type="password" id="fpwd-new" placeholder="••••••••" oninput="checkForcedPwd()" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Confirmar senha</label>
+          <input type="password" id="fpwd-confirm" placeholder="••••••••" oninput="checkForcedPwd()" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);box-sizing:border-box;">
+        </div>
+        <div style="display:grid;gap:6px;padding:12px;background:var(--bg);border-radius:10px;">
+          <div id="fpwd-c1" style="font-size:12px;color:var(--text3);">○ Mínimo 8 caracteres</div>
+          <div id="fpwd-c2" style="font-size:12px;color:var(--text3);">○ Pelo menos uma letra maiúscula</div>
+          <div id="fpwd-c3" style="font-size:12px;color:var(--text3);">○ Pelo menos um caractere especial (!@#$%&*...)</div>
+          <div id="fpwd-c4" style="font-size:12px;color:var(--text3);">○ Senhas coincidem</div>
+        </div>
+        <div id="fpwd-error" style="display:none;font-size:12px;color:#dc2626;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;"></div>
+        <button id="fpwd-btn" onclick="saveForcedPwd()" disabled style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:not-allowed;opacity:0.4;transition:opacity 0.2s;">Salvar senha</button>
+      </div>
     </div>
-    <div style="display:grid;gap:12px;">
-      <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Nova senha</label>
-        <input type="password" id="fpwd-new" placeholder="••••••••" oninput="checkForcedPwd()" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);box-sizing:border-box;">
-      </div>
-      <div>
-        <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px;">Confirmar senha</label>
-        <input type="password" id="fpwd-confirm" placeholder="••••••••" oninput="checkForcedPwd()" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);box-sizing:border-box;">
-      </div>
-      <div style="display:grid;gap:6px;padding:12px;background:var(--bg);border-radius:10px;">
-        <div id="fpwd-c1" style="font-size:12px;color:var(--text3);">○ Mínimo 8 caracteres</div>
-        <div id="fpwd-c2" style="font-size:12px;color:var(--text3);">○ Pelo menos uma letra maiúscula</div>
-        <div id="fpwd-c3" style="font-size:12px;color:var(--text3);">○ Pelo menos um caractere especial (!@#$%&*...)</div>
-        <div id="fpwd-c4" style="font-size:12px;color:var(--text3);">○ Senhas coincidem</div>
-      </div>
-      <button id="fpwd-btn" onclick="saveForcedPwd()" disabled style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:not-allowed;opacity:0.4;transition:opacity 0.2s;">Salvar senha</button>
+    <div id="fpwd-success-step" style="display:none;text-align:center;">
+      <div style="font-size:46px;margin-bottom:10px;">✅</div>
+      <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;">Senha alterada com sucesso!</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:22px;line-height:1.4;">Sua senha foi atualizada. Você já pode continuar usando o sistema normalmente.</div>
+      <button onclick="closeForcedPwdSuccess()" style="width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">OK</button>
     </div>
   </div>
 </div>
@@ -1501,7 +1510,19 @@ function forceLogout(){
 const _FPWD_LABELS=['Mínimo 8 caracteres','Pelo menos uma letra maiúscula','Pelo menos um caractere especial (!@#$%&*...)','Senhas coincidem'];
 function showForcedPwdPopup(){
   const el=document.getElementById('forced-pwd-overlay');
-  if(el){el.style.display='flex';document.getElementById('fpwd-new').value='';document.getElementById('fpwd-confirm').value='';checkForcedPwd();}
+  if(el){
+    el.style.display='flex';
+    document.getElementById('fpwd-form-step').style.display='block';
+    document.getElementById('fpwd-success-step').style.display='none';
+    document.getElementById('fpwd-new').value='';
+    document.getElementById('fpwd-confirm').value='';
+    const errEl=document.getElementById('fpwd-error');if(errEl)errEl.style.display='none';
+    checkForcedPwd();
+  }
+}
+function closeForcedPwdSuccess(){
+  document.getElementById('forced-pwd-overlay').style.display='none';
+  checkBackupReminder(perfisCache[currentUser?.username]);
 }
 function checkForcedPwd(){
   const pwd=document.getElementById('fpwd-new').value;
@@ -1522,25 +1543,34 @@ function checkForcedPwd(){
   const btn=document.getElementById('fpwd-btn');
   if(btn){btn.disabled=!allOk;btn.style.opacity=allOk?'1':'0.4';btn.style.cursor=allOk?'pointer':'not-allowed';}
 }
+function _fpwdShowError(msg){
+  const el=document.getElementById('fpwd-error');
+  if(el){el.textContent=msg;el.style.display='block';}
+}
 async function saveForcedPwd(){
   const pwd=document.getElementById('fpwd-new').value;
   const btn=document.getElementById('fpwd-btn');
+  const errEl=document.getElementById('fpwd-error');if(errEl)errEl.style.display='none';
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   // Garante sessão server-side válida antes de trocar senha
   const {error:refreshErr}=await _sb.auth.refreshSession();
   if(refreshErr){
-    showToast('Sessão expirada. Faça login novamente.','error');
+    _fpwdShowError('Sessão expirada. Faça login novamente.');
     setTimeout(()=>forceLogout(),1800);
     return;
   }
   const {error}=await _sb.auth.updateUser({password:pwd});
   if(error){
     if(error.status===403||error.status===401){
-      showToast('Sessão inválida. Faça login novamente.','error');
+      _fpwdShowError('Sessão inválida. Faça login novamente.');
       setTimeout(()=>forceLogout(),1800);
       return;
     }
-    showToast('Erro ao salvar: '+error.message,'error');
+    if(error.code==='same_password'||/different from the old/i.test(error.message||'')){
+      _fpwdShowError('Essa é a sua senha atual. Escolha uma senha diferente.');
+    } else {
+      _fpwdShowError('Erro ao salvar: '+error.message);
+    }
     if(btn){btn.disabled=false;btn.textContent='Salvar senha';}
     return;
   }
@@ -1549,9 +1579,9 @@ async function saveForcedPwd(){
     await sbUpsert('perfis',[{id:p.id,username:currentUser.username,nome:p.name,role:p.role,must_change_password:false}]);
     perfisCache[currentUser.username]={...p,mustChangePwd:false};
   }
-  document.getElementById('forced-pwd-overlay').style.display='none';
-  showToast('Senha atualizada com sucesso ✓','ok');
-  checkBackupReminder(p);
+  document.getElementById('fpwd-form-step').style.display='none';
+  document.getElementById('fpwd-success-step').style.display='block';
+  if(btn){btn.disabled=false;btn.textContent='Salvar senha';}
 }
 
 // ===== STORAGE (Supabase + localStorage fallback) =====
