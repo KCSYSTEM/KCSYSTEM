@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.33</title>
+<title>KC System v6.35</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -367,7 +367,12 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="login-title">Bem-vindo de<br>volta</div>
     <div class="login-sub">Acesse sua conta para continuar</div>
     <div class="field"><label>Usuário</label><input type="text" id="login-user" placeholder="seu.usuario" autocomplete="username" inputmode="text"></div>
-    <div class="field"><label>Senha</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="field"><label>Senha</label>
+      <div style="position:relative;">
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" style="padding-right:42px;">
+        <button type="button" onclick="toggleLoginPassVis()" id="login-pass-eye" aria-label="Mostrar senha" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:6px;color:var(--text3);font-size:18px;line-height:1;">👁️</button>
+      </div>
+    </div>
     <button class="btn-primary" onclick="doLogin()">Entrar</button>
     <div class="login-error" id="login-error">Usuário ou senha incorretos</div>
   </div>
@@ -413,7 +418,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.33</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.35</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -769,7 +774,7 @@ input[type="number"]{-moz-appearance:textfield;}
       <!-- Formulário -->
       <div id="fin-venda-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-venda-form-title">➕ Nova Venda</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;">
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Cliente</label><input id="fv-cliente" type="text" placeholder="Nome do cliente" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Lote</label><input id="fv-lote" type="text" placeholder="Ex: L-001" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Quantidade (milheiros)</label><input id="fv-qtd" type="number" min="0" step="0.001" placeholder="0,000" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
@@ -814,7 +819,7 @@ input[type="number"]{-moz-appearance:textfield;}
       <!-- Formulário -->
       <div id="fin-gasto-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-gasto-form-title">➕ Novo Gasto</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;">
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Data</label><input id="fg-data" type="date" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Valor (R$)</label><input id="fg-valor" type="number" min="0" step="0.01" placeholder="0,00" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Responsável</label>
@@ -3557,6 +3562,15 @@ function isWithinWorkingHours(){
   if(day===0)return false;
   const mins=now.getHours()*60+now.getMinutes();
   return mins>=7*60&&mins<18*60;
+}
+function toggleLoginPassVis(){
+  const inp=document.getElementById('login-pass');
+  const eye=document.getElementById('login-pass-eye');
+  if(!inp||!eye)return;
+  const showing=inp.type==='text';
+  inp.type=showing?'password':'text';
+  eye.textContent=showing?'👁️':'🙈';
+  eye.setAttribute('aria-label',showing?'Mostrar senha':'Esconder senha');
 }
 function _showLoginError(msg,ms=3000){
   const el=document.getElementById('login-error');
