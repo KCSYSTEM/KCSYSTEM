@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.36</title>
+<title>KC System v6.37</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -418,7 +418,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.36</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.37</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1436,14 +1436,14 @@ const _sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true}
 console.warn=_w;
 
 let _sbSessionRecovery=null;
+let _sbResetting=false;
 async function sbHeaders(){
   let {data:{session}}=await _sb.auth.getSession();
   if(!session&&currentUser){
-    // Sessão local ficou inconsistente (comum após instabilidade de rede no celular — token de
-    // refresh pode expirar/invalidar nesse meio tempo). Sem isso, o app cai para a chave anônima
-    // e tabelas restritas a admin (financeiro) voltam vazias, sem erro nenhum.
-    // Compartilha uma única tentativa de recuperação entre chamadas concorrentes, em vez de
-    // cada uma tentar renovar a sessão por conta própria (o que pode invalidar o token uma da outra).
+    // Sessão local ficou inconsistente (comum após instabilidade de rede no celular — o token de
+    // refresh pode expirar/invalidar nesse meio tempo). Compartilha uma única tentativa de
+    // recuperação entre chamadas concorrentes, em vez de cada uma tentar renovar a sessão por
+    // conta própria (o que pode invalidar o token uma da outra).
     if(!_sbSessionRecovery){
       _sbSessionRecovery=_sb.auth.refreshSession()
         .catch(()=>({data:{session:null}}))
@@ -1452,8 +1452,17 @@ async function sbHeaders(){
     const {data}=await _sbSessionRecovery;
     session=data?.session||null;
   }
-  const token=session?.access_token||SB_KEY;
-  return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+token};
+  if(!session){
+    // Nunca envia requisição com a chave anônima como substituta — isso faria tabelas
+    // restritas (financeiro) voltarem vazias silenciosamente. Em vez disso, força um reset
+    // completo de volta para a tela de login.
+    if(currentUser&&!_sbResetting){
+      _sbResetting=true;
+      forceLogout('Sessão expirada. Faça login novamente para continuar.');
+    }
+    throw new Error('Sessão inválida — requisição bloqueada antes de ser enviada.');
+  }
+  return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+session.access_token};
 }
 
 function _sbAbort(){const ac=new AbortController();setTimeout(()=>ac.abort(),15000);return ac.signal;}
@@ -1515,7 +1524,7 @@ function scheduleSessionTimeout(){
   clearTimeout(_sessionTimer);
   _sessionTimer=setTimeout(()=>{showToast('Sessão encerrada após 8 horas. Faça login novamente.','error');forceLogout();},8*60*60*1000);
 }
-function forceLogout(){
+function forceLogout(msg){
   _sb.auth.signOut().catch(()=>{});
   stopRealtime();
   _pontoDetalheUser=null;
@@ -1524,7 +1533,7 @@ function forceLogout(){
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('login-user').value='';
   document.getElementById('login-pass').value='';
-  showToast('Sessão encerrada. Faça login.','error');
+  showToast(msg||'Sessão encerrada. Faça login.','error');
 }
 
 const _FPWD_LABELS=['Mínimo 8 caracteres','Pelo menos uma letra maiúscula','Pelo menos um caractere especial (!@#$%&*...)','Senhas coincidem'];
@@ -3496,6 +3505,7 @@ function hideSyncStatus(){
 function isAdmin(){return currentUser?.role==='admin';}
 async function enterApp(u,perfil){
   currentUser={username:perfil.username,name:perfil.nome,role:perfil.role};
+  _sbResetting=false;
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   const initials=currentUser.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
