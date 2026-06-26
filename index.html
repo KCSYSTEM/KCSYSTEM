@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.39</title>
+<title>KC System v6.41</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -159,6 +159,10 @@ input,select,textarea,button{font-family:'Space Grotesk',sans-serif;}
 .form-section{margin-bottom:16px;}
 .form-section-title{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;padding-bottom:5px;border-bottom:1.5px solid var(--border);}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fin-form-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+@media (max-width:600px){
+  .fin-form-grid{grid-template-columns:1fr;}
+}
 .form-field{display:flex;flex-direction:column;gap:4px;}
 .form-field.full{grid-column:1/-1;}
 .form-field label{font-size:11px;color:var(--text2);font-weight:600;}
@@ -418,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.39</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.41</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -774,7 +778,7 @@ input[type="number"]{-moz-appearance:textfield;}
       <!-- Formulário -->
       <div id="fin-venda-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-venda-form-title">➕ Nova Venda</div>
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;">
+        <div class="fin-form-grid">
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Cliente</label><input id="fv-cliente" type="text" placeholder="Nome do cliente" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Lote</label><input id="fv-lote" type="text" placeholder="Ex: L-001" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Quantidade (milheiros)</label><input id="fv-qtd" type="number" min="0" step="0.001" placeholder="0,000" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
@@ -819,7 +823,7 @@ input[type="number"]{-moz-appearance:textfield;}
       <!-- Formulário -->
       <div id="fin-gasto-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-gasto-form-title">➕ Novo Gasto</div>
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;">
+        <div class="fin-form-grid">
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Data</label><input id="fg-data" type="date" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Valor (R$)</label><input id="fg-valor" type="number" min="0" step="0.01" placeholder="0,00" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Responsável</label>
@@ -1474,6 +1478,20 @@ async function sbGet(table,filters=''){
     if(!r.ok)throw new Error(await r.text());
     return await r.json();
   }catch(e){console.warn('sbGet error',table,e);return null;}
+}
+// Busca em lotes pequenos (do mais recente para o mais antigo) em vez de uma única
+// requisição grande — evita que tabelas que crescem com o tempo (financeiro, estoque, etc.)
+// comecem a estourar o tempo limite em conexões mais lentas (celular).
+async function sbGetPaginated(table,filters='',pageSize=300,orderBy='id.desc'){
+  let all=[], offset=0;
+  while(true){
+    const page=await sbGet(table,`${filters}&order=${orderBy}&limit=${pageSize}&offset=${offset}`);
+    if(page==null) return null; // falha real — quem chamou decide o que fazer (ex: preservar cache)
+    all=all.concat(page);
+    if(page.length<pageSize) break; // última página
+    offset+=pageSize;
+  }
+  return all;
 }
 async function sbUpsert(table,rows){
   try{
@@ -3363,7 +3381,7 @@ async function load(){
 
   // ── 5. Manejos ────────────────────────────────────────────
   try{
-    const sbMan=await sbGet('manejos','select=data&order=id.asc&deleted_at=is.null');
+    const sbMan=await sbGetPaginated('manejos','select=data&deleted_at=is.null');
     if(sbMan!=null) manejos=sbMan.map(r=>r.data).filter(Boolean);
   }catch(e){console.warn('load manejos error',e);}
 
@@ -8012,6 +8030,11 @@ async function saveNovaFase(){
 let finVendas = [];
 let finGastos = [];
 let finCaixaAjustes = [];
+// Lê do cache local imediatamente — evita começar "vazio" caso a primeira
+// busca ao servidor falhe (comum em conexões instáveis no celular).
+try{const _fv=localStorage.getItem('kc_fin_vendas');if(_fv)finVendas=JSON.parse(_fv);}catch(e){}
+try{const _fg=localStorage.getItem('kc_fin_gastos');if(_fg)finGastos=JSON.parse(_fg);}catch(e){}
+try{const _fa=localStorage.getItem('kc_fin_caixa_ajustes');if(_fa)finCaixaAjustes=JSON.parse(_fa);}catch(e){}
 let _finVendaEditId = null;
 let _finGastoEditId = null;
 let _finPainelFiltro = 'tudo';
@@ -8039,7 +8062,11 @@ function showFinanceiroView(v){
 
 async function loadFinanceiroFromSupabase(){
   try{
-    const [rv,rg,ra]=await Promise.all([sbGet('financeiro_vendas','select=id,data&deleted_at=is.null'),sbGet('financeiro_gastos','select=id,data&deleted_at=is.null'),sbGet('financeiro_caixa_ajustes','select=id,data')]);
+    const [rv,rg,ra]=await Promise.all([
+      sbGetPaginated('financeiro_vendas','select=id,data&deleted_at=is.null'),
+      sbGetPaginated('financeiro_gastos','select=id,data&deleted_at=is.null'),
+      sbGetPaginated('financeiro_caixa_ajustes','select=id,data')
+    ]);
     if(rv!=null){finVendas=rv.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_vendas',JSON.stringify(finVendas));}
     if(rg!=null){finGastos=rg.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_gastos',JSON.stringify(finGastos));}
     if(ra!=null){finCaixaAjustes=ra.map(r=>r.data).filter(Boolean);localStorage.setItem('kc_fin_caixa_ajustes',JSON.stringify(finCaixaAjustes));}
@@ -8655,7 +8682,7 @@ async function loadEstoqueFromSupabase(){
     }
   }catch(e){console.warn('load estoque_itens error',e);}
   try{
-    const rows=await sbGet('estoque_mov','select=id,data&order=id.desc&deleted_at=is.null');
+    const rows=await sbGetPaginated('estoque_mov','select=id,data&deleted_at=is.null');
     if(rows!=null){
       estoqueMov=rows.map(r=>r.data).filter(Boolean);
       localStorage.setItem('kc_estoque_mov',JSON.stringify(estoqueMov));
