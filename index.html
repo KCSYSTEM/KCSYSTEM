@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.47</title>
+<title>KC System v6.48</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -422,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.47</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.48</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -7415,7 +7415,7 @@ function buildColetaByLote(){
       const hk=(r.tankId||'lote')+'_'+(r.hapa??'x');
       if(!l._ovosMlByHapa)l._ovosMlByHapa={};
       if(!l._ovosMlByHapa[hk]||((r.timestamp||'')>(l._ovosMlByHapa[hk].ts||'')))
-        l._ovosMlByHapa[hk]={val:r.ovosPorMl,ts:r.timestamp||''};
+        l._ovosMlByHapa[hk]={val:r.ovosPorMl,ts:r.timestamp||'',ml:r.desovaML??null};
     }
 
     // Fêmeas em reprodução — dedup por hapa (mais recente), soma no final
@@ -7450,19 +7450,21 @@ function buildColetaByLote(){
       ? hapaReprodEntries.reduce((s,e)=>s+e.val, 0)
       : (femeasAlocadasEm(l.lastDate) || 0);
 
-    const ovosMlVals = l._ovosMlByHapa ? Object.values(l._ovosMlByHapa).map(x=>x.val) : [];
+    // Hapas com 0 mL coletado não desovaram nessa coleta — não entram na média
+    // (ter fêmeas em reprodução não significa que desovaram em todo hapa).
+    const ovosMlVals = l._ovosMlByHapa
+      ? Object.values(l._ovosMlByHapa).filter(x=>x.ml!=null&&x.ml>0).map(x=>x.val) : [];
     l.ovosMlMedio = ovosMlVals.length
       ? parseFloat((ovosMlVals.reduce((s,v)=>s+v,0)/ovosMlVals.length).toFixed(1))
       : null;
 
-    // Gorados: média ponderada pelo volume (mL) de cada hapa
-    const goradosEntries = l._goradosByHapa ? Object.entries(l._goradosByHapa) : [];
+    // Gorados: média ponderada pelo volume (mL) de cada hapa — exclui hapas sem mL coletado
+    const goradosEntries = l._goradosByHapa
+      ? Object.entries(l._goradosByHapa).filter(([,e])=>e.ml!=null&&e.ml>0) : [];
     l._goradosVals = goradosEntries.map(([,e])=>e.val);
     if(goradosEntries.length){
-      const totalMl = goradosEntries.reduce((s,[,e])=>s+(e.ml??0), 0);
-      l.goradosMedio = totalMl > 0
-        ? parseFloat((goradosEntries.reduce((s,[,e])=>s+e.val*(e.ml??0),0)/totalMl).toFixed(2))
-        : parseFloat((goradosEntries.reduce((s,[,e])=>s+e.val,0)/goradosEntries.length).toFixed(2));
+      const totalMl = goradosEntries.reduce((s,[,e])=>s+e.ml, 0);
+      l.goradosMedio = parseFloat((goradosEntries.reduce((s,[,e])=>s+e.val*e.ml,0)/totalMl).toFixed(2));
     } else {
       l.goradosMedio = null;
     }
