@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.2</title>
+<title>KC System v7.3</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -422,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.2</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.3</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -8519,7 +8519,7 @@ function renderFinDRE(){
   const vF=finVendas.filter(v=>(!ini||v.dvenda>=ini)&&(!fim||v.dvenda<=fim));
   const gF=finGastos.filter(g=>(!ini||g.data>=ini)&&(!fim||g.data<=fim));
 
-  const receitaBruta=vF.reduce((s,v)=>s+(v.total||0),0);
+  const receitaBruta=vF.reduce((s,v)=>s+mc3(v.total||0),0);
   const gImpostos=gF.filter(g=>g.tipo==='Imposto');
   const impostos=gImpostos.reduce((s,g)=>s+(g.valor||0),0);
   const receitaLiquida=receitaBruta-impostos;
@@ -8693,7 +8693,7 @@ function renderFinGraficos(){
   const MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const fmtYM=ym=>{const[y,m]=ym.split('-');return`${MN[+m-1]}/${y.slice(2)}`;};
   const months={};
-  finVendas.forEach(v=>{const d=v.dvenda||v.data;if(!d)return;const ym=d.slice(0,7);if(!months[ym])months[ym]={v:0,g:0};months[ym].v+=(v.total||0);});
+  finVendas.forEach(v=>{const d=v.dvenda||v.data;if(!d)return;const ym=d.slice(0,7);if(!months[ym])months[ym]={v:0,g:0};months[ym].v+=mc3(v.total||0);});
   finGastos.forEach(g=>{if(!g.data)return;const ym=g.data.slice(0,7);if(!months[ym])months[ym]={v:0,g:0};months[ym].g+=(g.valor||0);});
   const sorted=Object.keys(months).sort();
   const mk=(field,alt)=>sorted.map(ym=>({label:fmtYM(ym),value:months[ym][field]??alt(ym)}));
