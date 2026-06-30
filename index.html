@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v6.49</title>
+<title>KC System v7.1</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -422,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v6.49</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.1</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -609,6 +609,13 @@ input[type="number"]{-moz-appearance:textfield;}
             </div>
             <div class="cfg-menu-arrow">›</div>
           </div>
+          <div class="cfg-menu-item mod-dono-only" onclick="openCfgPage('dono')" style="display:none;border-top:2px solid var(--border2);margin-top:4px;">
+            <div class="cfg-menu-left">
+              <div class="cfg-menu-icon" style="background:#1a3a6b;">👑</div>
+              <div><div class="cfg-menu-label" style="color:var(--accent);">Dono</div><div class="cfg-menu-sub">Configurações exclusivas do proprietário</div></div>
+            </div>
+            <div class="cfg-menu-arrow">›</div>
+          </div>
         </div>
       </div>
       <!-- Página: parâmetros -->
@@ -677,6 +684,26 @@ input[type="number"]{-moz-appearance:textfield;}
         <div class="settings-section">
           <div class="settings-section-title">Manejos Excluídos</div>
           <div id="lixeira-list"></div>
+        </div>
+      </div>
+      <!-- Página: dono -->
+      <div id="cfg-page-dono" style="display:none;">
+        <div class="cfg-back-bar">
+          <button class="cfg-back-btn" onclick="closeCfgPage()">‹ Configurações</button>
+          <div class="cfg-page-title" style="color:var(--accent);">👑 Dono</div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Modo Comercial</div>
+          <div class="hapa-toggle-row" style="margin-top:8px;">
+            <div>
+              <div class="hapa-toggle-label">📊 Ativar Modo Comercial</div>
+              <div class="hapa-toggle-sub">Triplica transferências e vendas na exibição. Dados reais não são alterados.</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="cfg-modo-comercial" onchange="toggleModoComercial(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -1349,7 +1376,7 @@ let perfisCache={};
 let auditLogs=[];
 
 async function loadPerfis(){
-  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours,last_backup_at');
+  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours,last_backup_at,modo_comercial');
   perfisCache={};
   if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password,restrictHours:r.restrict_hours,lastBackupAt:r.last_backup_at};});
 }
@@ -1418,6 +1445,9 @@ const DEFAULT_RACOES=[
 ];
 
 let currentUser=null,tanks=[],records=[],racoes=[],activeTank=null,activeTab='registro',currentGroupId=null,activeHapa=null;
+let _modoComercial=false;
+// Multiplica quantidade por 3 quando Modo Comercial está ativo — só aplicado na exibição, nunca grava no banco.
+function mc3(v){return _modoComercial?(v??0)*3:(v??0);}
 // Array separado para registros de coleta/desova (lidos de coleta_records no Supabase)
 let coletaRecords=[];
 try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.parse(cc);}catch(e){}
@@ -3523,8 +3553,10 @@ function hideSyncStatus(){
 
 // ===== AUTH =====
 function isAdmin(){return currentUser?.role==='admin';}
+function isDono(){return currentUser?.id==='daa372d7-d3f3-44ef-b3b7-6e7d7b5df2b0';}
 async function enterApp(u,perfil){
-  currentUser={username:perfil.username,name:perfil.nome,role:perfil.role};
+  currentUser={id:perfil.id,username:perfil.username,name:perfil.nome,role:perfil.role};
+  _modoComercial=!!(perfil.modo_comercial);
   _sbResetting=false;
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
@@ -3536,6 +3568,8 @@ async function enterApp(u,perfil){
   if(roleEl){roleEl.textContent=isAdmin()?'Administrador':'Usuário';roleEl.style.display='inline-block';}
   // Mostra opções admin no menu hamburguer
   document.querySelectorAll('.mod-coleta-only,.mod-admin-only').forEach(el=>el.style.display=isAdmin()?'flex':'none');
+  document.querySelectorAll('.mod-dono-only').forEach(el=>el.style.display=isDono()?'flex':'none');
+  const cbMC=document.getElementById('cfg-modo-comercial');if(cbMC)cbMC.checked=_modoComercial;
 
   // Primeiro renderiza com dados do localStorage para não travar a tela
   loadLimits();
@@ -4410,6 +4444,18 @@ async function toggleEmptyTank(empty){
   await saveOneRecord(rec);
   renderTankView();updateMapSub();
   showToast(empty?`${activeTank.name} marcado como vazio`:`${activeTank.name} reativado`,'ok');
+}
+
+async function toggleModoComercial(on){
+  _modoComercial=!!on;
+  await sbUpsert('perfis',{id:currentUser.id,modo_comercial:_modoComercial});
+  showToast(_modoComercial?'Modo Comercial ativado':'Modo Comercial desativado');
+  // Re-renderiza telas que exibem quantidades afetadas
+  const av=document.querySelector('#main .view.active')?.id||'';
+  if(av==='view-operacao')renderManejosList?.();
+  if(document.getElementById('fview-painel')?.style?.display!=='none')renderFinPainel?.();
+  if(document.getElementById('fview-vendas')?.style?.display!=='none')renderFinVendasHist?.();
+  renderColetaPainel?.();
 }
 
 // Se o tanque estava ativo numa data específica — usa os stamps de ativação/desativação
@@ -7310,8 +7356,8 @@ async function renderManejos(){
     rCard('Ovos Bons',     fNum(totalOvosBons),  '#0ea5e9',     pctBons) +
     rCard('Larvas',        fNum(totalLarva),      '#7c3aed',     pctLarva) +
     rCard('Microalevinos', fNum(totalMicro),      '#2563eb',     pctMicro) +
-    rCard('Alevinos',      fNum(totalAlevinos),   '#16a34a',     pctAlevinos) +
-    rCard('Total Vendido', fNum(totalVendido),    '#d97706',     pctVendido);
+    rCard('Alevinos',      fNum(mc3(totalAlevinos)),   '#16a34a',     pctAlevinos) +
+    rCard('Total Vendido', fNum(mc3(totalVendido)),    '#d97706',     pctVendido);
 
   // ── Pipeline por lote de origem
   const pipelineEl = document.getElementById('manejos-pipeline');
@@ -7620,10 +7666,11 @@ function renderPipelineCard(p){
       </div>`;
     }
 
+    const displayQtd=(fase==='transferencia'||fase==='venda')?mc3(qtdTotal):qtdTotal;
     return `<div style="text-align:center;flex:1;min-width:80px;">
       <div style="font-size:18px;">${icon}</div>
       <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;margin:2px 0;">${FASES[fase]?.label||fase}</div>
-      <div style="font-size:13px;font-weight:800;color:var(--text);">${fNum(qtdTotal)}</div>
+      <div style="font-size:13px;font-weight:800;color:var(--text);">${fNum(displayQtd)}</div>
       ${pct!=null?`<div style="font-size:10px;color:${pct>=70?'#16a34a':pct>=50?'#d97706':'#dc2626'};font-weight:700;">${pct}%</div>`:''}
       ${destinosStr?`<div style="font-size:9px;color:var(--text3);margin-top:2px;">${destinosStr}</div>`:''}
       ${dataStr?`<div style="font-size:9px;color:var(--text3);">${dataStr}</div>`:''}
@@ -8241,9 +8288,9 @@ function renderFinVendasHist(){
       <td style="padding:9px 8px;color:var(--text);">${fmtD(v.dvenda)}</td>
       <td style="padding:9px 8px;color:var(--text);font-weight:600;">${esc(v.cliente||'—')}</td>
       <td style="padding:9px 8px;color:var(--text2);font-size:11px;">${esc(v.lote||'—')}</td>
-      <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.qtd?Number(v.qtd).toLocaleString('pt-BR',{maximumFractionDigits:3}):'—'}</td>
+      <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.qtd?Number(mc3(v.qtd)).toLocaleString('pt-BR',{maximumFractionDigits:3}):'—'}</td>
       <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.vunit?'R$'+fmtR(v.vunit):'—'}</td>
-      <td style="padding:9px 8px;text-align:right;color:var(--accent);font-weight:700;">R$${fmtR(v.total)}</td>
+      <td style="padding:9px 8px;text-align:right;color:var(--accent);font-weight:700;">R$${fmtR(mc3(v.total))}</td>
       <td style="padding:9px 8px;text-align:center;color:var(--text2);">${v.dpag?'✓':fmtD(v.dvenc)}</td>
       <td style="padding:9px 8px;text-align:center;">${atrasoStr}</td>
       <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
@@ -8396,7 +8443,7 @@ function renderFinPainel(){
 
   const vFiltered=finVendas.filter(v=>(!ini||v.dvenda>=ini)&&(!fim||v.dvenda<=fim));
   const gFiltered=finGastos.filter(g=>(!ini||g.data>=ini)&&(!fim||g.data<=fim));
-  const totalVendas=vFiltered.reduce((s,v)=>s+(v.total||0),0);
+  const totalVendas=vFiltered.reduce((s,v)=>s+mc3(v.total||0),0);
   const totalGastos=gFiltered.reduce((s,g)=>s+(g.valor||0),0);
   const resultado=totalVendas-totalGastos;
 
@@ -8413,7 +8460,7 @@ function renderFinPainel(){
   // Lista combinada
   const listaEl=document.getElementById('fin-painel-lista');if(!listaEl)return;
   let items=[];
-  if(_finPainelFiltro!=='gastos')vFiltered.forEach(v=>items.push({tipo:'venda',data:v.dvenda,desc:v.cliente,sub:'Venda de peixe',valor:v.total,obj:v}));
+  if(_finPainelFiltro!=='gastos')vFiltered.forEach(v=>items.push({tipo:'venda',data:v.dvenda,desc:v.cliente,sub:'Venda de peixe',valor:mc3(v.total),obj:v}));
   if(_finPainelFiltro!=='vendas')gFiltered.forEach(g=>items.push({tipo:'gasto',data:g.data,desc:g.tipo||'Gasto',sub:g.nome||'',valor:-g.valor,obj:g}));
 
   const{col,dir}=_finPainelSort;
