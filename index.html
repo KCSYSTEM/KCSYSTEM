@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.5</title>
+<title>KC System v7.7</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -422,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.5</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.7</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1712,6 +1712,11 @@ function recToTankRow(rec, reason){
     aditivos:      rec.aditivos?.length?rec.aditivos:null,
     overridden:    rec.overridden||false,
     changed_fields:rec._changedFields||null,
+    is_troca_agua: rec.isTrocaAgua??null,
+    troca_origem:  rec.trocaOrigem??null,
+    troca_inicio:  rec.trocaInicio??null,
+    troca_fim:     rec.trocaFim??null,
+    troca_horas:   rec.trocaHoras??null,
   };
   if(reason){
     row.archived_at=rec.archived_at||new Date().toISOString();
@@ -1753,6 +1758,11 @@ function tankRowToRec(row){
     aditivos:      row.aditivos||null,
     overridden:    row.overridden,
     _changedFields:row.changed_fields||undefined,
+    isTrocaAgua:   row.is_troca_agua??null,
+    trocaOrigem:   row.troca_origem??null,
+    trocaInicio:   row.troca_inicio??null,
+    trocaFim:      row.troca_fim??null,
+    trocaHoras:    row.troca_horas!=null?parseFloat(row.troca_horas):null,
   };
 }
 
@@ -5063,13 +5073,17 @@ function renderLancamentos(){
     </tr>`+
     allTks.map(t=>{
       const rid=t.id.replace(/[^a-z0-9]/gi,'_');
-      const cur=t.trocaAguaIdealH!=null?fNum(t.trocaAguaIdealH,1)+'h':'—';
-      return`<tr>
-        <td style="padding:8px;font-size:13px;font-weight:600;color:var(--text);">${esc(t.name)}</td>
+      const temMeta=t.trocaAguaIdealH!=null;
+      const cur=temMeta?fNum(t.trocaAguaIdealH,1)+'h':'—';
+      const rowBg=temMeta?'background:rgba(234,179,8,0.06);':'';
+      const badge=temMeta?`<span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:700;">⚠️ Já tem meta</span>`:'';
+      return`<tr style="${rowBg}">
+        <td style="padding:8px;font-size:13px;font-weight:600;color:var(--text);">${esc(t.name)}${badge}</td>
         <td style="padding:8px;font-size:13px;color:var(--text2);text-align:center;">${cur}</td>
         <td style="padding:4px 8px;">
           <input type="number" class="lancamento-input" id="tai-${rid}" data-tank="${t.id}"
-            min="0" step="0.5" inputmode="decimal" placeholder="—" style="${inputStyle}">
+            min="0" step="0.5" inputmode="decimal" placeholder="—" style="${inputStyle}"
+            value="${temMeta?t.trocaAguaIdealH:''}">
         </td>
       </tr>`;
     }).join('');
@@ -5095,8 +5109,10 @@ function renderLancamentos(){
       const ex=records.find(r=>r.tankId===t.id&&r.date===date&&r.isTrocaAgua);
       const orig=ex?.trocaOrigem||'';const ini=ex?.trocaInicio||'';const fim=ex?.trocaFim||'';
       const horas=ini&&fim?_calcTrocaHoras(ini,fim):'';
-      return`<tr>
-        <td style="padding:8px;font-size:13px;font-weight:600;color:var(--text);">${esc(t.name)}</td>
+      const rowBg=ex?'background:rgba(234,179,8,0.06);':'';
+      const badge=ex?`<span style="font-size:9px;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;margin-left:6px;font-weight:700;">⚠️ Já lançado</span>`:'';
+      return`<tr style="${rowBg}">
+        <td style="padding:8px;font-size:13px;font-weight:600;color:var(--text);">${esc(t.name)}${badge}</td>
         <td style="padding:4px 8px;">
           <select id="ta-orig-${rid}" class="lanc-agua-input" data-tank="${t.id}" style="${selStyle}">
             <option value="">—</option>
@@ -5346,20 +5362,36 @@ async function saveLancamentos(){
 
   // ── Troca de Água: caminho próprio ──────────────────────────
   if(param==='trocaAguaIdealH'){
-    const inputs=[...document.querySelectorAll('.lancamento-input[data-tank]')].filter(el=>el.value.trim()!=='');
-    if(!inputs.length){showToast('Nenhum valor preenchido','error');return;}
-    showSaveProgress(0,inputs.length);
-    let saved=0;
-    for(const inp of inputs){
-      const tank=tanks.find(t=>t.id===inp.dataset.tank);if(!tank){saved++;showSaveProgress(saved,inputs.length);continue;}
-      const v=parseFloat(inp.value);
-      if(isNaN(v)){saved++;showSaveProgress(saved,inputs.length);continue;}
-      tank.trocaAguaIdealH=v;
-      saved++;showSaveProgress(saved,inputs.length);
+    // Só inclui inputs com valor diferente do atual (evita salvar sem mudança)
+    const toSaveMeta=[...document.querySelectorAll('.lancamento-input[data-tank]')]
+      .filter(el=>{
+        if(el.value.trim()==='')return false;
+        const v=parseFloat(el.value);if(isNaN(v))return false;
+        const tank=tanks.find(t=>t.id===el.dataset.tank);
+        return tank&&v!==tank.trocaAguaIdealH; // só se mudou
+      });
+    if(!toSaveMeta.length){showToast('Nenhuma alteração para salvar','error');return;}
+    const conflitosIdeal=toSaveMeta.filter(el=>{const t=tanks.find(t=>t.id===el.dataset.tank);return t?.trocaAguaIdealH!=null;});
+    const doSaveMeta=()=>{
+      showSaveProgress(0,toSaveMeta.length);
+      let saved=0;
+      for(const inp of toSaveMeta){
+        const tank=tanks.find(t=>t.id===inp.dataset.tank);if(!tank){saved++;showSaveProgress(saved,toSaveMeta.length);continue;}
+        tank.trocaAguaIdealH=parseFloat(inp.value);
+        saved++;showSaveProgress(saved,toSaveMeta.length);
+      }
+      save();
+      showSaveDone(saved);
+      renderLancamentos();
+    };
+    if(conflitosIdeal.length){
+      const nomes=conflitosIdeal.map(el=>tanks.find(t=>t.id===el.dataset.tank)?.name||'').join(', ');
+      showConfirm('Meta já definida',
+        `${conflitosIdeal.length} tanque${conflitosIdeal.length>1?'s já têm':' já tem'} meta de troca definida:\n${nomes}\n\nDeseja substituir?`,
+        doSaveMeta);
+    } else {
+      doSaveMeta();
     }
-    save();
-    showSaveDone(saved);
-    renderLancamentos();
     return;
   }
 
@@ -5376,9 +5408,11 @@ async function saveLancamentos(){
       toSaveTroca.push({tankId,rid,orig,ini,fim});
     }
     if(!toSaveTroca.length){showToast('Nenhuma troca preenchida','error');return;}
-    showSaveProgress(0,toSaveTroca.length);
-    let saved=0;
-    for(const item of toSaveTroca){
+    const conflitosAgua=toSaveTroca.filter(item=>records.some(r=>r.tankId===item.tankId&&r.date===date&&r.isTrocaAgua));
+    const doSaveTroca=async()=>{
+      showSaveProgress(0,toSaveTroca.length);
+      let saved=0;
+      for(const item of toSaveTroca){
       const horas=_calcTrocaHoras(item.ini,item.fim);
       const tank=tanks.find(t=>t.id===item.tankId);if(!tank){saved++;showSaveProgress(saved,toSaveTroca.length);continue;}
       const prev=records.findIndex(r=>r.tankId===item.tankId&&r.date===date&&r.isTrocaAgua);
@@ -5397,8 +5431,17 @@ async function saveLancamentos(){
       await saveOneRecord(rec);
       saved++;showSaveProgress(saved,toSaveTroca.length);
     }
-    showSaveDone(saved);
-    renderLancamentos();
+      showSaveDone(saved);
+      renderLancamentos();
+    };
+    if(conflitosAgua.length){
+      const nomes=conflitosAgua.map(i=>tanks.find(t=>t.id===i.tankId)?.name||i.tankId).join(', ');
+      showConfirm('Troca já lançada',
+        `${conflitosAgua.length} tanque${conflitosAgua.length>1?'s já têm':' já tem'} troca registrada para ${formatDate(date)}:\n${nomes}\n\nDeseja substituir os dados existentes?`,
+        doSaveTroca);
+    } else {
+      doSaveTroca();
+    }
     return;
   }
 
