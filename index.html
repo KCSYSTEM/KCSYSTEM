@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.1</title>
+<title>KC System v7.2</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -422,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.1</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.2</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -531,21 +531,6 @@ input[type="number"]{-moz-appearance:textfield;}
         <button onclick="document.getElementById('chart-date-from').value='';document.getElementById('chart-date-to').value='';renderCharts();" style="background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;font-size:11px;color:var(--text2);cursor:pointer;white-space:nowrap;">Limpar</button>
       </div>
       <div id="charts-container"></div>
-    </div>
-
-    <!-- HISTÓRICO -->
-    <!-- MANEJOS -->
-    <div id="view-manejos" class="view">
-      <div class="view-header" style="flex-wrap:wrap;gap:8px;">
-        <div><div class="view-title">Manejos</div><div class="view-sub">Pipeline de produção de alevinos</div></div>
-        <button onclick="openManejoForm()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Nova Fase</button>
-      </div>
-      <!-- Filtro de período -->
-      <div id="manejos-filtro" style="padding:0 13px 8px;"></div>
-      <!-- Resumo geral -->
-      <div id="manejos-resumo" style="padding:0 13px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"></div>
-      <!-- Pipeline -->
-      <div id="manejos-pipeline" style="padding:0 13px 80px;display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
     <!-- HISTÓRICO -->
@@ -1058,6 +1043,16 @@ input[type="number"]{-moz-appearance:textfield;}
         </div>
         <div id="coleta-historico-list" style="padding:0 0 80px;"></div>
       </div>
+      <!-- VIEW MANEJOS COLETA -->
+      <div id="view-col-manejos" class="view">
+        <div class="view-header" style="flex-wrap:wrap;gap:8px;">
+          <div><div class="view-title">Manejos</div><div class="view-sub">Pipeline de produção de alevinos</div></div>
+          <button onclick="openManejoForm()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Nova Fase</button>
+        </div>
+        <div id="manejos-filtro" style="padding:0 13px 8px;"></div>
+        <div id="manejos-resumo" style="padding:0 13px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"></div>
+        <div id="manejos-pipeline" style="padding:0 13px 80px;display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
       <!-- VIEW GRÁFICOS COLETA -->
       <div id="view-col-graficos" class="view">
         <div class="view-header">
@@ -1089,6 +1084,9 @@ input[type="number"]{-moz-appearance:textfield;}
       </div>
       <div class="coleta-nav-item" id="nav-col-historico" onclick="showColetaView('historico')">
         <div class="nav-icon">↻</div><div class="nav-label">Histórico</div>
+      </div>
+      <div class="coleta-nav-item" id="nav-col-manejos" onclick="showColetaView('manejos')">
+        <div class="nav-icon">🔄</div><div class="nav-label">Manejos</div>
       </div>
     </div>
   </div>
@@ -1212,9 +1210,6 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
     <div class="nav-item" id="nav-graficos" onclick="showView('graficos')">
       <div class="nav-icon">📈</div><div class="nav-label">Gráficos</div>
-    </div>
-    <div class="nav-item" id="nav-manejos" onclick="showView('manejos')">
-      <div class="nav-icon">🔄</div><div class="nav-label">Manejos</div>
     </div>
     <div class="nav-item" id="nav-history" onclick="showView('history')">
       <div class="nav-icon">↻</div><div class="nav-label">Histórico</div>
@@ -1957,6 +1952,7 @@ function showColetaView(v){
   if(v==='painel')renderColetaPainel();
   if(v==='historico')renderColetaHistorico();
   if(v==='graficos')renderColetaGraficos();
+  if(v==='manejos')renderManejos();
 }
 
 function renderColetaGraficos(){
@@ -3717,7 +3713,6 @@ function showView(v){
   document.getElementById('view-'+v)?.classList.add('active');
   document.querySelectorAll('.bottom-nav .nav-item').forEach(el=>el.classList.remove('active'));
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
-  if(v==='manejos')renderManejos();
   if(v==='history')loadAuditLog();
   if(v==='tanques')renderTankView();
   if(v==='settings')renderSettings();
