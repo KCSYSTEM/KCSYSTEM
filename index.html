@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.3</title>
+<title>KC System v7.4</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -422,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.3</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.4</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -481,6 +481,7 @@ input[type="number"]{-moz-appearance:textfield;}
           <option value="racaoReal">🌾 Ração Real / Sobra (kg)</option>
           <option id="lanc-opt-tratosIdeal" value="tratosIdeal">🕐 Tratos Ideal/dia</option>
           <option value="tratos">🕐 Tratos Real/dia</option>
+          <option value="trocaAgua">💧 Troca de Água</option>
         </select>
         <div style="display:flex;align-items:center;gap:4px;">
           <button onclick="shiftLancDate(-1)" style="background:rgba(255,255,255,0.1);border:1.5px solid var(--border2);border-radius:8px;width:30px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);">‹</button>
@@ -497,6 +498,21 @@ input[type="number"]{-moz-appearance:textfield;}
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- CONTROLE DE ÁGUA -->
+    <div id="view-agua" class="view">
+      <div class="view-header" style="flex-wrap:wrap;gap:8px;">
+        <div><div class="view-title">Controle de Água</div><div class="view-sub">Histórico de trocas por tanque</div></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="_aguaShortcut(7)" style="font-size:11px;background:var(--accent-dim);border:1.5px solid var(--accent);border-radius:7px;padding:5px 10px;color:var(--accent);font-weight:700;cursor:pointer;white-space:nowrap;">7 dias</button>
+          <button onclick="_aguaShortcut(30)" style="font-size:11px;background:var(--surface);border:1.5px solid var(--border2);border-radius:7px;padding:5px 10px;color:var(--text2);font-weight:700;cursor:pointer;white-space:nowrap;">30 dias</button>
+          <input type="date" id="agua-de" onchange="renderAguaView()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:6px 8px;color:var(--text);font-size:13px;outline:none;">
+          <span style="font-size:12px;color:var(--text3);">até</span>
+          <input type="date" id="agua-ate" onchange="renderAguaView()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:6px 8px;color:var(--text);font-size:13px;outline:none;">
+        </div>
+      </div>
+      <div id="agua-container" style="overflow:auto;padding:0 13px 80px;max-height:calc(100vh - 180px);"></div>
     </div>
 
     <!-- PAINEL -->
@@ -1207,6 +1223,9 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
     <div class="nav-item" id="nav-painel" onclick="showView('painel')">
       <div class="nav-icon">📋</div><div class="nav-label">Painel</div>
+    </div>
+    <div class="nav-item" id="nav-agua" onclick="showView('agua')">
+      <div class="nav-icon">💧</div><div class="nav-label">Água</div>
     </div>
     <div class="nav-item" id="nav-graficos" onclick="showView('graficos')">
       <div class="nav-icon">📈</div><div class="nav-label">Gráficos</div>
@@ -3706,6 +3725,92 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 // ===== NAV =====
+function _aguaShortcut(dias){
+  const hoje=new Date();
+  const ate=hoje.toISOString().split('T')[0];
+  const de=new Date(hoje);de.setDate(de.getDate()-(dias-1));
+  const deStr=de.toISOString().split('T')[0];
+  document.getElementById('agua-de').value=deStr;
+  document.getElementById('agua-ate').value=ate;
+  renderAguaView();
+}
+
+function renderAguaView(){
+  const cont=document.getElementById('agua-container');if(!cont)return;
+  const hoje=new Date().toISOString().split('T')[0];
+  let de=document.getElementById('agua-de')?.value;
+  let ate=document.getElementById('agua-ate')?.value;
+  if(!de||!ate){
+    const d7=new Date();d7.setDate(d7.getDate()-6);
+    de=d7.toISOString().split('T')[0];ate=hoje;
+    const deEl=document.getElementById('agua-de');const ateEl=document.getElementById('agua-ate');
+    if(deEl)deEl.value=de;if(ateEl)ateEl.value=ate;
+  }
+
+  // Gera array de datas do intervalo
+  const dates=[];
+  const cur=new Date(de+'T12:00:00');
+  const end=new Date(ate+'T12:00:00');
+  while(cur<=end){dates.push(cur.toISOString().split('T')[0]);cur.setDate(cur.getDate()+1);}
+  if(!dates.length){cont.innerHTML='<div style="padding:30px;text-align:center;color:var(--text3);">Selecione um período válido</div>';return;}
+
+  const fmtD=ds=>{const[,m,d]=ds.split('-');return`${d}/${m}`;};
+  const sorted=[...tanks].filter(t=>records.some(r=>r.tankId===t.id))
+    .sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+  const ativos=sorted.filter(t=>tankWasActiveOn(t,ate));
+  const vazios=sorted.filter(t=>!tankWasActiveOn(t,ate));
+
+  const colW=72;
+  const thBase='padding:6px 4px;font-size:11px;font-weight:700;text-align:center;white-space:nowrap;color:var(--text2);border-bottom:2px solid var(--border);';
+  const thName='padding:6px 8px;font-size:11px;font-weight:700;text-align:left;color:var(--text2);border-bottom:2px solid var(--border);min-width:110px;position:sticky;left:0;z-index:2;background:var(--surface);';
+
+  let headerCols=dates.map(ds=>`<th style="${thBase}min-width:${colW}px;">${fmtD(ds)}<br><span style="font-size:9px;font-weight:400;color:var(--text3);">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][new Date(ds+'T12:00:00').getDay()]}</span></th>`).join('');
+  const header=`<thead><tr><th style="${thName}">Tanque</th>${headerCols}</tr></thead>`;
+
+  function buildCell(tankId,ds,isEmpty){
+    if(isEmpty)return`<td style="min-width:${colW}px;background:#f1f5f9;"></td>`;
+    const troca=records.find(r=>r.tankId===tankId&&r.date===ds&&r.isTrocaAgua);
+    const rec=recForDate(tankId,ds);
+    const temp=rec?.temp??null;
+    const amonia=rec?.amonia??null;
+    const tank=tanks.find(t=>t.id===tankId);
+    const idealH=tank?.trocaAguaIdealH??null;
+    let farol='⚪',farolTip='';
+    if(troca){
+      const h=troca.trocaHoras;
+      if(idealH!=null){farol=h>=idealH?'🟢':'🟡';farolTip=`${fNum(h,1)}h / ${fNum(idealH,1)}h meta`;}
+      else{farol='🔵';farolTip=`${fNum(h,1)}h`;}
+    } else if(idealH!=null&&idealH>0){farol='🔴';farolTip='Sem troca';}
+    const horasStr=troca?`<div style="font-size:12px;font-weight:700;color:var(--accent);">${fNum(troca.trocaHoras,1)}h</div>`:'';
+    const origemStr=troca?`<div style="font-size:9px;color:var(--text3);">${{poco1:'P1',poco2:'P2',represa:'Rep'}[troca.trocaOrigem]||''}</div>`:'';
+    const metaStr=temp!=null||amonia!=null?`<div style="font-size:9px;color:var(--text3);">${temp!=null?fNum(temp,1)+'°':''} ${amonia!=null?fNum(amonia,2)+'mg/L':''}</div>`:'';
+    return`<td title="${farolTip}" style="min-width:${colW}px;padding:4px 2px;text-align:center;border-bottom:1px solid var(--border);vertical-align:top;">
+      <div style="font-size:15px;line-height:1.2;">${farol}</div>
+      ${horasStr}${origemStr}${metaStr}
+    </td>`;
+  }
+
+  function buildRow(t,isEmpty){
+    const nameStyle='padding:6px 8px;font-size:12px;font-weight:600;color:'+(isEmpty?'var(--text3)':'var(--text)')+';border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;left:0;z-index:1;background:'+(isEmpty?'#f8fafc':'var(--bg)')+';';
+    const cells=dates.map(ds=>buildCell(t.id,ds,isEmpty)).join('');
+    const badge=isEmpty?`<span style="font-size:9px;background:#b0bec5;color:#fff;border-radius:4px;padding:1px 4px;margin-left:4px;">VAZIO</span>`:'';
+    return`<tr><td style="${nameStyle}">${esc(t.name)}${badge}</td>${cells}</tr>`;
+  }
+
+  let tbody='<tbody>';
+  ativos.forEach(t=>{tbody+=buildRow(t,false);});
+  if(vazios.length){
+    tbody+=`<tr><td colspan="${dates.length+1}" style="padding:6px 8px;font-size:10px;font-weight:700;color:#b0bec5;letter-spacing:1px;text-transform:uppercase;background:var(--surface2);border-top:2px solid var(--border2);border-bottom:1px solid var(--border);">Tanques Vazios</td></tr>`;
+    vazios.forEach(t=>{tbody+=buildRow(t,true);});
+  }
+  tbody+='</tbody>';
+
+  cont.innerHTML=`<table style="border-collapse:collapse;min-width:max-content;">${header}${tbody}</table>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);display:flex;gap:12px;flex-wrap:wrap;">
+      <span>🟢 Meta atingida</span><span>🟡 Troca curta</span><span>🔴 Sem troca</span><span>🔵 Sem meta definida</span><span>⚪ Inativo/sem programa</span>
+    </div>`;
+}
+
 function showView(v){
   if(v==='settings'&&!isAdmin()){showToast('Acesso restrito a administradores','error');return;}
   // Só mexe nas views do módulo operação (dentro de #main)
@@ -3713,6 +3818,7 @@ function showView(v){
   document.getElementById('view-'+v)?.classList.add('active');
   document.querySelectorAll('.bottom-nav .nav-item').forEach(el=>el.classList.remove('active'));
   const n=document.getElementById('nav-'+v);if(n)n.classList.add('active');
+  if(v==='agua')renderAguaView();
   if(v==='history')loadAuditLog();
   if(v==='tanques')renderTankView();
   if(v==='settings')renderSettings();
@@ -4382,6 +4488,12 @@ function buildConfigForm(){
       </div>
     </div>
   </div>
+  ${admin?`<div class="form-section"><div class="form-section-title">Controle de Água</div>
+    <div class="config-field"><label>Meta de troca (h/dia)</label>
+      <input type="number" id="cfg-troca-agua-ideal" min="0" step="0.5" inputmode="decimal"
+        value="${t.trocaAguaIdealH??''}" placeholder="ex: 4" style="width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;">
+    </div>
+  </div>`:''}
   <div class="form-section"><div class="form-section-title">Status do Tanque</div>
     <div class="hapa-toggle-row">
       <div>
@@ -4485,6 +4597,8 @@ function saveTankConfig(){
   activeTank.volume=parseFloat(document.getElementById('cfg-vol').value)||activeTank.volume;
   activeTank.shape=document.getElementById('cfg-shape').value;
   activeTank.groupId=document.getElementById('cfg-group').value;
+  const _taiH=parseFloat(document.getElementById('cfg-troca-agua-ideal')?.value);
+  if(!isNaN(_taiH))activeTank.trocaAguaIdealH=_taiH;else delete activeTank.trocaAguaIdealH;
   const hapasOn=document.getElementById('cfg-hapas-on').checked;
   if(hapasOn){
     const qty=parseInt(document.getElementById('cfg-hapas-qty').value)||0;
@@ -4874,6 +4988,7 @@ const LANC_PARAMS={
   racaoReal:{label:'Ração Real/Sobra',  unit:'kg',   step:'0.0001',inputmode:'decimal'},
   tratosIdeal:{label:'Tratos Ideal',    unit:'',     step:'1',   inputmode:'numeric'},
   tratos:   {label:'Tratos Real',       unit:'',     step:'1',   inputmode:'numeric'},
+  trocaAgua:{label:'Troca de Água',    unit:'h',    special:true},
 };
 
 function shiftColetaDate(days){
@@ -4931,6 +5046,43 @@ function renderLancamentos(){
   const admOnly=['racaoIdealG','tratosIdeal'];
   if(admOnly.includes(param)&&!admin){
     tbody.innerHTML='<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--danger);font-size:13px;">🔒 Parâmetro restrito a administradores</td></tr>';
+    return;
+  }
+
+  if(param==='trocaAgua'){
+    const date=document.getElementById('lanc-date')?.value||new Date().toISOString().split('T')[0];
+    const activeTks=tanks.filter(t=>!t.empty&&records.some(r=>r.tankId===t.id))
+      .sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+    const selStyle='background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;color:var(--text);width:100%;outline:none;';
+    const timeStyle='background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;color:var(--text);width:100%;outline:none;';
+    tbody.innerHTML=`
+    <tr style="background:var(--surface2);">
+      <th style="padding:8px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);min-width:110px;">Tanque</th>
+      <th style="padding:8px;font-size:11px;font-weight:700;color:var(--text2);min-width:120px;">Origem</th>
+      <th style="padding:8px;font-size:11px;font-weight:700;color:var(--text2);min-width:90px;">Início</th>
+      <th style="padding:8px;font-size:11px;font-weight:700;color:var(--text2);min-width:90px;">Fim</th>
+      <th style="padding:8px;font-size:11px;font-weight:700;color:var(--text2);min-width:60px;text-align:center;">Horas</th>
+    </tr>`+
+    activeTks.map(t=>{
+      const rid=t.id.replace(/[^a-z0-9]/gi,'_');
+      const ex=records.find(r=>r.tankId===t.id&&r.date===date&&r.isTrocaAgua);
+      const orig=ex?.trocaOrigem||'';const ini=ex?.trocaInicio||'';const fim=ex?.trocaFim||'';
+      const horas=ini&&fim?_calcTrocaHoras(ini,fim):'';
+      return`<tr>
+        <td style="padding:8px;font-size:13px;font-weight:600;color:var(--text);">${esc(t.name)}</td>
+        <td style="padding:4px 8px;">
+          <select id="ta-orig-${rid}" class="lanc-agua-input" data-tank="${t.id}" style="${selStyle}">
+            <option value="">—</option>
+            <option value="poco1" ${orig==='poco1'?'selected':''}>Poço 1</option>
+            <option value="poco2" ${orig==='poco2'?'selected':''}>Poço 2</option>
+            <option value="represa" ${orig==='represa'?'selected':''}>Represa</option>
+          </select>
+        </td>
+        <td style="padding:4px 8px;"><input type="time" id="ta-ini-${rid}" class="lanc-agua-input" data-tank="${t.id}" value="${ini}" oninput="_atualizaHorasTroca('${rid}')" style="${timeStyle}"></td>
+        <td style="padding:4px 8px;"><input type="time" id="ta-fim-${rid}" class="lanc-agua-input" data-tank="${t.id}" value="${fim}" oninput="_atualizaHorasTroca('${rid}')" style="${timeStyle}"></td>
+        <td style="padding:8px;text-align:center;font-size:14px;font-weight:700;color:var(--accent);" id="ta-h-${rid}">${horas?fNum(horas,1)+'h':''}</td>
+      </tr>`;
+    }).join('');
     return;
   }
 
@@ -5142,11 +5294,64 @@ function getRacaoRealParaLinha(rowId,hapaCount){
   return{sobra:null,racaoReal:null,modo:'balde'};
 }
 
+function _calcTrocaHoras(ini,fim){
+  if(!ini||!fim)return null;
+  const [hI,mI]=ini.split(':').map(Number);
+  const [hF,mF]=fim.split(':').map(Number);
+  let diff=(hF*60+mF)-(hI*60+mI);
+  if(diff<0)diff+=1440; // passou da meia-noite
+  return parseFloat((diff/60).toFixed(2));
+}
+function _atualizaHorasTroca(rid){
+  const ini=document.getElementById('ta-ini-'+rid)?.value;
+  const fim=document.getElementById('ta-fim-'+rid)?.value;
+  const el=document.getElementById('ta-h-'+rid);
+  if(!el)return;
+  const h=_calcTrocaHoras(ini,fim);
+  el.textContent=h!=null?fNum(h,1)+'h':'';
+}
+
 async function saveLancamentos(){
   const param=document.getElementById('lanc-param')?.value;
   const date=document.getElementById('lanc-date')?.value;
   if(!param){showToast('Selecione um parâmetro','error');return;}
   if(!date){showToast('Selecione uma data','error');return;}
+
+  // ── Troca de Água: caminho próprio ──────────────────────────
+  if(param==='trocaAgua'){
+    const aguaInputs=[...document.querySelectorAll('.lanc-agua-input[data-tank]')];
+    const tankIds=[...new Set(aguaInputs.map(el=>el.dataset.tank))];
+    let saved=0;
+    for(const tankId of tankIds){
+      const rid=tankId.replace(/[^a-z0-9]/gi,'_');
+      const orig=document.getElementById('ta-orig-'+rid)?.value||'';
+      const ini=document.getElementById('ta-ini-'+rid)?.value||'';
+      const fim=document.getElementById('ta-fim-'+rid)?.value||'';
+      if(!orig&&!ini&&!fim)continue;
+      const horas=_calcTrocaHoras(ini,fim);
+      const tank=tanks.find(t=>t.id===tankId);if(!tank)continue;
+      // Remove registro anterior do mesmo dia se existir
+      const prev=records.findIndex(r=>r.tankId===tankId&&r.date===date&&r.isTrocaAgua);
+      if(prev>=0)records.splice(prev,1);
+      const rec={
+        id:'agua_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+        tankId,tankName:tank.name,date,
+        user:currentUser.name,username:currentUser.username,
+        timestamp:new Date().toISOString(),
+        isTrocaAgua:true,
+        trocaOrigem:orig,trocaInicio:ini,trocaFim:fim,trocaHoras:horas,
+        temp:null,o2:null,amonia:null,ph:null,mort:null,
+        qty:null,bio:null,racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+        tratosIdeal:null,tratos:null,obs:'',overridden:false,hapa:null,lote:tank.lote||'',
+      };
+      await saveOneRecord(rec);
+      saved++;
+    }
+    if(saved)showToast(`${saved} troca${saved>1?'s':''} de água salva${saved>1?'s':''}! ✓`);
+    else showToast('Nenhuma troca preenchida','error');
+    renderLancamentos();
+    return;
+  }
 
   // Coleta inputs diretamente — cada input tem data-tank e data-hapa
   const allInputs=[...document.querySelectorAll('.lancamento-input[data-tank]')];
