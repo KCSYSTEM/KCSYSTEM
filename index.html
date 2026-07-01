@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.13</title>
+<title>KC System v7.14</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -422,7 +422,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.13</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.14</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -3782,9 +3782,10 @@ function renderAguaView(){
 
   function buildCell(tankId,ds,isEmpty){
     if(isEmpty)return`<td style="min-width:${colW}px;background:#f1f5f9;"></td>`;
-    const troca=records.find(r=>r.tankId===tankId&&r.date===ds&&r.isTrocaAgua&&!r.overridden);
-    // Busca temp/amônia SOMENTE em registros que não são de troca de água
-    // (evitar que o registro de troca, com temp:null, apague os valores do dia)
+    const trocaRec=records.find(r=>r.tankId===tankId&&r.date===ds&&r.isTrocaAgua&&!r.overridden);
+    // Só considera troca realizada se as horas foram registradas (ambos início e fim preenchidos)
+    const trocaRealizada=trocaRec&&trocaRec.trocaHoras!=null&&trocaRec.trocaHoras>0;
+    // Busca temp/amônia somente em registros que não são de troca de água
     const recQual=records.filter(r=>r.tankId===tankId&&r.date===ds&&!r.isTrocaAgua&&!r.overridden&&!r.hapa)
       .reduce((a,b)=>(!a||(b.timestamp||'')>(a.timestamp||''))?b:a, null);
     const temp=recQual?.temp??null;
@@ -3794,13 +3795,21 @@ function renderAguaView(){
     const idealH=recMeta?.trocaAguaIdealH??null;
     const temMeta=idealH!=null&&idealH>0;
     let farol='⚪',farolTip='';
-    if(troca){
-      const h=troca.trocaHoras;
-      if(temMeta){farol=h>=idealH?'🟢':'🟡';farolTip=`${fNum(h,1)}h / ${fNum(idealH,1)}h meta`;}
-      else{farol='🔵';farolTip=`${fNum(h,1)}h`;}
-    } else if(temMeta){farol='🔴';farolTip='Sem troca';}
-    const horasStr=troca?`<div style="font-size:12px;font-weight:700;color:var(--accent);">${fNum(troca.trocaHoras,1)}h</div>`:'';
-    const origemStr=troca?`<div style="font-size:9px;color:var(--text3);">${{poco1:'P1',poco2:'P2',represa:'Rep'}[troca.trocaOrigem]||''}</div>`:'';
+    if(trocaRealizada){
+      const h=trocaRec.trocaHoras;
+      if(temMeta){farol=h>=idealH?'🟢':'🟡';farolTip=`${fNum(h,1)}h realizado / ${fNum(idealH,1)}h meta`;}
+      else{farol='🔵';farolTip=`${fNum(h,1)}h (sem meta definida)`;}
+    } else if(temMeta){farol='🔴';farolTip='Sem troca realizada';}
+    // Horas: mostra "real/meta" quando há meta, ou só "real" quando não há
+    let horasStr='';
+    if(trocaRealizada){
+      const hReal=fNum(trocaRec.trocaHoras,1)+'h';
+      const hMeta=temMeta?`<span style="color:var(--text3);">/${fNum(idealH,1)}h</span>`:'';
+      horasStr=`<div style="font-size:12px;font-weight:700;color:var(--accent);">${hReal}${hMeta}</div>`;
+    } else if(temMeta){
+      horasStr=`<div style="font-size:12px;color:var(--text3);">—/<span style="font-weight:700;">${fNum(idealH,1)}h</span></div>`;
+    }
+    const origemStr=trocaRealizada?`<div style="font-size:9px;color:var(--text3);">${{poco1:'P1',poco2:'P2',represa:'Rep'}[trocaRec.trocaOrigem]||''}</div>`:'';
     const metaStr=temp!=null||amonia!=null?`<div style="font-size:9px;color:var(--text3);">${temp!=null?fNum(temp,1)+'°':''} ${amonia!=null?fNum(amonia,2)+'mg/L':''}</div>`:'';
     return`<td title="${farolTip}" style="min-width:${colW}px;padding:4px 2px;text-align:center;border-bottom:1px solid var(--border);vertical-align:top;">
       <div style="font-size:15px;line-height:1.2;">${farol}</div>
@@ -5417,6 +5426,7 @@ async function saveLancamentos(){
       const ini=document.getElementById('ta-ini-'+rid)?.value||'';
       const fim=document.getElementById('ta-fim-'+rid)?.value||'';
       if(!orig&&!ini&&!fim)continue;
+      if((ini&&!fim)||(fim&&!ini)){showToast(`${tanks.find(t=>t.id===item.tankId)?.name}: preencha início e fim para calcular as horas`,'error');continue;}
       toSaveTroca.push({tankId,rid,orig,ini,fim});
     }
     if(!toSaveTroca.length){showToast('Nenhuma troca preenchida','error');return;}
