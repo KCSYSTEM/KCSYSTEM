@@ -857,6 +857,9 @@ input[type="number"]{-moz-appearance:textfield;}
 
       <!-- Legenda -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;" id="cal-legend"></div>
+
+      <!-- Tabela de atividades do mês -->
+      <div id="cal-activity-table"></div>
     </div>
   </div>
 
@@ -10847,6 +10850,7 @@ function _buildMonthCal(){
 
   h+='</div>';
   document.getElementById('cal-month-grid').innerHTML=h;
+  _buildActivityTable();
 }
 
 function calMonthPrev(){ _calMonthOff--; _buildMonthCal(); }
@@ -10941,6 +10945,14 @@ function openAddEvent(ds){
             <input type="text" id="cal-new-title" placeholder="Ex: Coleta tanque 15" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
           </div>
           <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">RESPONSÁVEL <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
+            <input type="text" id="cal-new-resp" placeholder="Nome do responsável" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">DATA PREVISTA DE CONCLUSÃO <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
+            <input type="date" id="cal-new-dprev" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+          </div>
+          <div>
             <label style="font-size:11px;font-weight:700;color:var(--text2);">DESCRIÇÃO <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
             <textarea id="cal-new-desc" rows="2" placeholder="Detalhes da atividade..." style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;"></textarea>
           </div>
@@ -10960,6 +10972,8 @@ async function confirmAddEvent(){
   const date=document.getElementById('cal-new-date').value;
   const type=document.getElementById('cal-new-type').value;
   const title=document.getElementById('cal-new-title').value.trim();
+  const resp=document.getElementById('cal-new-resp').value.trim();
+  const dprev=document.getElementById('cal-new-dprev').value;
   const desc=document.getElementById('cal-new-desc').value.trim();
   if(!date){showToast('Selecione uma data','error');return;}
   if(!title){showToast('Digite um título','error');return;}
@@ -10968,6 +10982,9 @@ async function confirmAddEvent(){
     id:'cal_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
     date,type,title,
     description:desc||null,
+    responsavel:resp||null,
+    data_prevista:dprev||null,
+    status:'pendente',
     created_by:currentUser.username,
     timestamp:new Date().toISOString(),
   };
@@ -11000,6 +11017,101 @@ async function deleteCalEvent(id){
       showToast('Erro ao remover','error');
     }
   });
+}
+
+function _buildActivityTable(){
+  const el=document.getElementById('cal-activity-table');
+  if(!el) return;
+  const today=_calDs(new Date());
+  const {year,month}=_calMonthOf(_calMonthOff);
+  const mStr=`${year}-${String(month).padStart(2,'0')}`;
+  const evs=calEvents.filter(e=>e.date&&e.date.startsWith(mStr));
+  const mLabel=`${CAL_MESES[month-1]} ${year}`;
+
+  if(!evs.length){
+    el.innerHTML=`<div class="cal-card" style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">Nenhuma atividade em ${mLabel}</div>`;
+    return;
+  }
+
+  const admin=isAdmin();
+
+  function dispStatus(ev){
+    if(ev.status==='concluido') return 'concluido';
+    if(ev.data_prevista&&ev.data_prevista<today) return 'atrasado';
+    return 'no_prazo';
+  }
+
+  function daysLate(ev){
+    if(!ev.data_prevista||ev.status==='concluido') return '';
+    const diff=Math.round((new Date(today+'T12:00:00')-new Date(ev.data_prevista+'T12:00:00'))/86400000);
+    if(diff>0) return `<span style="color:#c62828;font-weight:700;">${diff}d</span>`;
+    if(diff===0) return `<span style="color:#e65100;font-weight:700;">Hoje</span>`;
+    return '';
+  }
+
+  function statusBadge(ev){
+    const ds=dispStatus(ev);
+    const CFG={
+      concluido:{dot:'●',label:'Concluído',bg:'rgba(76,175,80,.15)',color:'#2e7d32'},
+      no_prazo: {dot:'●',label:'No prazo', bg:'rgba(33,150,243,.12)',color:'#1565c0'},
+      atrasado: {dot:'●',label:'Atrasado', bg:'rgba(244,67,54,.12)', color:'#c62828'},
+    };
+    const cfg=CFG[ds];
+    const clk=admin?`onclick="toggleCalEventStatus('${ev.id}')" title="Clique para alternar status" style="cursor:pointer;"`:'';
+    return `<span ${clk} style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;background:${cfg.bg};color:${cfg.color};">${cfg.dot} ${cfg.label}</span>`;
+  }
+
+  const INS=`style="text-align:left;padding:6px 8px;font-size:12px;color:var(--text);border-bottom:1px solid var(--border);"`;
+  const THS=`style="text-align:left;padding:5px 8px;font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1.5px solid var(--border);white-space:nowrap;"`;
+
+  function section(title,list){
+    if(!list.length) return '';
+    const rows=list.map(ev=>{
+      const ti=CAL_TYPES[ev.type]||CAL_TYPES.outro;
+      const [,em,ed]=ev.date.split('-');
+      const prev=ev.data_prevista?ev.data_prevista.split('-').reverse().slice(0,2).join('/'):'—';
+      return `<tr>
+        <td ${INS}>${ed}/${em}</td>
+        <td ${INS}><span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><span style="width:8px;height:8px;border-radius:50%;background:${ti.color};flex-shrink:0;"></span>${ti.label}</span></td>
+        <td ${INS}>${ev.responsavel||'—'}</td>
+        <td ${INS}>${prev}</td>
+        <td ${INS}>${daysLate(ev)||'—'}</td>
+        <td ${INS}>${statusBadge(ev)}</td>
+      </tr>`;
+    }).join('');
+    return `<div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 6px;">${title} (${list.length})</div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th ${THS}>Data</th><th ${THS}>Tipo</th><th ${THS}>Responsável</th>
+        <th ${THS}>Previsto</th><th ${THS}>Atraso</th><th ${THS}>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  }
+
+  const pending=evs.filter(e=>e.status!=='concluido').sort((a,b)=>a.date.localeCompare(b.date));
+  const done=evs.filter(e=>e.status==='concluido').sort((a,b)=>a.date.localeCompare(b.date));
+
+  el.innerHTML=`<div class="cal-card">
+    <div style="font-size:14px;font-weight:800;color:var(--text);padding-bottom:2px;">Atividades — ${mLabel}</div>
+    ${section('A Fazer',pending)}
+    ${section('Concluídas',done)}
+  </div>`;
+}
+
+async function toggleCalEventStatus(id){
+  if(!isAdmin()) return;
+  const ev=calEvents.find(e=>e.id===id);
+  if(!ev) return;
+  const novo=ev.status==='concluido'?'pendente':'concluido';
+  const ok=await _calSaveEvent({...ev,status:novo});
+  if(ok){
+    ev.status=novo;
+    _buildActivityTable();
+    showToast(novo==='concluido'?'Marcado como concluído ✓':'Marcado como pendente','ok');
+  } else {
+    showToast('Erro ao atualizar status','error');
+  }
 }
 </script>
 
