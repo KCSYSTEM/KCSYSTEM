@@ -11312,14 +11312,15 @@ function _buildFeriasTable(){
 
   let rows='';
   sorted.forEach(g=>{
-    const totalDias=g.recs.reduce((s,r)=>s+r.dias,0);
+    const activeRecs=g.recs.filter(r=>r.status!=='cancelado');
+    const totalDias=activeRecs.reduce((s,r)=>s+r.dias,0);
     const restante=30-totalDias;
     const paStr=`${_fmtDate(g.paInicio)} — ${_fmtDate(g.paFim)}`;
     const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${_feriasColor(g.usuario)};margin-right:5px;flex-shrink:0;"></span>`;
-    const assinados=g.recs.filter(r=>r.assinado).length;
-    const sigGrp=assinados===g.recs.length
+    const assinados=activeRecs.filter(r=>r.assinado).length;
+    const sigGrp=assinados===activeRecs.length
       ?`<span style="color:#2e7d32;font-weight:800;font-size:11px;">✅ Todos assinados</span>`
-      :`<span style="color:#e65100;font-weight:700;font-size:11px;">⏳ ${assinados}/${g.recs.length} assinados</span>`;
+      :`<span style="color:#e65100;font-weight:700;font-size:11px;">⏳ ${assinados}/${activeRecs.length} assinados</span>`;
     rows+=`<tr style="background:var(--surface);">
       <td ${INS}><span style="display:inline-flex;align-items:center;">${dot}${g.nome}</span></td>
       <td ${INS} style="font-size:11px;">${paStr}</td>
@@ -11328,19 +11329,36 @@ function _buildFeriasTable(){
       <td ${INS}></td>
     </tr>`;
     // Sub-linhas por período
+    let activeIdx=0;
     g.recs.forEach(r=>{
+      const isCancelled=r.status==='cancelado';
+      if(isCancelled){
+        rows+=`<tr style="background:var(--bg);opacity:0.5;">
+          <td ${INS} style="padding-left:20px;font-size:11px;color:var(--text2);"><s>${_fmtDate(r.data_inicio)} a ${_fmtDate(r.data_fim)}</s></td>
+          <td ${INS} colspan="3" style="font-size:11px;">
+            <span style="background:#fee2e2;color:#dc2626;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:800;white-space:nowrap;">CANCELADO</span>
+            ${r.cancelado_obs?`<span style="color:var(--text2);margin-left:4px;font-size:11px;">${r.cancelado_obs}</span>`:''}
+          </td>
+          <td ${INS}></td>
+        </tr>`;
+        return;
+      }
+      activeIdx++;
       const isMine=r.usuario===currentUser.username;
       let sigCell='';
       if(r.assinado) sigCell=`<span style="color:#2e7d32;font-size:11px;white-space:nowrap;">✅ ${_fmtDate((r.assinado_em||'').slice(0,10))}</span>`;
       else if(isMine) sigCell=`<button onclick="assinarFerias('${r.id}')" style="padding:3px 10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✍ Assinar</button>`;
       else sigCell=`<span style="color:var(--text2);font-size:11px;">Aguardando</span>`;
-      const delBtn=admin?`<button onclick="deleteFerias('${r.id}')" style="padding:2px 7px;background:none;border:1.5px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);cursor:pointer;">✕</button>`:'';
+      const actBtns=admin?`<div style="display:flex;gap:4px;">
+        <button onclick="openEditFerias('${r.id}')" title="Editar férias" style="padding:2px 7px;background:none;border:1.5px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);cursor:pointer;">✏️</button>
+        <button onclick="deleteFerias('${r.id}')" title="Excluir" style="padding:2px 7px;background:none;border:1.5px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);cursor:pointer;">✕</button>
+      </div>`:'';
       rows+=`<tr style="background:var(--bg);">
         <td ${INS} style="padding-left:20px;font-size:11px;color:var(--text2);">↳ ${_fmtDate(r.data_inicio)} a ${_fmtDate(r.data_fim)}</td>
-        <td ${INS} style="font-size:11px;color:var(--text2);">Período ${g.recs.indexOf(r)+1}</td>
+        <td ${INS} style="font-size:11px;color:var(--text2);">Período ${activeIdx}</td>
         <td ${INS} style="font-size:12px;font-weight:700;">${r.dias} dias</td>
         <td ${INS}>${sigCell}</td>
-        <td ${INS}>${delBtn}</td>
+        <td ${INS}>${actBtns}</td>
       </tr>`;
     });
   });
@@ -11406,6 +11424,108 @@ function openAddFerias(ds){
 
 function closeAddFerias(){ document.getElementById('ferias-add-overlay')?.remove(); }
 
+function openEditFerias(id){
+  if(!isAdmin()) return;
+  const r=feriasList.find(f=>f.id===id);
+  if(!r||r.status==='cancelado') return;
+  document.getElementById('ferias-edit-overlay')?.remove();
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="ferias-edit-overlay" onclick="if(event.target===this)closeEditFerias()" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:450;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1.5px solid var(--border);">
+          <div style="font-size:15px;font-weight:800;color:var(--text);">✏️ Editar Férias</div>
+          <button onclick="closeEditFerias()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;line-height:1;">×</button>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="background:var(--bg);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--text);">👤 ${r.nome}</div>
+          <div style="background:#fff8e1;border-radius:8px;padding:8px 12px;font-size:12px;color:#a16207;">⚠️ Ao salvar, o registro atual será cancelado e o funcionário precisará assinar novamente.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);">INÍCIO DAS FÉRIAS</label>
+              <input type="date" id="fe-inicio" value="${r.data_inicio}" onchange="feCalcDias()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);">FIM DAS FÉRIAS</label>
+              <input type="date" id="fe-fim" value="${r.data_fim}" onchange="feCalcDias()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            </div>
+          </div>
+          <div id="fe-dias-calc" style="background:var(--bg);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--accent);">${r.dias} dias de férias</div>
+          <div style="border-top:1px solid var(--border);padding-top:10px;">
+            <div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:10px;">PERÍODO AQUISITIVO</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">INÍCIO DO PERÍODO</label>
+                <input type="date" id="fe-pa-inicio" value="${r.periodo_aquisitivo_inicio}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">FIM DO PERÍODO</label>
+                <input type="date" id="fe-pa-fim" value="${r.periodo_aquisitivo_fim}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+            </div>
+          </div>
+          <button onclick="confirmEditFerias('${id}')" style="padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">💾 Salvar alterações</button>
+        </div>
+      </div>
+    </div>`);
+}
+
+function closeEditFerias(){ document.getElementById('ferias-edit-overlay')?.remove(); }
+
+function feCalcDias(){
+  const i=document.getElementById('fe-inicio').value;
+  const f=document.getElementById('fe-fim').value;
+  const el=document.getElementById('fe-dias-calc');
+  if(!i||!f){el.textContent='Selecione início e fim';return;}
+  const diff=Math.round((new Date(f+'T12:00:00')-new Date(i+'T12:00:00'))/86400000)+1;
+  el.textContent=diff>0?`${diff} dias de férias`:'Data de fim deve ser após o início';
+}
+
+async function confirmEditFerias(id){
+  if(!isAdmin()) return;
+  const old=feriasList.find(f=>f.id===id);
+  if(!old||old.status==='cancelado') return;
+  const inicio=document.getElementById('fe-inicio').value;
+  const fim=document.getElementById('fe-fim').value;
+  const paInicio=document.getElementById('fe-pa-inicio').value;
+  const paFim=document.getElementById('fe-pa-fim').value;
+  if(!inicio||!fim){showToast('Selecione as datas das férias','error');return;}
+  if(!paInicio||!paFim){showToast('Preencha o período aquisitivo','error');return;}
+  const dias=Math.round((new Date(fim+'T12:00:00')-new Date(inicio+'T12:00:00'))/86400000)+1;
+  if(dias<=0){showToast('Data de fim deve ser após o início','error');return;}
+  const hoje=_fmtDate(_calDs(new Date()));
+  const newRec={
+    id:'ferias_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+    usuario:old.usuario,nome:old.nome,
+    data_inicio:inicio,data_fim:fim,dias,
+    periodo_aquisitivo_inicio:paInicio,periodo_aquisitivo_fim:paFim,
+    assinado:false,assinado_em:null,
+    status:'ativo',cancelado_obs:null,
+    created_by:currentUser.username,timestamp:new Date().toISOString(),
+  };
+  try{
+    const h=await sbHeaders();
+    const [r1,r2]=await Promise.all([
+      fetch(`${SB_URL}/rest/v1/ferias`,{
+        method:'POST',headers:{...h,'Prefer':'resolution=merge-duplicates'},
+        body:JSON.stringify([newRec]),signal:_sbAbort()
+      }),
+      fetch(`${SB_URL}/rest/v1/ferias?id=eq.${encodeURIComponent(id)}`,{
+        method:'PATCH',headers:{...h,'Prefer':'return=representation'},
+        body:JSON.stringify({status:'cancelado',cancelado_obs:`Alterado em ${hoje}`}),signal:_sbAbort()
+      })
+    ]);
+    if(!r1.ok||!r2.ok) throw new Error('save failed');
+    old.status='cancelado';
+    old.cancelado_obs=`Alterado em ${hoje}`;
+    feriasList.push(newRec);
+    feriasList.sort((a,b)=>a.data_inicio.localeCompare(b.data_inicio));
+    closeEditFerias();
+    showToast('Férias atualizadas ✓ — aguardando nova assinatura do funcionário','ok');
+    _buildFeriasCalendar();
+    _buildFeriasTable();
+  }catch(e){showToast('Erro ao salvar alterações','error');}
+}
+
 function faCalcDias(){
   const i=document.getElementById('fa-inicio').value;
   const f=document.getElementById('fa-fim').value;
@@ -11416,6 +11536,7 @@ function faCalcDias(){
 }
 
 async function confirmAddFerias(){
+  if(!isAdmin()) return;
   const usuario=document.getElementById('fa-usuario').value;
   const inicio=document.getElementById('fa-inicio').value;
   const fim=document.getElementById('fa-fim').value;
