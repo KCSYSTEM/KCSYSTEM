@@ -10766,7 +10766,7 @@ function _calMonthOf(monthOff=0){
   return {year:y,month:m};
 }
 
-function _calEventsFor(ds){ return calEvents.filter(e=>e.date===ds); }
+function _calEventsFor(ds){ return calEvents.filter(e=>(e.data_prevista||e.date)===ds); }
 
 function _calDashes(evs, max){
   if(!evs.length) return '';
