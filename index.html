@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.16</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.18</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -10767,6 +10767,14 @@ function _calMonthOf(monthOff=0){
 }
 
 function _calEventsFor(ds){ return calEvents.filter(e=>(e.data_prevista||e.date)===ds); }
+function _calRespOpts(selected=''){
+  const opts=['<option value="">— Responsável —</option>'];
+  Object.values(perfisCache).filter(u=>!u.bloqueado).sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(u=>{
+    const s=(u.name||'')===(selected||'')?' selected':'';
+    opts.push(`<option value="${(u.name||'').replace(/"/g,'&quot;')}"${s}>${u.name||''}</option>`);
+  });
+  return opts.join('');
+}
 
 function _calDashes(evs, max){
   if(!evs.length) return '';
@@ -11001,7 +11009,7 @@ function openAddEvent(ds){
           </div>
           <div>
             <label style="font-size:11px;font-weight:700;color:var(--text2);">RESPONSÁVEL <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
-            <input type="text" id="cal-new-resp" placeholder="Nome do responsável" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            <select id="cal-new-resp" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">${_calRespOpts()}</select>
           </div>
           <div>
             <label style="font-size:11px;font-weight:700;color:var(--text2);">DATA PREVISTA DE CONCLUSÃO <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
@@ -11657,7 +11665,7 @@ function openEditCalEvent(id){
           </div>
           <div>
             <label style="font-size:11px;font-weight:700;color:var(--text2);">RESPONSÁVEL <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
-            <input type="text" id="cal-edit-resp" value="${(ev.responsavel||'').replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            <select id="cal-edit-resp" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">${_calRespOpts(ev.responsavel||'')}</select>
           </div>
           <div>
             <label style="font-size:11px;font-weight:700;color:var(--text2);">DATA PREVISTA DE CONCLUSÃO <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
