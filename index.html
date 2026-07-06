@@ -863,11 +863,38 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
   </div>
 
+  <!-- VIEW FÉRIAS -->
+  <div id="pview-ferias" class="pview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div><div class="view-title">Férias</div><div class="view-sub">Controle de férias dos funcionários</div></div>
+      <div id="ferias-admin-btn" style="display:none;">
+        <button onclick="openAddFerias(null)" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">+ Férias</button>
+      </div>
+    </div>
+    <div style="padding:0 16px 20px;display:flex;flex-direction:column;gap:14px;">
+      <!-- Seletor de ano -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+        <button class="cal-nav-btn" onclick="feriasPrevYear()">‹</button>
+        <div id="ferias-year-label" style="font-size:20px;font-weight:800;color:var(--text);min-width:60px;text-align:center;">—</div>
+        <button class="cal-nav-btn" onclick="feriasNextYear()">›</button>
+      </div>
+      <!-- Filtro funcionário (apenas admin) -->
+      <div id="ferias-filter-wrap"></div>
+      <!-- Legenda de cores -->
+      <div id="ferias-legend" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+      <!-- Grade com os 12 meses -->
+      <div id="ferias-cal-grid"></div>
+      <!-- Tabela resumo -->
+      <div id="ferias-table"></div>
+    </div>
+  </div>
+
   <!-- Nav abas — rodapé -->
   <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
-    <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🎯 Metas</button>
-    <button onclick="showPessoalView('calendario')" id="pnav-calendario" class="pessoal-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📅 Calendário</button>
-    <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🕐 Ponto</button>
+    <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🎯 Metas</button>
+    <button onclick="showPessoalView('calendario')" id="pnav-calendario" class="pessoal-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📅 Calendário</button>
+    <button onclick="showPessoalView('ferias')" id="pnav-ferias" class="pessoal-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🌴 Férias</button>
+    <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav" style="flex:1;padding:10px 4px;font-size:11px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🕐 Ponto</button>
   </div>
 </div>
 
@@ -9866,6 +9893,7 @@ function showPessoalView(v) {
   if (v === 'metas') setTimeout(renderMetas, 0);
   if (v === 'ponto') setTimeout(renderPonto, 0);
   if (v === 'calendario') setTimeout(renderCalendario, 0);
+  if (v === 'ferias') setTimeout(renderFerias, 0);
 }
 
 
@@ -11097,6 +11125,326 @@ function _buildActivityTable(){
     ${section('A Fazer',pending)}
     ${section('Concluídas',done)}
   </div>`;
+}
+
+// ===== MÓDULO PESSOAL — FÉRIAS =====
+let feriasList = [];
+let _feriasYear = new Date().getFullYear();
+let _feriasFiltroUsuario = '';
+let _feriasPerfis = [];
+const FERIAS_PALETTE = ['#4CAF50','#2196F3','#FF9800','#E91E63','#9C27B0','#00BCD4','#FF5722','#795548','#607D8B'];
+let _feriasColorMap = {};
+
+function _feriasColor(usuario){
+  if(!_feriasColorMap[usuario]){
+    const idx=Object.keys(_feriasColorMap).length;
+    _feriasColorMap[usuario]=FERIAS_PALETTE[idx%FERIAS_PALETTE.length];
+  }
+  return _feriasColorMap[usuario];
+}
+
+function _fmtDate(ds){
+  if(!ds) return '—';
+  const p=String(ds).slice(0,10).split('-');
+  return `${p[2]}/${p[1]}/${p[0]}`;
+}
+
+async function _loadFeriasPerfis(){
+  if(_feriasPerfis.length) return;
+  try{
+    const h=await sbHeaders();
+    const r=await fetch(`${SB_URL}/rest/v1/perfis?select=username,nome&order=nome.asc`,{headers:h,signal:_sbAbort()});
+    if(!r.ok) throw new Error(await r.text());
+    _feriasPerfis=await r.json();
+  }catch(e){console.warn('_loadFeriasPerfis',e);_feriasPerfis=[];}
+}
+
+async function loadFerias(){
+  try{
+    const h=await sbHeaders();
+    const r=await fetch(`${SB_URL}/rest/v1/ferias?select=*&order=data_inicio.asc`,{headers:h,signal:_sbAbort()});
+    if(!r.ok) throw new Error(await r.text());
+    feriasList=await r.json();
+  }catch(e){console.warn('loadFerias',e);feriasList=[];}
+}
+
+async function renderFerias(){
+  document.getElementById('ferias-admin-btn').style.display=isAdmin()?'block':'none';
+  await _loadFeriasPerfis();
+  if(!feriasList.length) await loadFerias();
+  _feriasColorMap={};
+  [...new Set(feriasList.map(f=>f.usuario))].sort().forEach(u=>_feriasColor(u));
+  if(!isAdmin()) _feriasFiltroUsuario=currentUser.username;
+  _buildFeriasFilter();
+  _buildFeriasCalendar();
+  _buildFeriasTable();
+}
+
+function _buildFeriasFilter(){
+  const el=document.getElementById('ferias-filter-wrap');
+  if(!el) return;
+  if(!isAdmin()){el.innerHTML='';return;}
+  const opts=`<option value="">Todos os funcionários</option>`+
+    _feriasPerfis.map(p=>`<option value="${p.username}"${_feriasFiltroUsuario===p.username?' selected':''}>${p.nome||p.username}</option>`).join('');
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
+    <label style="font-size:11px;font-weight:700;color:var(--text2);">FUNCIONÁRIO:</label>
+    <select onchange="_feriasFiltroUsuario=this.value;_buildFeriasCalendar();_buildFeriasTable();_buildFeriasLegend();" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">${opts}</select>
+  </div>`;
+}
+
+function _buildFeriasLegend(){
+  const el=document.getElementById('ferias-legend');
+  if(!el) return;
+  const list=_feriasFiltroUsuario?feriasList.filter(f=>f.usuario===_feriasFiltroUsuario):feriasList;
+  const usuarios=[...new Map(list.map(f=>[f.usuario,f.nome])).entries()];
+  el.innerHTML=usuarios.map(([u,n])=>
+    `<div style="display:flex;align-items:center;gap:5px;">
+       <div style="width:12px;height:12px;border-radius:3px;background:${_feriasColor(u)};flex-shrink:0;"></div>
+       <span style="font-size:12px;color:var(--text2);">${n||u}</span>
+     </div>`).join('');
+}
+
+function _feriasForDay(ds){
+  const list=_feriasFiltroUsuario?feriasList.filter(f=>f.usuario===_feriasFiltroUsuario):feriasList;
+  return list.filter(f=>f.data_inicio<=ds&&ds<=f.data_fim);
+}
+
+function _buildFeriasCalendar(){
+  const el=document.getElementById('ferias-cal-grid');
+  if(!el) return;
+  document.getElementById('ferias-year-label').textContent=_feriasYear;
+  _buildFeriasLegend();
+  const today=_calDs(new Date());
+  const DIAS=['D','S','T','Q','Q','S','S'];
+  let html=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">`;
+  for(let m=1;m<=12;m++){
+    const firstDay=new Date(_feriasYear,m-1,1).getDay();
+    const daysInM=new Date(_feriasYear,m,0).getDate();
+    const mStr=String(m).padStart(2,'0');
+    let grid=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;">`;
+    DIAS.forEach(d=>{ grid+=`<div style="text-align:center;font-size:9px;font-weight:700;color:var(--text2);padding:2px 0;">${d}</div>`; });
+    for(let i=0;i<firstDay;i++) grid+=`<div></div>`;
+    for(let d=1;d<=daysInM;d++){
+      const ds=`${_feriasYear}-${mStr}-${String(d).padStart(2,'0')}`;
+      const fds=_feriasForDay(ds);
+      const isToday=ds===today;
+      let bg='',title='',txtClr='var(--text)';
+      if(fds.length===1){bg=_feriasColor(fds[0].usuario);title=fds[0].nome;txtClr='#fff';}
+      else if(fds.length>1){bg='#555';title=fds.map(f=>f.nome).join(', ');txtClr='#fff';}
+      const todayRing=isToday?'outline:2px solid var(--accent);outline-offset:-1px;':'';
+      grid+=`<div title="${title}" onclick="${isAdmin()?`openAddFerias('${ds}')`:'void 0'}" style="text-align:center;font-size:10px;padding:2px 1px;border-radius:3px;cursor:${isAdmin()?'pointer':'default'};background:${bg};color:${txtClr};font-weight:${isToday?'800':'400'};${todayRing}">${d}</div>`;
+    }
+    grid+='</div>';
+    html+=`<div style="background:var(--surface);border-radius:12px;border:1.5px solid var(--border);padding:10px;">
+      <div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:6px;">${CAL_MESES[m-1]}</div>
+      ${grid}
+    </div>`;
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function feriasPrevYear(){ _feriasYear--; _buildFeriasCalendar(); _buildFeriasTable(); }
+function feriasNextYear(){ _feriasYear++; _buildFeriasCalendar(); _buildFeriasTable(); }
+
+function _buildFeriasTable(){
+  const el=document.getElementById('ferias-table');
+  if(!el) return;
+  const list=_feriasFiltroUsuario?feriasList.filter(f=>f.usuario===_feriasFiltroUsuario):feriasList;
+  if(!list.length){
+    el.innerHTML=`<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px;">Nenhuma férias registrada.</div>`;
+    return;
+  }
+  const admin=isAdmin();
+  const INS=`style="text-align:left;padding:7px 8px;font-size:12px;color:var(--text);border-bottom:1px solid var(--border);"`;
+  const THS=`style="text-align:left;padding:5px 8px;font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1.5px solid var(--border);white-space:nowrap;"`;
+
+  // Agrupar por usuario + periodo_aquisitivo_inicio
+  const groups={};
+  list.forEach(f=>{
+    const k=`${f.usuario}|||${f.periodo_aquisitivo_inicio}`;
+    if(!groups[k]) groups[k]={usuario:f.usuario,nome:f.nome,paInicio:f.periodo_aquisitivo_inicio,paFim:f.periodo_aquisitivo_fim,recs:[]};
+    groups[k].recs.push(f);
+  });
+  const sorted=Object.values(groups).sort((a,b)=>(a.nome||'').localeCompare(b.nome||'')||(a.paInicio||'').localeCompare(b.paInicio||''));
+
+  let rows='';
+  sorted.forEach(g=>{
+    const totalDias=g.recs.reduce((s,r)=>s+r.dias,0);
+    const restante=30-totalDias;
+    const paStr=`${_fmtDate(g.paInicio)} — ${_fmtDate(g.paFim)}`;
+    const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${_feriasColor(g.usuario)};margin-right:5px;flex-shrink:0;"></span>`;
+    const assinados=g.recs.filter(r=>r.assinado).length;
+    const sigGrp=assinados===g.recs.length
+      ?`<span style="color:#2e7d32;font-weight:800;font-size:11px;">✅ Todos assinados</span>`
+      :`<span style="color:#e65100;font-weight:700;font-size:11px;">⏳ ${assinados}/${g.recs.length} assinados</span>`;
+    rows+=`<tr style="background:var(--surface);">
+      <td ${INS}><span style="display:inline-flex;align-items:center;">${dot}${g.nome}</span></td>
+      <td ${INS} style="font-size:11px;">${paStr}</td>
+      <td ${INS}><b>${totalDias}</b>/30 dias${restante>0?` <span style="color:#c62828;font-size:11px;">(faltam ${restante})</span>`:` <span style="color:#2e7d32;font-size:11px;">✓</span>`}</td>
+      <td ${INS}>${sigGrp}</td>
+      <td ${INS}></td>
+    </tr>`;
+    // Sub-linhas por período
+    g.recs.forEach(r=>{
+      const isMine=r.usuario===currentUser.username;
+      let sigCell='';
+      if(r.assinado) sigCell=`<span style="color:#2e7d32;font-size:11px;white-space:nowrap;">✅ ${_fmtDate((r.assinado_em||'').slice(0,10))}</span>`;
+      else if(isMine) sigCell=`<button onclick="assinarFerias('${r.id}')" style="padding:3px 10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✍ Assinar</button>`;
+      else sigCell=`<span style="color:var(--text2);font-size:11px;">Aguardando</span>`;
+      const delBtn=admin?`<button onclick="deleteFerias('${r.id}')" style="padding:2px 7px;background:none;border:1.5px solid var(--border);border-radius:6px;font-size:11px;color:var(--text2);cursor:pointer;">✕</button>`:'';
+      rows+=`<tr style="background:var(--bg);">
+        <td ${INS} style="padding-left:20px;font-size:11px;color:var(--text2);">↳ ${_fmtDate(r.data_inicio)} a ${_fmtDate(r.data_fim)}</td>
+        <td ${INS} style="font-size:11px;color:var(--text2);">Período ${g.recs.indexOf(r)+1}</td>
+        <td ${INS} style="font-size:12px;font-weight:700;">${r.dias} dias</td>
+        <td ${INS}>${sigCell}</td>
+        <td ${INS}>${delBtn}</td>
+      </tr>`;
+    });
+  });
+
+  el.innerHTML=`<div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow-x:auto;">
+    <div style="padding:12px 14px 6px;font-size:13px;font-weight:800;color:var(--text);">Resumo de Férias</div>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th ${THS}>Funcionário</th><th ${THS}>Período Aquisitivo</th>
+        <th ${THS}>Dias Marcados</th><th ${THS}>Assinatura</th><th ${THS}></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function openAddFerias(ds){
+  if(!isAdmin()) return;
+  const date=ds||_calDs(new Date());
+  document.getElementById('ferias-add-overlay')?.remove();
+  const opts=_feriasPerfis.map(p=>`<option value="${p.username}">${p.nome||p.username}</option>`).join('');
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="ferias-add-overlay" onclick="if(event.target===this)closeAddFerias()" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:450;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:460px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1.5px solid var(--border);">
+          <div style="font-size:15px;font-weight:800;color:var(--text);">🌴 Lançar Férias</div>
+          <button onclick="closeAddFerias()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;line-height:1;">×</button>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">FUNCIONÁRIO</label>
+            <select id="fa-usuario" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"><option value="">Selecione...</option>${opts}</select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);">INÍCIO DAS FÉRIAS</label>
+              <input type="date" id="fa-inicio" value="${date}" onchange="faCalcDias()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);">FIM DAS FÉRIAS</label>
+              <input type="date" id="fa-fim" onchange="faCalcDias()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            </div>
+          </div>
+          <div id="fa-dias-calc" style="background:var(--bg);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--accent);">Selecione início e fim</div>
+          <div style="border-top:1px solid var(--border);padding-top:10px;">
+            <div style="font-size:12px;font-weight:800;color:var(--text2);margin-bottom:10px;">PERÍODO AQUISITIVO (tempo trabalhado que originou estas férias)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">INÍCIO DO PERÍODO</label>
+                <input type="date" id="fa-pa-inicio" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">FIM DO PERÍODO</label>
+                <input type="date" id="fa-pa-fim" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+            </div>
+          </div>
+          <button onclick="confirmAddFerias()" style="padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+        </div>
+      </div>
+    </div>`);
+}
+
+function closeAddFerias(){ document.getElementById('ferias-add-overlay')?.remove(); }
+
+function faCalcDias(){
+  const i=document.getElementById('fa-inicio').value;
+  const f=document.getElementById('fa-fim').value;
+  const el=document.getElementById('fa-dias-calc');
+  if(!i||!f){el.textContent='Selecione início e fim';return;}
+  const diff=Math.round((new Date(f+'T12:00:00')-new Date(i+'T12:00:00'))/86400000)+1;
+  el.textContent=diff>0?`${diff} dias de férias`:'Data de fim deve ser após o início';
+}
+
+async function confirmAddFerias(){
+  const usuario=document.getElementById('fa-usuario').value;
+  const inicio=document.getElementById('fa-inicio').value;
+  const fim=document.getElementById('fa-fim').value;
+  const paInicio=document.getElementById('fa-pa-inicio').value;
+  const paFim=document.getElementById('fa-pa-fim').value;
+  if(!usuario){showToast('Selecione o funcionário','error');return;}
+  if(!inicio||!fim){showToast('Selecione as datas das férias','error');return;}
+  if(!paInicio||!paFim){showToast('Preencha o período aquisitivo','error');return;}
+  const dias=Math.round((new Date(fim+'T12:00:00')-new Date(inicio+'T12:00:00'))/86400000)+1;
+  if(dias<=0){showToast('Data de fim deve ser após o início','error');return;}
+  const perfil=_feriasPerfis.find(p=>p.username===usuario);
+  const rec={
+    id:'ferias_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+    usuario,nome:perfil?.nome||usuario,
+    data_inicio:inicio,data_fim:fim,dias,
+    periodo_aquisitivo_inicio:paInicio,periodo_aquisitivo_fim:paFim,
+    assinado:false,assinado_em:null,
+    created_by:currentUser.username,timestamp:new Date().toISOString(),
+  };
+  try{
+    const h=await sbHeaders();
+    const r=await fetch(`${SB_URL}/rest/v1/ferias`,{
+      method:'POST',headers:{...h,'Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify([rec]),signal:_sbAbort()
+    });
+    if(!r.ok) throw new Error(await r.text());
+    feriasList.push(rec);
+    feriasList.sort((a,b)=>a.data_inicio.localeCompare(b.data_inicio));
+    _feriasColor(usuario);
+    closeAddFerias();
+    showToast('Férias lançadas ✓','ok');
+    _buildFeriasCalendar();
+    _buildFeriasTable();
+  }catch(e){showToast('Erro ao salvar','error');}
+}
+
+async function deleteFerias(id){
+  if(!isAdmin()) return;
+  showConfirm('Remover férias','Deseja remover este registro de férias?',async()=>{
+    try{
+      const h=await sbHeaders();
+      const r=await fetch(`${SB_URL}/rest/v1/ferias?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:h,signal:_sbAbort()});
+      if(!r.ok) throw new Error(await r.text());
+      feriasList=feriasList.filter(f=>f.id!==id);
+      showToast('Registro removido','ok');
+      _buildFeriasCalendar();
+      _buildFeriasTable();
+    }catch(e){showToast('Erro ao remover','error');}
+  });
+}
+
+async function assinarFerias(id){
+  const f=feriasList.find(r=>r.id===id);
+  if(!f) return;
+  if(f.usuario!==currentUser.username){showToast('Apenas o próprio funcionário pode assinar','error');return;}
+  showConfirm('Assinatura Digital',
+    `Ao assinar, ${f.nome||f.usuario} confirma que leu e concorda com as datas de férias de ${_fmtDate(f.data_inicio)} a ${_fmtDate(f.data_fim)} (${f.dias} dias). Esta ação não pode ser desfeita.`,
+    async()=>{
+      try{
+        const agora=new Date().toISOString();
+        const h=await sbHeaders();
+        const r=await fetch(`${SB_URL}/rest/v1/ferias?id=eq.${encodeURIComponent(id)}`,{
+          method:'PATCH',headers:{...h,'Prefer':'return=representation'},
+          body:JSON.stringify({assinado:true,assinado_em:agora}),signal:_sbAbort()
+        });
+        if(!r.ok) throw new Error(await r.text());
+        f.assinado=true; f.assinado_em=agora;
+        showToast('Férias assinadas digitalmente ✓','ok');
+        _buildFeriasTable();
+      }catch(e){showToast('Erro ao assinar','error');}
+    });
 }
 
 async function toggleCalEventStatus(id){
