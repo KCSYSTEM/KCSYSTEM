@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.16</title>
+<title>KC System v7.17</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -356,6 +356,37 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
 input[type="number"]{-moz-appearance:textfield;}
 
+/* ===== CALENDÁRIO ===== */
+.cal-card{background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1.5px solid var(--border);gap:8px;}
+.cal-nav-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:6px 10px;border-radius:8px;font-size:18px;font-weight:700;line-height:1;transition:background .15s,color .15s;}
+.cal-nav-btn:hover{background:var(--accent-dim);color:var(--accent);}
+.cal-title-block{text-align:center;flex:1;}
+.cal-title-block .cal-main-label{font-size:14px;font-weight:800;color:var(--text);cursor:pointer;}
+.cal-title-block input[type=date],.cal-title-block input[type=month]{position:absolute;opacity:0;pointer-events:none;width:0;height:0;}
+.cal-grid-week{display:grid;grid-template-columns:repeat(5,1fr);}
+.cal-grid-month{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-day-header{text-align:center;padding:7px 2px;font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--border);}
+.cal-day-cell{padding:6px 5px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;position:relative;min-height:52px;}
+.cal-day-cell:last-child{border-right:none;}
+.cal-grid-week .cal-day-cell{min-height:72px;padding:8px 6px;}
+.cal-day-cell:hover{background:var(--accent-dim);}
+.cal-day-cell.cal-today .cal-day-num{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;}
+.cal-grid-week .cal-day-cell.cal-today .cal-day-num{width:26px;height:26px;font-size:14px;}
+.cal-day-cell.cal-other-month{opacity:.38;}
+.cal-day-num{font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;width:22px;}
+.cal-grid-week .cal-day-num{font-size:15px;font-weight:800;width:26px;}
+.cal-dashes{display:flex;flex-direction:column;gap:2px;margin-top:2px;}
+.cal-event-dash{height:4px;border-radius:2px;width:100%;}
+.cal-grid-week .cal-event-dash{height:5px;}
+.cal-more{font-size:9px;color:var(--text2);font-weight:700;margin-top:1px;}
+/* Day popup */
+.cal-popup-ev{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.cal-popup-ev:last-child{border-bottom:none;}
+.cal-ev-bar{width:4px;min-height:38px;border-radius:2px;flex-shrink:0;margin-top:2px;}
+.cal-ev-type{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;}
+.cal-ev-title{font-size:14px;font-weight:700;color:var(--text);margin:2px 0;}
+.cal-ev-desc{font-size:12px;color:var(--text2);line-height:1.4;}
 </style>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://fsxoyytkmzqonrgfapgm.supabase.co wss://fsxoyytkmzqonrgfapgm.supabase.co https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' data: https:; object-src 'none';">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -788,10 +819,52 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
   </div>
 
+  <!-- VIEW CALENDÁRIO -->
+  <div id="pview-calendario" class="pview" style="flex:1;overflow-y:auto;display:none;">
+    <div class="view-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div><div class="view-title">Calendário</div><div class="view-sub">Atividades programadas</div></div>
+      <div id="cal-admin-btn" style="display:none;">
+        <button onclick="openAddEvent(null)" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">+ Atividade</button>
+      </div>
+    </div>
+    <div style="padding:0 16px 20px;display:flex;flex-direction:column;gap:16px;">
+
+      <!-- Card semana -->
+      <div class="cal-card">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="calWeekPrev()">‹</button>
+          <div class="cal-title-block">
+            <div class="cal-main-label" onclick="document.getElementById('cal-week-picker').showPicker?document.getElementById('cal-week-picker').showPicker():document.getElementById('cal-week-picker').focus()" id="cal-week-label">—</div>
+            <input type="date" id="cal-week-picker" onchange="calWeekGoTo(this.value)">
+          </div>
+          <button class="cal-nav-btn" onclick="calWeekNext()">›</button>
+        </div>
+        <div id="cal-week-grid"></div>
+      </div>
+
+      <!-- Card mês -->
+      <div class="cal-card">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="calMonthPrev()">‹</button>
+          <div class="cal-title-block">
+            <div class="cal-main-label" onclick="document.getElementById('cal-month-picker').showPicker?document.getElementById('cal-month-picker').showPicker():document.getElementById('cal-month-picker').focus()" id="cal-month-label">—</div>
+            <input type="month" id="cal-month-picker" onchange="calMonthGoTo(this.value)">
+          </div>
+          <button class="cal-nav-btn" onclick="calMonthNext()">›</button>
+        </div>
+        <div id="cal-month-grid"></div>
+      </div>
+
+      <!-- Legenda -->
+      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:4px 0;" id="cal-legend"></div>
+    </div>
+  </div>
+
   <!-- Nav abas — rodapé -->
   <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
-    <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🎯 Metas</button>
-    <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:var(--accent-dim);color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">🕐 Ponto</button>
+    <button onclick="showPessoalView('metas')" id="pnav-metas" class="pessoal-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🎯 Metas</button>
+    <button onclick="showPessoalView('calendario')" id="pnav-calendario" class="pessoal-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📅 Calendário</button>
+    <button onclick="showPessoalView('ponto')" id="pnav-ponto" class="pessoal-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🕐 Ponto</button>
   </div>
 </div>
 
@@ -9789,6 +9862,7 @@ function showPessoalView(v) {
   }
   if (v === 'metas') setTimeout(renderMetas, 0);
   if (v === 'ponto') setTimeout(renderPonto, 0);
+  if (v === 'calendario') setTimeout(renderCalendario, 0);
 }
 
 
@@ -10598,6 +10672,335 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
 }
 // ── Inicialização ────────────────────────────────────────────
 loadPonto();
+
+// ===== MÓDULO PESSOAL — CALENDÁRIO =====
+let calEvents = [];
+let _calWeekOff  = 0;
+let _calMonthOff = 0;
+let _calDayPopupDs = null;
+
+const CAL_TYPES = {
+  coleta:       {label:'Coleta',       color:'#4CAF50'},
+  biometria:    {label:'Biometria',    color:'#FF9800'},
+  manejo:       {label:'Manejo',       color:'#2196F3'},
+  arracoamento: {label:'Arraçoamento', color:'#9C27B0'},
+  limpeza:      {label:'Limpeza',      color:'#00BCD4'},
+  medicamento:  {label:'Medicamento',  color:'#F44336'},
+  outro:        {label:'Outro',        color:'#607D8B'},
+};
+
+const CAL_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CAL_MESES_S = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+function _calDs(d){ return d.toISOString().split('T')[0]; }
+
+function _calMondayOf(weekOff=0){
+  const d=new Date(); d.setHours(0,0,0,0);
+  const dow=d.getDay()||7; // 1=Mon..7=Sun
+  d.setDate(d.getDate()-(dow-1)+weekOff*7);
+  return d;
+}
+
+function _calMonthOf(monthOff=0){
+  const now=new Date();
+  let m=now.getMonth()+1+monthOff, y=now.getFullYear();
+  while(m>12){m-=12;y++;} while(m<1){m+=12;y--;}
+  return {year:y,month:m};
+}
+
+function _calEventsFor(ds){ return calEvents.filter(e=>e.date===ds); }
+
+function _calDashes(evs, max){
+  if(!evs.length) return '';
+  const visible=evs.slice(0,max);
+  let h=`<div class="cal-dashes">`;
+  visible.forEach(ev=>{
+    const c=(CAL_TYPES[ev.type]||CAL_TYPES.outro).color;
+    h+=`<div class="cal-event-dash" style="background:${c};"></div>`;
+  });
+  if(evs.length>max) h+=`<div class="cal-more">+${evs.length-max}</div>`;
+  h+=`</div>`;
+  return h;
+}
+
+// ── Load / Save / Delete ─────────────────────────────────────
+async function loadCalendarEvents(){
+  try{
+    const h=await sbHeaders();
+    const r=await fetch(`${SB_URL}/rest/v1/calendar_events?select=*&order=date.asc,timestamp.asc`,{headers:{...h,'Prefer':'return=representation'},signal:_sbAbort()});
+    if(!r.ok) throw new Error(await r.text());
+    calEvents=await r.json();
+  }catch(e){console.warn('loadCalendarEvents',e);calEvents=[];}
+}
+
+async function _calSaveEvent(ev){
+  const h=await sbHeaders();
+  const r=await fetch(`${SB_URL}/rest/v1/calendar_events`,{
+    method:'POST',headers:{...h,'Prefer':'resolution=merge-duplicates'},
+    body:JSON.stringify([ev]),signal:_sbAbort()
+  });
+  return r.ok;
+}
+
+async function _calDeleteEvent(id){
+  const h=await sbHeaders();
+  const r=await fetch(`${SB_URL}/rest/v1/calendar_events?id=eq.${encodeURIComponent(id)}`,{method:'DELETE',headers:h,signal:_sbAbort()});
+  return r.ok;
+}
+
+// ── Render principal ─────────────────────────────────────────
+async function renderCalendario(){
+  document.getElementById('cal-admin-btn').style.display=isAdmin()?'block':'none';
+  if(!calEvents.length) await loadCalendarEvents();
+  _buildWeekCal();
+  _buildMonthCal();
+  _buildCalLegend();
+}
+
+function _buildCalLegend(){
+  const el=document.getElementById('cal-legend');
+  if(!el) return;
+  el.innerHTML=Object.entries(CAL_TYPES).map(([,v])=>
+    `<div style="display:flex;align-items:center;gap:5px;">
+       <div style="width:14px;height:4px;border-radius:2px;background:${v.color};"></div>
+       <span style="font-size:11px;color:var(--text2);font-weight:600;">${v.label}</span>
+     </div>`
+  ).join('');
+}
+
+// ── Calendário Semanal ───────────────────────────────────────
+function _buildWeekCal(){
+  const monday=_calMondayOf(_calWeekOff);
+  const fri=new Date(monday); fri.setDate(fri.getDate()+4);
+  const today=_calDs(new Date());
+
+  document.getElementById('cal-week-label').textContent=
+    `${monday.getDate()}/${monday.getMonth()+1} – ${fri.getDate()}/${fri.getMonth()+1} ${fri.getFullYear()}`;
+  document.getElementById('cal-week-picker').value=_calDs(monday);
+
+  const dayNames=['Seg','Ter','Qua','Qui','Sex'];
+  let h='<div class="cal-grid-week">';
+  dayNames.forEach(n=>{ h+=`<div class="cal-day-header">${n}</div>`; });
+  for(let i=0;i<5;i++){
+    const d=new Date(monday); d.setDate(d.getDate()+i);
+    const ds=_calDs(d);
+    const evs=_calEventsFor(ds);
+    const isToday=ds===today;
+    h+=`<div class="cal-day-cell${isToday?' cal-today':''}" onclick="openDayPopup('${ds}')">`;
+    h+=`<div class="cal-day-num">${d.getDate()}</div>`;
+    h+=_calDashes(evs,4);
+    h+=`</div>`;
+  }
+  h+='</div>';
+  document.getElementById('cal-week-grid').innerHTML=h;
+}
+
+function calWeekPrev(){ _calWeekOff--; _buildWeekCal(); }
+function calWeekNext(){ _calWeekOff++; _buildWeekCal(); }
+function calWeekGoTo(ds){
+  const d=new Date(ds+'T12:00:00');
+  const baseMonday=_calMondayOf(0);
+  _calWeekOff=Math.round((d-baseMonday)/(7*86400000));
+  _buildWeekCal();
+}
+
+// ── Calendário Mensal ────────────────────────────────────────
+function _buildMonthCal(){
+  const {year,month}=_calMonthOf(_calMonthOff);
+  const today=_calDs(new Date());
+
+  document.getElementById('cal-month-label').textContent=`${CAL_MESES[month-1]} ${year}`;
+  document.getElementById('cal-month-picker').value=`${year}-${String(month).padStart(2,'0')}`;
+
+  const firstDow=new Date(year,month-1,1).getDay()||7; // 1=Mon..7=Sun
+  const startPad=firstDow-1;
+  const daysInM=new Date(year,month,0).getDate();
+  const prevDaysInM=new Date(year,month-1,0).getDate();
+  const prevM=month===1?12:month-1, prevY=month===1?year-1:year;
+  const nextM=month===12?1:month+1, nextY=month===12?year+1:year;
+
+  let h='<div class="cal-grid-month">';
+  ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].forEach(n=>{ h+=`<div class="cal-day-header">${n}</div>`; });
+
+  for(let i=startPad-1;i>=0;i--){
+    const d=prevDaysInM-i;
+    const ds=`${prevY}-${String(prevM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    h+=`<div class="cal-day-cell cal-other-month" onclick="openDayPopup('${ds}')">`;
+    h+=`<div class="cal-day-num">${d}</div>${_calDashes(_calEventsFor(ds),2)}</div>`;
+  }
+
+  for(let d=1;d<=daysInM;d++){
+    const ds=`${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const evs=_calEventsFor(ds);
+    const isToday=ds===today;
+    h+=`<div class="cal-day-cell${isToday?' cal-today':''}" onclick="openDayPopup('${ds}')">`;
+    h+=`<div class="cal-day-num">${d}</div>${_calDashes(evs,2)}</div>`;
+  }
+
+  const totalUsed=startPad+daysInM;
+  const rem=(7-(totalUsed%7))%7;
+  for(let d=1;d<=rem;d++){
+    const ds=`${nextY}-${String(nextM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    h+=`<div class="cal-day-cell cal-other-month" onclick="openDayPopup('${ds}')">`;
+    h+=`<div class="cal-day-num">${d}</div>${_calDashes(_calEventsFor(ds),2)}</div>`;
+  }
+
+  h+='</div>';
+  document.getElementById('cal-month-grid').innerHTML=h;
+}
+
+function calMonthPrev(){ _calMonthOff--; _buildMonthCal(); }
+function calMonthNext(){ _calMonthOff++; _buildMonthCal(); }
+function calMonthGoTo(val){
+  const [y,m]=val.split('-').map(Number);
+  const now=new Date();
+  _calMonthOff=(y-now.getFullYear())*12+(m-(now.getMonth()+1));
+  _buildMonthCal();
+}
+
+// ── Popup do dia ─────────────────────────────────────────────
+function openDayPopup(ds){
+  _calDayPopupDs=ds;
+  const [y,m,d]=ds.split('-').map(Number);
+  const evs=_calEventsFor(ds);
+  const admin=isAdmin();
+  const dateLabel=`${d} de ${CAL_MESES_S[m-1]} de ${y}`;
+
+  let evHtml='';
+  if(!evs.length){
+    evHtml=`<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px 0;">Nenhuma atividade programada</div>`;
+  } else {
+    evs.forEach(ev=>{
+      const ti=CAL_TYPES[ev.type]||CAL_TYPES.outro;
+      evHtml+=`
+        <div class="cal-popup-ev" id="cal-pev-${ev.id}">
+          <div class="cal-ev-bar" style="background:${ti.color};"></div>
+          <div style="flex:1;min-width:0;">
+            <div class="cal-ev-type" style="color:${ti.color};">${ti.label}</div>
+            <div class="cal-ev-title">${ev.title}</div>
+            ${ev.description?`<div class="cal-ev-desc">${ev.description}</div>`:''}
+          </div>
+          ${admin?`<button onclick="deleteCalEvent('${ev.id}')" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:17px;padding:2px 6px;border-radius:6px;flex-shrink:0;" title="Remover">🗑</button>`:''}
+        </div>`;
+    });
+  }
+
+  const addBtn=admin
+    ?`<button onclick="openAddEvent('${ds}')" style="width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">+ Adicionar atividade</button>`
+    :'';
+
+  closeDayPopup();
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="cal-day-overlay" onclick="if(event.target===this)closeDayPopup()" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:400px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;border-bottom:1.5px solid var(--border);flex-shrink:0;">
+          <div>
+            <div style="font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;">Atividades</div>
+            <div style="font-size:17px;font-weight:800;color:var(--text);">${dateLabel}</div>
+          </div>
+          <button onclick="closeDayPopup()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;padding:4px;line-height:1;">×</button>
+        </div>
+        <div style="padding:0 16px;overflow-y:auto;flex:1;" id="cal-day-evlist">${evHtml}</div>
+        <div style="padding:12px 16px;flex-shrink:0;">${addBtn}</div>
+      </div>
+    </div>`);
+}
+
+function closeDayPopup(){
+  const el=document.getElementById('cal-day-overlay');
+  if(el) el.remove();
+}
+
+// ── Modal adicionar atividade (admin) ────────────────────────
+function openAddEvent(ds){
+  if(!isAdmin()) return;
+  const date=ds||_calDayPopupDs||_calDs(new Date());
+  closeDayPopup();
+  const typeOpts=Object.entries(CAL_TYPES).map(([k,v])=>
+    `<option value="${k}">${v.label}</option>`).join('');
+
+  closeAddEvent();
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="cal-add-overlay" onclick="if(event.target===this)closeAddEvent()" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:450;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1.5px solid var(--border);">
+          <div style="font-size:15px;font-weight:800;color:var(--text);">📅 Nova Atividade</div>
+          <button onclick="closeAddEvent()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;line-height:1;">×</button>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">DATA</label>
+            <input type="date" id="cal-new-date" value="${date}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">TIPO</label>
+            <select id="cal-new-type" style="width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">${typeOpts}</select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">TÍTULO</label>
+            <input type="text" id="cal-new-title" placeholder="Ex: Coleta tanque 15" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">DESCRIÇÃO <span style="font-weight:500;color:var(--text2);">(opcional)</span></label>
+            <textarea id="cal-new-desc" rows="2" placeholder="Detalhes da atividade..." style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;resize:vertical;"></textarea>
+          </div>
+          <button onclick="confirmAddEvent()" style="padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+        </div>
+      </div>
+    </div>`);
+  document.getElementById('cal-new-title').focus();
+}
+
+function closeAddEvent(){
+  const el=document.getElementById('cal-add-overlay');
+  if(el) el.remove();
+}
+
+async function confirmAddEvent(){
+  const date=document.getElementById('cal-new-date').value;
+  const type=document.getElementById('cal-new-type').value;
+  const title=document.getElementById('cal-new-title').value.trim();
+  const desc=document.getElementById('cal-new-desc').value.trim();
+  if(!date){showToast('Selecione uma data','error');return;}
+  if(!title){showToast('Digite um título','error');return;}
+
+  const ev={
+    id:'cal_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+    date,type,title,
+    description:desc||null,
+    created_by:currentUser.username,
+    timestamp:new Date().toISOString(),
+  };
+
+  const ok=await _calSaveEvent(ev);
+  if(ok){
+    calEvents.push(ev);
+    calEvents.sort((a,b)=>a.date.localeCompare(b.date)||(a.timestamp||'').localeCompare(b.timestamp||''));
+    closeAddEvent();
+    showToast('Atividade salva ✓','ok');
+    _buildWeekCal();
+    _buildMonthCal();
+    openDayPopup(date);
+  } else {
+    showToast('Erro ao salvar','error');
+  }
+}
+
+async function deleteCalEvent(id){
+  if(!isAdmin()) return;
+  showConfirm('Remover atividade','Deseja remover esta atividade do calendário?',async()=>{
+    const ok=await _calDeleteEvent(id);
+    if(ok){
+      calEvents=calEvents.filter(e=>e.id!==id);
+      showToast('Atividade removida','ok');
+      _buildWeekCal();
+      _buildMonthCal();
+      if(_calDayPopupDs){closeDayPopup();openDayPopup(_calDayPopupDs);}
+    } else {
+      showToast('Erro ao remover','error');
+    }
+  });
+}
 </script>
 
 </body>
