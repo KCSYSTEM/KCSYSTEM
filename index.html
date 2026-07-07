@@ -2651,7 +2651,7 @@ function renderColetaPainel(){
       ${cell(fNum(l.ml,1))}
       ${cell(l.ovosPorMl!=null?fNum(l.ovosPorMl):null)}
       ${cell(l.ovosTotal!=null?fNum(l.ovosTotal):null)}
-      ${cell(l.ovosGorados!=null?l.ovosGorados+'%':null,'#e53e3e')}
+      ${cell(l.ovosGorados!=null?fNum(l.ovosGorados,2)+'%':null,'#e53e3e')}
       ${cell(l.ovosFinal!=null?fNum(l.ovosFinal):null,'var(--accent)')}
       <div style="display:flex;align-items:center;justify-content:center;padding:4px;">
         <button onclick="event.stopPropagation();deleteColetaLote('${l.lote}')"
@@ -2848,7 +2848,7 @@ function renderColeta(){
         return`<tr>
           <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
           <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${l.femeas}</td>
-          <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${parseFloat(l.ml.toFixed(1))}</td>
+          <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${fNum(l.ml,1)}</td>
           <td><input class="lancamento-input" type="number" id="col-ovosml-${i}" data-lote="${l.lote}" data-field="ovosPorMl" placeholder="—" step="0.1" inputmode="decimal" value="${last?.ovosPorMl??''}" data-initial="${last?.ovosPorMl??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
         </tr>`;
       }).join('');
@@ -2864,7 +2864,7 @@ function renderColeta(){
         const last=allLoteRecs.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||'')).find(r=>r.ovosGorados!=null);
         return`<tr>
           <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
-          <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${parseFloat(l.ml.toFixed(1))}</td>
+          <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${fNum(l.ml,1)}</td>
           <td><input class="lancamento-input" type="number" id="col-gorados-${i}" data-lote="${l.lote}" data-field="ovosGorados" placeholder="—" min="0" max="100" step="0.1" inputmode="decimal" value="${last?.ovosGorados??''}" data-initial="${last?.ovosGorados??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
         </tr>`;
       }).join('');
@@ -7537,7 +7537,7 @@ function makeTCATable(data){
   <tbody>${rows.map(r=>{
     const bio=(r.qty*r.bio/1000);
     const tca=(r.racaoG/1000/bio).toFixed(3);
-    return`<tr><td>${formatDate(r.date)}</td><td>${r.racaoG}</td><td>${bio.toFixed(1)}</td><td style="font-weight:700;color:var(--accent2);">${tca}</td></tr>`;
+    return`<tr><td>${formatDate(r.date)}</td><td>${fNum(r.racaoG)}</td><td>${fNum(bio,1)}</td><td style="font-weight:700;color:var(--accent2);">${fNum(parseFloat(tca),3)}</td></tr>`;
   }).join('')}</tbody></table>`;
   return block;
 }
@@ -9113,7 +9113,7 @@ function onRealtimeFinanceiro(row, eventType, table){
 // ============================================================
 function _finBarChart(data,color,negColor){
   if(!data.length)return'<div style="text-align:center;color:var(--text2);font-size:13px;padding:24px 0;">Sem dados</div>';
-  const fmtV=v=>{const a=Math.abs(v);if(a>=1000000)return(v/1000000).toFixed(1)+'M';if(a>=1000)return(v/1000).toFixed(1)+'k';return v.toFixed(0);};
+  const fmtV=v=>{const a=Math.abs(v);if(a>=1000000)return(v/1000000).toLocaleString('pt-BR',{maximumFractionDigits:1})+'M';if(a>=1000)return(v/1000).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k';return Math.round(v).toLocaleString('pt-BR');};
   const rotateX=data.length>8;
   const W=360,H=180,pL=44,pB=rotateX?46:26,pT=18,pR=6;
   const pw=W-pL-pR,ph=H-pT-pB;
@@ -9328,7 +9328,7 @@ function renderEstoqueMovHist(){
         <td style="padding:9px 12px;font-size:12px;color:var(--text2);">${m.date?m.date.split('-').reverse().join('-'):'—'}</td>
         <td style="padding:9px 12px;font-size:12px;color:var(--text);">${esc(nomeItem)}${m.obs?`<div style="font-size:10px;color:var(--text3);">${esc(m.obs)}</div>`:''}</td>
         <td style="padding:9px 12px;text-align:center;"><span style="font-size:11px;font-weight:700;color:${cor};background:${m.tipo==='entrada'?'rgba(22,163,74,0.1)':'rgba(220,38,38,0.1)'};border-radius:6px;padding:2px 8px;">${label}</span></td>
-        <td style="padding:9px 12px;text-align:right;font-size:13px;font-weight:700;color:${cor};">${m.tipo==='entrada'?'+':'-'}${m.qtd}</td>
+        <td style="padding:9px 12px;text-align:right;font-size:13px;font-weight:700;color:${cor};">${m.tipo==='entrada'?'+':'-'}${fNum(m.qtd,3)}</td>
         <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
           <button onclick="editEstoqueMov('${m.id}')" title="Editar" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;cursor:pointer;color:var(--accent);margin-right:4px;">✏️</button>
           <button onclick="deleteEstoqueMov('${m.id}')" title="Excluir" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:12px;cursor:pointer;color:var(--danger);">🗑️</button>
@@ -9512,7 +9512,7 @@ function renderEstoqueGrafico(){
       <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--border);">
         <div style="font-size:14px;font-weight:700;color:var(--text);">${esc(item.nome)} <span style="font-size:11px;font-weight:500;color:var(--text3);">(${esc(item.unidade)||'un'})</span></div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
-          <div style="font-size:12px;color:var(--text2);">Estoque atual: <span style="font-weight:800;color:${corSaldo};">${parseFloat(lastSaldo.toFixed(2))} ${item.unidade||'un'}</span></div>
+          <div style="font-size:12px;color:var(--text2);">Estoque atual: <span style="font-weight:800;color:${corSaldo};">${fNum(lastSaldo,3)} ${item.unidade||'un'}</span></div>
           ${zeroDate?`<div style="font-size:12px;color:var(--text2);">Projeção zero: <span style="font-weight:800;color:#ef4444;">${fmtMonthShort(zeroDate)}</span></div>`:'<div style="font-size:12px;color:#22c55e;font-weight:600;">✓ Sem previsão de falta</div>'}
         </div>
       </div>
@@ -9550,7 +9550,7 @@ function _drawEstoqueChart(series,proj,unidade){
     ctx.strokeStyle=borderC;ctx.lineWidth=0.5;ctx.setLineDash([]);
     ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+cW,y);ctx.stroke();
     ctx.fillStyle='#94a3b8';ctx.textAlign='right';ctx.font='10px sans-serif';
-    ctx.fillText(parseFloat(v.toFixed(1)),P.l-4,y+4);
+    ctx.fillText(fNum(v,1),P.l-4,y+4);
   }
   // Zero line
   if(minV<0){
@@ -9747,7 +9747,7 @@ function renderEstoquePainel(){
 // ============================================================
 
 // ── Estrutura de metas por perfil ───────────────────────────
-const _fmtProd = v => v >= 1e6 ? (v/1e6).toFixed(1).replace(/\.0$/,'')+'M' : (v/1000).toFixed(0)+'k';
+const _fmtProd = v => v >= 1e6 ? (v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+'M' : (v/1000).toLocaleString('pt-BR',{maximumFractionDigits:0})+'k';
 
 const PERFIS_META = {
   padrao: {
@@ -9760,12 +9760,12 @@ const PERFIS_META = {
       { id:'qtd_alevinos',      label:'Quantidade de Alevinos',  fonte:'auto',   unidade:'alevinos',formato:_fmtProd,
         faixas:[{min:800000,valor:100},{min:600000,valor:80},{min:400000,valor:60},{min:300000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
       { id:'escape_matrizes',   label:'Escape de Matrizes',      fonte:'admin',  inputLabel:'Peixes escapados', inputUnidade:'peixes', inputMode:'escapados',
-        unidade:'%', formato:v=>v.toFixed(1)+'%', invertido:true,
+        unidade:'%', formato:v=>fNum(v,1)+'%', invertido:true,
         faixas:[{max:0,valor:50},{max:5,valor:40},{max:7.5,valor:30},{max:10,valor:20}] },
       { id:'limpeza_piscicultura', label:'Limpeza da Piscicultura', fonte:'admin', inputLabel:'Dias sem limpeza', inputUnidade:'dias', inputMode:'diasSemLimpeza',
         unidade:'% dias', formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:90,valor:40},{min:0,valor:0}] },
-      { id:'mortalidade_manejo',label:'Mortalidade Pós Manejo',  fonte:'manual', unidade:'%', formato:v=>v.toFixed(1)+'%', invertido:true,
+      { id:'mortalidade_manejo',label:'Mortalidade Pós Manejo',  fonte:'manual', unidade:'%', formato:v=>fNum(v,1)+'%', invertido:true,
         faixas:[{max:2.5,valor:50},{max:5,valor:40},{max:7.5,valor:30},{max:10,valor:20}] },
       { id:'sabados',           label:'Sábados — Ração, Lab. e Água', fonte:'manual', unidade:'% sáb.', formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:0,valor:0}] },
