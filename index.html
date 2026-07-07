@@ -1973,7 +1973,7 @@ function save(){
 // Salva apenas um registro novo/atualizado
 async function saveOneRecord(rec){
   records.push(rec);
-  localStorage.setItem('kc_records',JSON.stringify(records));
+  try{localStorage.setItem('kc_records',JSON.stringify(records));}catch(e){console.warn('localStorage quota',e);}
   let ok;
   if(isColetaRec(rec)){
     ok=await saveColetaRecord_sb(rec);
@@ -5571,7 +5571,7 @@ async function saveLancamentos(){
       const ini=document.getElementById('ta-ini-'+rid)?.value||'';
       const fim=document.getElementById('ta-fim-'+rid)?.value||'';
       if(!orig&&!ini&&!fim)continue;
-      if((ini&&!fim)||(fim&&!ini)){showToast(`${tanks.find(t=>t.id===item.tankId)?.name}: preencha início e fim para calcular as horas`,'error');continue;}
+      if((ini&&!fim)||(fim&&!ini)){showToast(`${tanks.find(t=>t.id===tankId)?.name}: preencha início e fim`,'error');continue;}
       toSaveTroca.push({tankId,rid,orig,ini,fim});
     }
     if(!toSaveTroca.length){showToast('Nenhuma troca preenchida','error');return;}
@@ -5579,27 +5579,33 @@ async function saveLancamentos(){
     const doSaveTroca=async()=>{
       showSaveProgress(0,toSaveTroca.length);
       let saved=0;
-      for(const item of toSaveTroca){
-      const horas=_calcTrocaHoras(item.ini,item.fim);
-      const tank=tanks.find(t=>t.id===item.tankId);if(!tank){saved++;showSaveProgress(saved,toSaveTroca.length);continue;}
-      const prev=records.findIndex(r=>r.tankId===item.tankId&&r.date===date&&r.isTrocaAgua);
-      if(prev>=0)records.splice(prev,1);
-      const rec={
-        id:'agua_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
-        tankId:item.tankId,tankName:tank.name,date,
-        user:currentUser.name,username:currentUser.username,
-        timestamp:new Date().toISOString(),
-        isTrocaAgua:true,
-        trocaOrigem:item.orig,trocaInicio:item.ini,trocaFim:item.fim,trocaHoras:horas,
-        temp:null,o2:null,amonia:null,ph:null,mort:null,
-        qty:null,bio:null,racao:'',racaoIdealG:null,sobra:null,racaoG:null,
-        tratosIdeal:null,tratos:null,obs:'',overridden:false,hapa:null,lote:tank.lote||'',
-      };
-      await saveOneRecord(rec);
-      saved++;showSaveProgress(saved,toSaveTroca.length);
-    }
-      showSaveDone(saved);
-      renderLancamentos();
+      try{
+        for(const item of toSaveTroca){
+          const horas=_calcTrocaHoras(item.ini,item.fim);
+          const tank=tanks.find(t=>t.id===item.tankId);if(!tank){saved++;showSaveProgress(saved,toSaveTroca.length);continue;}
+          const prev=records.findIndex(r=>r.tankId===item.tankId&&r.date===date&&r.isTrocaAgua);
+          if(prev>=0)records.splice(prev,1);
+          const rec={
+            id:'agua_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+            tankId:item.tankId,tankName:tank.name,date,
+            user:currentUser.name,username:currentUser.username,
+            timestamp:new Date().toISOString(),
+            isTrocaAgua:true,
+            trocaOrigem:item.orig,trocaInicio:item.ini,trocaFim:item.fim,trocaHoras:horas,
+            temp:null,o2:null,amonia:null,ph:null,mort:null,
+            qty:null,bio:null,racao:'',racaoIdealG:null,sobra:null,racaoG:null,
+            tratosIdeal:null,tratos:null,obs:'',overridden:false,hapa:null,lote:tank.lote||'',
+          };
+          await saveOneRecord(rec);
+          saved++;showSaveProgress(saved,toSaveTroca.length);
+        }
+        showSaveDone(saved);
+        renderLancamentos();
+      }catch(e){
+        console.error('doSaveTroca erro',e);
+        document.getElementById('save-popup')?.remove();
+        showToast('Erro ao salvar. Tente novamente.','error');
+      }
     };
     if(conflitosAgua.length){
       const nomes=conflitosAgua.map(i=>tanks.find(t=>t.id===i.tankId)?.name||i.tankId).join(', ');
