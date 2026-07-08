@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.18</title>
+<title>KC System v7.19</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.18</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.19</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1308,12 +1308,27 @@ input[type="number"]{-moz-appearance:textfield;}
     </div>
   </div>
 
+  <!-- VIEW VEÍCULOS -->
+  <div id="eview-veiculos" class="eview" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+    <!-- sub-nav -->
+    <div style="display:flex;border-bottom:1.5px solid var(--border);background:var(--surface);flex-shrink:0;">
+      <button onclick="showVeiculoView('registros')" id="vnav-registros" class="veiculo-snav active" style="flex:1;padding:10px;font-size:12px;font-weight:700;border:none;border-bottom:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);cursor:pointer;margin-bottom:-1.5px;">📋 Registros</button>
+      <button onclick="showVeiculoView('painel')" id="vnav-painel" class="veiculo-snav" style="flex:1;padding:10px;font-size:12px;font-weight:700;border:none;border-bottom:2px solid transparent;background:none;color:var(--text2);cursor:pointer;margin-bottom:-1.5px;">📊 Painel</button>
+      <button onclick="showVeiculoView('frota')" id="vnav-frota" class="veiculo-snav" style="flex:1;padding:10px;font-size:12px;font-weight:700;border:none;border-bottom:2px solid transparent;background:none;color:var(--text2);cursor:pointer;margin-bottom:-1.5px;">🔧 Frota</button>
+    </div>
+    <!-- sub-views -->
+    <div id="vview-registros" style="flex:1;overflow-y:auto;"></div>
+    <div id="vview-painel"    style="flex:1;overflow-y:auto;display:none;"></div>
+    <div id="vview-frota"     style="flex:1;overflow-y:auto;display:none;"></div>
+  </div>
+
   <!-- Nav abas — rodapé -->
   <div style="display:flex;border-top:2px solid var(--border);background:var(--surface);flex-shrink:0;">
-    <button onclick="showEstoqueView('itens')" id="enav-itens" class="estoque-nav active" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:var(--accent-dim);color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">📋 Itens</button>
-    <button onclick="showEstoqueView('lancar')" id="enav-lancar" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">✏️ Lançar</button>
-    <button onclick="showEstoqueView('painel')" id="enav-painel" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📊 Painel</button>
-    <button onclick="showEstoqueView('grafico')" id="enav-grafico" class="estoque-nav" style="flex:1;padding:12px;font-size:13px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📈 Gráfico</button>
+    <button onclick="showEstoqueView('itens')" id="enav-itens" class="estoque-nav active" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:var(--accent-dim);color:var(--accent);border-top:2px solid var(--accent);cursor:pointer;margin-top:-2px;">📋 Itens</button>
+    <button onclick="showEstoqueView('lancar')" id="enav-lancar" class="estoque-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">✏️ Lançar</button>
+    <button onclick="showEstoqueView('painel')" id="enav-painel" class="estoque-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📊 Painel</button>
+    <button onclick="showEstoqueView('grafico')" id="enav-grafico" class="estoque-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">📈 Gráfico</button>
+    <button onclick="showEstoqueView('veiculos')" id="enav-veiculos" class="estoque-nav" style="flex:1;padding:12px;font-size:12px;font-weight:700;border:none;background:none;color:var(--text2);cursor:pointer;">🚗 Veículos</button>
   </div>
 </div>
 
@@ -1571,6 +1586,7 @@ let coletaRecords=[];
 try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.parse(cc);}catch(e){}
 // Módulo Estoques
 let estoqueItens=[], estoqueMov=[];
+let veiculos=[], veiculoMov=[], _veiculoSubView='registros', _veiculoFiltro={ini:'',fim:'',veicId:''};
 try{const ei=localStorage.getItem('kc_estoque_itens');if(ei)estoqueItens=JSON.parse(ei);}catch(e){}
 try{const em=localStorage.getItem('kc_estoque_mov');if(em)estoqueMov=JSON.parse(em);}catch(e){}
 let _estoquePainelFiltro={inicio:'',fim:''};
@@ -9199,6 +9215,7 @@ function showEstoqueView(v){
   else if(v==='lancar')loadEstoqueFromSupabase().then(()=>{renderEstoqueLancarForm();renderEstoqueMovHist();});
   else if(v==='painel')loadEstoqueFromSupabase().then(()=>renderEstoquePainel());
   else if(v==='grafico')loadEstoqueFromSupabase().then(()=>renderEstoqueGrafico());
+  else if(v==='veiculos'){if(vEl)vEl.style.display='flex';loadVeiculosFromSupabase().then(()=>showVeiculoView(_veiculoSubView||'registros'));}
 }
 
 async function loadEstoqueFromSupabase(){
@@ -9747,6 +9764,534 @@ function renderEstoquePainel(){
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+}
+
+// ============================================================
+// MÓDULO VEÍCULOS
+// ============================================================
+
+const _VEIC_DEFAULTS=[
+  {id:'veic_caminhao',nome:'Caminhão',combustivel:'diesel',  medida:'km',   ativo:true},
+  {id:'veic_gerador', nome:'Gerador', combustivel:'gasolina',medida:'horas',ativo:true},
+];
+
+async function loadVeiculosFromSupabase(){
+  try{
+    const rv=await sbGet('veiculos','select=id,data&deleted_at=is.null');
+    if(rv!=null){
+      veiculos=rv.map(r=>r.data).filter(Boolean);
+      // seed defaults if table is empty
+      if(!veiculos.length){
+        await sbUpsert('veiculos',_VEIC_DEFAULTS.map(v=>({id:v.id,data:v})));
+        veiculos=[..._VEIC_DEFAULTS];
+      }
+      localStorage.setItem('kc_veiculos',JSON.stringify(veiculos));
+    } else {
+      veiculos=JSON.parse(localStorage.getItem('kc_veiculos')||'[]');
+      if(!veiculos.length)veiculos=[..._VEIC_DEFAULTS];
+    }
+  }catch(e){console.warn('load veiculos error',e);veiculos=JSON.parse(localStorage.getItem('kc_veiculos')||'[]');}
+  try{
+    const rm=await sbGet('veiculo_mov','select=id,data&deleted_at=is.null&order=data->>date.desc');
+    if(rm!=null){
+      veiculoMov=rm.map(r=>r.data).filter(Boolean);
+      localStorage.setItem('kc_veiculo_mov',JSON.stringify(veiculoMov));
+    } else {
+      veiculoMov=JSON.parse(localStorage.getItem('kc_veiculo_mov')||'[]');
+    }
+  }catch(e){console.warn('load veiculo_mov error',e);veiculoMov=JSON.parse(localStorage.getItem('kc_veiculo_mov')||'[]');}
+}
+
+function showVeiculoView(v){
+  _veiculoSubView=v;
+  ['registros','painel','frota'].forEach(k=>{
+    const el=document.getElementById('vview-'+k);
+    if(el)el.style.display=k===v?'block':'none';
+    const nb=document.getElementById('vnav-'+k);
+    if(nb){
+      nb.style.color=k===v?'var(--accent)':'var(--text2)';
+      nb.style.borderBottomColor=k===v?'var(--accent)':'transparent';
+      nb.style.background=k===v?'var(--accent-dim)':'none';
+    }
+  });
+  if(v==='registros')renderVeiculoRegistros();
+  else if(v==='painel')renderVeiculoPainel();
+  else if(v==='frota')renderVeiculoFrota();
+}
+
+function _veicLabel(m){
+  if(m.tipo==='reembolso')return'Reembolso';
+  return m.veiculoNome||'—';
+}
+function _veicTipoLabel(t){
+  return t==='abastecimento'?'Abastecimento':t==='uso'?'Uso':t==='reembolso'?'Reembolso':'—';
+}
+function _veicTipoColor(t){
+  return t==='abastecimento'?'#2563eb':t==='uso'?'#16a34a':t==='reembolso'?'#9333ea':'var(--text2)';
+}
+function _veicMedidaUnit(veicId){
+  const v=veiculos.find(x=>x.id===veicId);
+  return v?v.medida:'km';
+}
+
+function renderVeiculoRegistros(){
+  const el=document.getElementById('vview-registros');
+  if(!el)return;
+  const ativos=veiculos.filter(x=>x.ativo);
+  const veicOpts=['<option value="">Todos os veículos</option>',
+    ...ativos.map(v=>`<option value="${v.id}"${_veiculoFiltro.veicId===v.id?' selected':''}>${esc(v.nome)}</option>`),
+    `<option value="reembolso"${_veiculoFiltro.veicId==='reembolso'?' selected':''}>Reembolsos</option>`,
+  ].join('');
+  let movs=[...veiculoMov].sort((a,b)=>b.date.localeCompare(a.date));
+  if(_veiculoFiltro.ini)movs=movs.filter(m=>m.date>=_veiculoFiltro.ini);
+  if(_veiculoFiltro.fim)movs=movs.filter(m=>m.date<=_veiculoFiltro.fim);
+  if(_veiculoFiltro.veicId){
+    if(_veiculoFiltro.veicId==='reembolso')movs=movs.filter(m=>m.tipo==='reembolso');
+    else movs=movs.filter(m=>m.veiculoId===_veiculoFiltro.veicId);
+  }
+  const rows=movs.map(m=>{
+    const unid=m.tipo==='reembolso'?'km':_veicMedidaUnit(m.veiculoId);
+    const medidas=[];
+    if(m.tipo==='abastecimento'){
+      if(m.litros)medidas.push(`${fNum(m.litros,2)} L`);
+      if(m.odometroAtual!=null)medidas.push(`${fNum(m.odometroAtual,0)} ${unid}`);
+    } else if(m.tipo==='uso'){
+      const delta=(m.medidaFim!=null&&m.medidaInicio!=null)?m.medidaFim-m.medidaInicio:null;
+      if(delta!=null)medidas.push(`${fNum(delta,1)} ${unid}`);
+      if(m.medidaInicio!=null)medidas.push(`${fNum(m.medidaInicio,0)}→${fNum(m.medidaFim,0)}`);
+    } else {
+      if(m.kmRodado)medidas.push(`${fNum(m.kmRodado,0)} km`);
+    }
+    const valorStr=m.valorTotal?`R$ ${fNum(m.valorTotal,2)}`:'';
+    const podeExcluir=isAdmin()||(m.usuario===currentUser?.name);
+    return`<tr style="border-top:1px solid var(--border);">
+      <td style="padding:10px 12px;font-size:12px;color:var(--text2);">${formatDate(m.date)}</td>
+      <td style="padding:10px 12px;font-size:12px;font-weight:700;color:var(--text);">${esc(_veicLabel(m))}</td>
+      <td style="padding:10px 12px;"><span style="font-size:11px;font-weight:700;color:${_veicTipoColor(m.tipo)};background:${_veicTipoColor(m.tipo)}18;border-radius:6px;padding:2px 8px;">${_veicTipoLabel(m.tipo)}</span></td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--text);">${esc(m.motorista||m.usuario||'')}</td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--text);">${medidas.join(' · ')}</td>
+      <td style="padding:10px 12px;font-size:12px;font-weight:700;color:var(--accent);">${valorStr}</td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--text3);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(m.obs||'')}</td>
+      <td style="padding:10px 12px;">${podeExcluir?`<button onclick="deleteVeiculoMov('${m.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;padding:0;">🗑</button>`:''}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="view-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div><div class="view-title">Registros de Veículos</div><div class="view-sub">Abastecimentos, usos e reembolsos</div></div>
+      <button onclick="openAddVeiculoMov()" style="padding:10px 18px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">+ Lançar</button>
+    </div>
+    <div style="padding:0 16px 8px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:3px;">Veículo</div>
+        <select onchange="_veiculoFiltro.veicId=this.value;renderVeiculoRegistros()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;">${veicOpts}</select>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:3px;">De</div>
+        <input type="date" value="${_veiculoFiltro.ini}" onchange="_veiculoFiltro.ini=this.value;renderVeiculoRegistros()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:3px;">Até</div>
+        <input type="date" value="${_veiculoFiltro.fim}" onchange="_veiculoFiltro.fim=this.value;renderVeiculoRegistros()" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:12px;">
+      </div>
+      <button onclick="_veiculoFiltro={ini:'',fim:'',veicId:''};renderVeiculoRegistros()" style="padding:8px 14px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;">Limpar</button>
+    </div>
+    <div style="padding:0 16px 16px;">
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:auto;">
+        ${movs.length?`<table style="width:100%;border-collapse:collapse;min-width:600px;">
+          <thead><tr style="background:var(--surface2);">
+            <th style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;white-space:nowrap;">Data</th>
+            <th style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Veículo</th>
+            <th style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Tipo</th>
+            <th style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Motorista</th>
+            <th style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Medidas</th>
+            <th style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Valor</th>
+            <th style="padding:10px 12px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Obs</th>
+            <th style="padding:10px 12px;"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`:`<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px;">Nenhum registro encontrado</div>`}
+      </div>
+    </div>`;
+}
+
+function renderVeiculoPainel(){
+  const el=document.getElementById('vview-painel');
+  if(!el)return;
+  const ativos=veiculos.filter(x=>x.ativo);
+  const cards=ativos.map(v=>{
+    const movV=veiculoMov.filter(m=>m.veiculoId===v.id&&m.tipo!=='reembolso');
+    const abast=movV.filter(m=>m.tipo==='abastecimento');
+    const usos =movV.filter(m=>m.tipo==='uso');
+    const totalLitros=abast.reduce((s,m)=>s+(m.litros||0),0);
+    const totalValor =abast.reduce((s,m)=>s+(m.valorTotal||0),0);
+    const totalMedida=usos.reduce((s,m)=>{
+      const d=(m.medidaFim!=null&&m.medidaInicio!=null)?m.medidaFim-m.medidaInicio:0;
+      return s+d;
+    },0);
+    const consumo=totalMedida>0&&totalLitros>0?totalMedida/totalLitros:0;
+    const ultimoAbast=abast.sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const ultimoUso  =usos.sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const unit=v.medida;
+    return`<div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+        <div style="font-size:28px;">${v.medida==='horas'?'⚡':'🚛'}</div>
+        <div>
+          <div style="font-size:16px;font-weight:800;color:var(--text);">${esc(v.nome)}</div>
+          <div style="font-size:12px;color:var(--text2);">${v.combustivel} · controle em ${unit}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px;">
+        <div style="background:var(--bg);border-radius:10px;padding:10px 12px;text-align:center;">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Total abastecido</div>
+          <div style="font-size:18px;font-weight:800;color:#2563eb;">${fNum(totalLitros,1)} L</div>
+          <div style="font-size:11px;color:var(--text3);">R$ ${fNum(totalValor,2)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:10px 12px;text-align:center;">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">${unit==='horas'?'Horas rodadas':'KM rodados'}</div>
+          <div style="font-size:18px;font-weight:800;color:#16a34a;">${fNum(totalMedida,unit==='horas'?1:0)} ${unit}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:10px 12px;text-align:center;">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">${unit==='horas'?'h/L médio':'km/L médio'}</div>
+          <div style="font-size:18px;font-weight:800;color:var(--accent);">${consumo>0?fNum(consumo,2):'—'}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text2);">
+        ${ultimoAbast?`<span>⛽ Último abast.: <b>${formatDate(ultimoAbast.date)}</b> · ${fNum(ultimoAbast.litros||0,2)} L · R$ ${fNum(ultimoAbast.valorTotal||0,2)}</span>`:''}
+        ${ultimoUso?`<span>🛣 Último uso: <b>${formatDate(ultimoUso.date)}</b> · ${esc(ultimoUso.motorista||ultimoUso.usuario||'')}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // reembolsos totais
+  const reemb=veiculoMov.filter(m=>m.tipo==='reembolso');
+  const totalReemb=reemb.reduce((s,m)=>s+(m.valorTotal||0),0);
+  const totalKmReemb=reemb.reduce((s,m)=>s+(m.kmRodado||0),0);
+  const reembCard=`<div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:12px;">
+      <div style="font-size:28px;">🚗</div>
+      <div><div style="font-size:16px;font-weight:800;color:var(--text);">Reembolsos</div>
+        <div style="font-size:12px;color:var(--text2);">veículos pessoais dos funcionários</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;text-align:center;">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Total pago</div>
+        <div style="font-size:18px;font-weight:800;color:#9333ea;">R$ ${fNum(totalReemb,2)}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;text-align:center;">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">KM reembolsados</div>
+        <div style="font-size:18px;font-weight:800;color:var(--text);">${fNum(totalKmReemb,0)} km</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;text-align:center;">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Ocorrências</div>
+        <div style="font-size:18px;font-weight:800;color:var(--text);">${reemb.length}</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);">💡 Compare o total com os gastos no Módulo Financeiro para auditoria.</div>
+  </div>`;
+
+  el.innerHTML=`
+    <div class="view-header"><div><div class="view-title">Painel de Veículos</div><div class="view-sub">Resumo de consumo e auditoria</div></div></div>
+    <div style="padding:0 16px 16px;">${cards}${reembCard}</div>`;
+}
+
+function renderVeiculoFrota(){
+  const el=document.getElementById('vview-frota');
+  if(!el)return;
+  const rows=veiculos.map(v=>`
+    <tr style="border-top:1px solid var(--border);">
+      <td style="padding:12px 14px;font-size:14px;font-weight:700;color:var(--text);">${esc(v.nome)}</td>
+      <td style="padding:12px 14px;font-size:13px;color:var(--text2);">${v.combustivel}</td>
+      <td style="padding:12px 14px;font-size:13px;color:var(--text2);">${v.medida}</td>
+      <td style="padding:12px 14px;">
+        <span style="font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;${v.ativo?'background:rgba(22,163,74,.12);color:#16a34a;':'background:rgba(239,68,68,.1);color:#dc2626;'}">${v.ativo?'Ativo':'Inativo'}</span>
+      </td>
+      <td style="padding:12px 14px;">
+        ${isAdmin()?`<button onclick="toggleVeiculoAtivo('${v.id}')" style="background:none;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;padding:4px 10px;">${v.ativo?'Desativar':'Ativar'}</button>
+        ${!_VEIC_DEFAULTS.find(d=>d.id===v.id)?`<button onclick="deleteVeiculo('${v.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;padding:0 0 0 8px;">🗑</button>`:''}`:'-'}
+      </td>
+    </tr>`).join('');
+  const addForm=isAdmin()?`
+    <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;">+ Novo Veículo</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Nome</div>
+          <input type="text" id="vf-nome" placeholder="Ex: Moto, Van..." style="width:100%;box-sizing:border-box;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Combustível</div>
+          <select id="vf-comb" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            <option value="gasolina">Gasolina</option>
+            <option value="diesel">Diesel</option>
+            <option value="etanol">Etanol</option>
+            <option value="gnv">GNV</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;">Controle</div>
+          <select id="vf-medida" style="width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            <option value="km">Quilômetros</option>
+            <option value="horas">Horas</option>
+          </select>
+        </div>
+        <button onclick="addVeiculo()" style="padding:9px 18px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Adicionar</button>
+      </div>
+    </div>`:'';
+  el.innerHTML=`
+    <div class="view-header"><div><div class="view-title">Frota</div><div class="view-sub">Veículos cadastrados</div></div></div>
+    <div style="padding:0 16px 16px;">
+      ${addForm}
+      <div style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="background:var(--surface2);">
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Veículo</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Combustível</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Controle</th>
+            <th style="padding:10px 14px;font-size:11px;font-weight:700;color:var(--text2);text-align:left;">Status</th>
+            <th style="padding:10px 14px;"></th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+async function addVeiculo(){
+  if(!isAdmin())return;
+  const nome=document.getElementById('vf-nome')?.value.trim();
+  if(!nome){showToast('Informe o nome do veículo','error');return;}
+  const comb=document.getElementById('vf-comb')?.value||'gasolina';
+  const medida=document.getElementById('vf-medida')?.value||'km';
+  const v={id:'veic_'+Date.now(),nome,combustivel:comb,medida,ativo:true};
+  veiculos.push(v);
+  localStorage.setItem('kc_veiculos',JSON.stringify(veiculos));
+  const ok=await sbUpsert('veiculos',[{id:v.id,data:v}]);
+  if(ok)showToast('Veículo adicionado ✓','ok');
+  else showToast('⚠ Salvo localmente','error');
+  renderVeiculoFrota();
+}
+
+async function toggleVeiculoAtivo(id){
+  if(!isAdmin())return;
+  const v=veiculos.find(x=>x.id===id);
+  if(!v)return;
+  v.ativo=!v.ativo;
+  localStorage.setItem('kc_veiculos',JSON.stringify(veiculos));
+  await sbUpsert('veiculos',[{id:v.id,data:v}]);
+  renderVeiculoFrota();
+}
+
+async function deleteVeiculo(id){
+  if(!isAdmin())return;
+  if(_VEIC_DEFAULTS.find(d=>d.id===id)){showToast('Não é possível remover veículo padrão','error');return;}
+  if(!confirm('Remover este veículo? Registros existentes não serão apagados.'))return;
+  veiculos=veiculos.filter(x=>x.id!==id);
+  localStorage.setItem('kc_veiculos',JSON.stringify(veiculos));
+  await sbSoftDelete('veiculos',id);
+  showToast('Veículo removido ✓','ok');
+  renderVeiculoFrota();
+}
+
+function _vMov_respOpts(selected=''){
+  const opts=['<option value="">— Selecione —</option>'];
+  Object.values(perfisCache).filter(u=>!u.bloqueado).sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(u=>{
+    const s=(u.name||'')===(selected||'')?' selected':'';
+    opts.push(`<option value="${(u.name||'').replace(/"/g,'&quot;')}"${s}>${esc(u.name||'')}</option>`);
+  });
+  return opts.join('');
+}
+
+function openAddVeiculoMov(editId=null){
+  document.getElementById('veiculo-mov-overlay')?.remove();
+  const editing=editId?veiculoMov.find(m=>m.id===editId):null;
+  const today=new Date().toISOString().split('T')[0];
+  const ativos=veiculos.filter(x=>x.ativo);
+  const veicOpts=ativos.map(v=>`<option value="${v.id}"${editing?.veiculoId===v.id?' selected':''}>${esc(v.nome)}</option>`).join('');
+  const initTipo=editing?.tipo||'abastecimento';
+  document.body.insertAdjacentHTML('beforeend',`
+    <div id="veiculo-mov-overlay" onclick="if(event.target===this)closeAddVeiculoMov()" style="position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:450;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+      <div style="background:var(--surface);border-radius:16px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1.5px solid var(--border);">
+          <div style="font-size:15px;font-weight:800;color:var(--text);">🚗 ${editing?'Editar Registro':'Novo Registro'}</div>
+          <button onclick="closeAddVeiculoMov()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:22px;line-height:1;">×</button>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+          ${editing?`<input type="hidden" id="vmov-edit-id" value="${editing.id}">`:''}
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">TIPO</label>
+            <select id="vmov-tipo" onchange="vmovToggleFields()" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              <option value="abastecimento"${initTipo==='abastecimento'?' selected':''}>⛽ Abastecimento</option>
+              <option value="uso"${initTipo==='uso'?' selected':''}>🛣 Uso (sem abastecer)</option>
+              <option value="reembolso"${initTipo==='reembolso'?' selected':''}>🚗 Reembolso (veículo pessoal)</option>
+            </select>
+          </div>
+          <!-- veículo — oculto no reembolso -->
+          <div id="vmov-row-veic">
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">VEÍCULO</label>
+            <select id="vmov-veic" onchange="vmovToggleFields()" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">${veicOpts}</select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);">DATA</label>
+              <input type="date" id="vmov-data" value="${editing?.date||today}" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);" id="vmov-label-motorista">MOTORISTA / USUÁRIO</label>
+              <select id="vmov-motorista" style="width:100%;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">${_vMov_respOpts(editing?.motorista||currentUser?.name||'')}</select>
+            </div>
+          </div>
+          <!-- abastecimento fields -->
+          <div id="vmov-row-abast" style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">LITROS ABASTECIDOS</label>
+                <input type="number" id="vmov-litros" value="${editing?.litros||''}" min="0" step="0.01" inputmode="decimal" placeholder="0,00" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">VALOR TOTAL (R$)</label>
+                <input type="number" id="vmov-valor" value="${editing?.valorTotal||''}" min="0" step="0.01" inputmode="decimal" placeholder="0,00" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);" id="vmov-label-odometro">ODÔMETRO ATUAL (km/horas)</label>
+              <input type="number" id="vmov-odometro" value="${editing?.odometroAtual??''}" min="0" step="0.1" inputmode="decimal" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+            </div>
+          </div>
+          <!-- uso fields -->
+          <div id="vmov-row-uso" style="display:none;flex-direction:column;gap:10px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);" id="vmov-label-ini">INÍCIO (km/horas)</label>
+                <input type="number" id="vmov-ini" value="${editing?.medidaInicio??''}" min="0" step="0.1" inputmode="decimal" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);" id="vmov-label-fim">FIM (km/horas)</label>
+                <input type="number" id="vmov-fim" value="${editing?.medidaFim??''}" min="0" step="0.1" inputmode="decimal" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+              </div>
+            </div>
+          </div>
+          <!-- reembolso fields -->
+          <div id="vmov-row-reemb" style="display:none;flex-direction:column;gap:10px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">KM RODADO</label>
+                <input type="number" id="vmov-km" value="${editing?.kmRodado||''}" min="0" step="1" inputmode="decimal" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;" oninput="vmovCalcReemb()">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">R$/KM</label>
+                <input type="number" id="vmov-vkm" value="${editing?.valorKm||'0.50'}" min="0" step="0.01" inputmode="decimal" style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;" oninput="vmovCalcReemb()">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text2);">TOTAL (R$)</label>
+                <input type="number" id="vmov-vreemb" value="${editing?.valorTotal||''}" readonly style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--accent);font-size:13px;font-weight:700;">
+              </div>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text2);">OBSERVAÇÃO (opcional)</label>
+            <input type="text" id="vmov-obs" value="${esc(editing?.obs||'')}" placeholder="Destino, finalidade, fornecedor..." style="width:100%;box-sizing:border-box;margin-top:4px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+          </div>
+          <button onclick="confirmAddVeiculoMov()" style="padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">💾 Salvar</button>
+        </div>
+      </div>
+    </div>`);
+  vmovToggleFields();
+}
+
+function closeAddVeiculoMov(){document.getElementById('veiculo-mov-overlay')?.remove();}
+
+function vmovToggleFields(){
+  const tipo=document.getElementById('vmov-tipo')?.value;
+  const veicId=document.getElementById('vmov-veic')?.value;
+  const v=veiculos.find(x=>x.id===veicId);
+  const unit=v?.medida||'km';
+  const isAbast=tipo==='abastecimento';
+  const isUso=tipo==='uso';
+  const isReemb=tipo==='reembolso';
+  document.getElementById('vmov-row-veic').style.display=isReemb?'none':'block';
+  document.getElementById('vmov-row-abast').style.display=isAbast?'flex':'none';
+  document.getElementById('vmov-row-uso').style.display=isUso?'flex':'none';
+  document.getElementById('vmov-row-reemb').style.display=isReemb?'flex':'none';
+  if(document.getElementById('vmov-label-odometro'))
+    document.getElementById('vmov-label-odometro').textContent=`ODÔMETRO ATUAL (${unit})`;
+  if(document.getElementById('vmov-label-ini'))
+    document.getElementById('vmov-label-ini').textContent=`INÍCIO (${unit})`;
+  if(document.getElementById('vmov-label-fim'))
+    document.getElementById('vmov-label-fim').textContent=`FIM (${unit})`;
+  if(document.getElementById('vmov-label-motorista'))
+    document.getElementById('vmov-label-motorista').textContent=isReemb?'FUNCIONÁRIO':'MOTORISTA / USUÁRIO';
+}
+
+function vmovCalcReemb(){
+  const km=parseFloat(document.getElementById('vmov-km')?.value)||0;
+  const vkm=parseFloat(document.getElementById('vmov-vkm')?.value)||0;
+  const total=km*vkm;
+  const el=document.getElementById('vmov-vreemb');
+  if(el)el.value=total>0?total.toFixed(2):'';
+}
+
+async function confirmAddVeiculoMov(){
+  const tipo=document.getElementById('vmov-tipo')?.value;
+  const date=document.getElementById('vmov-data')?.value;
+  if(!date){showToast('Informe a data','error');return;}
+  const motorista=document.getElementById('vmov-motorista')?.value||'';
+  const obs=document.getElementById('vmov-obs')?.value.trim()||'';
+  const editId=document.getElementById('vmov-edit-id')?.value||null;
+
+  let mov={
+    id:editId||'vm_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+    tipo,date,motorista,
+    usuario:currentUser?.name||'',
+    obs,
+    timestamp:new Date().toISOString(),
+  };
+
+  if(tipo==='abastecimento'){
+    const veicId=document.getElementById('vmov-veic')?.value;
+    if(!veicId){showToast('Selecione o veículo','error');return;}
+    const v=veiculos.find(x=>x.id===veicId);
+    const litros=parseFloat(document.getElementById('vmov-litros')?.value)||0;
+    const valorTotal=parseFloat(document.getElementById('vmov-valor')?.value)||0;
+    const odometroAtual=parseFloat(document.getElementById('vmov-odometro')?.value);
+    if(!litros&&!valorTotal){showToast('Informe litros ou valor','error');return;}
+    Object.assign(mov,{veiculoId:veicId,veiculoNome:v?.nome||'',litros,valorTotal,odometroAtual:isNaN(odometroAtual)?null:odometroAtual});
+  } else if(tipo==='uso'){
+    const veicId=document.getElementById('vmov-veic')?.value;
+    if(!veicId){showToast('Selecione o veículo','error');return;}
+    const v=veiculos.find(x=>x.id===veicId);
+    const medidaInicio=parseFloat(document.getElementById('vmov-ini')?.value);
+    const medidaFim=parseFloat(document.getElementById('vmov-fim')?.value);
+    if(isNaN(medidaInicio)||isNaN(medidaFim)){showToast('Informe início e fim','error');return;}
+    if(medidaFim<medidaInicio){showToast('Fim deve ser maior que início','error');return;}
+    Object.assign(mov,{veiculoId:veicId,veiculoNome:v?.nome||'',medidaInicio,medidaFim});
+  } else {
+    const kmRodado=parseFloat(document.getElementById('vmov-km')?.value)||0;
+    const valorKm=parseFloat(document.getElementById('vmov-vkm')?.value)||0;
+    const valorTotal=parseFloat(document.getElementById('vmov-vreemb')?.value)||(kmRodado*valorKm);
+    if(!kmRodado){showToast('Informe os km rodados','error');return;}
+    Object.assign(mov,{veiculoId:'reembolso',veiculoNome:'Reembolso',kmRodado,valorKm,valorTotal});
+  }
+
+  if(editId)veiculoMov=veiculoMov.filter(m=>m.id!==editId);
+  veiculoMov.push(mov);
+  try{localStorage.setItem('kc_veiculo_mov',JSON.stringify(veiculoMov));}catch(e){console.warn('quota',e);}
+  const ok=await sbUpsert('veiculo_mov',[{id:mov.id,data:mov}]);
+  if(ok)showToast('Registro salvo ✓','ok');
+  else showToast('⚠ Salvo localmente','error');
+  closeAddVeiculoMov();
+  renderVeiculoRegistros();
+}
+
+async function deleteVeiculoMov(id){
+  const m=veiculoMov.find(x=>x.id===id);
+  if(!m)return;
+  if(!isAdmin()&&m.usuario!==currentUser?.name){showToast('Sem permissão','error');return;}
+  if(!confirm('Remover este registro?'))return;
+  veiculoMov=veiculoMov.filter(x=>x.id!==id);
+  try{localStorage.setItem('kc_veiculo_mov',JSON.stringify(veiculoMov));}catch(e){console.warn('quota',e);}
+  await sbSoftDelete('veiculo_mov',id);
+  showToast('Registro removido ✓','ok');
+  renderVeiculoRegistros();
 }
 
 </script>
