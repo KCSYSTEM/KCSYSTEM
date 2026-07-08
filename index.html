@@ -9669,48 +9669,57 @@ function renderEstoquePainel(){
   const ini=_estoquePainelFiltro.inicio;
   const fim=_estoquePainelFiltro.fim;
 
+  // Dia anterior ao início do período (para D-1 com filtro)
+  const diaAnteriorIni=ini?(()=>{
+    const d=new Date(ini+'T12:00:00');d.setDate(d.getDate()-1);
+    return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  })():null;
+  const dataFimRef=(temFiltro&&fim)?fim:today;
+
   const rows=allItems.map((item,i)=>{
     const unidade=item.unidade||'un';
-    let saldoD1,entradaD1=0,consumoD1,saldoHoje,consumoPeriodo=null;
+    let saldoD1,entradaD1=0,consumoD1=0,saldoHoje;
 
     if(item.isRacao){
-      // D-1 = saldo no início de ontem (fim de anteontem); Hoje = saldo acumulado até agora (inclusive hoje)
-      saldoD1  =racaoSaldoAte(item.id,item.racaoNome,dayBeforeYest);
-      saldoHoje=racaoSaldoAte(item.id,item.racaoNome,today);
-      entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'&&m.date===yesterday)
-        .reduce((s,m)=>s+m.qtd,0);
-      const consumoD1G=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===yesterday)
-        .reduce((s,r)=>s+(r.racaoG||0),0);
-      const saidaMovD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='saida'&&m.date===yesterday)
-        .reduce((s,m)=>s+m.qtd,0);
-      consumoD1=consumoD1G/1000+saidaMovD1;
       if(temFiltro){
+        saldoD1  =diaAnteriorIni?racaoSaldoAte(item.id,item.racaoNome,diaAnteriorIni):0;
+        saldoHoje=racaoSaldoAte(item.id,item.racaoNome,dataFimRef);
+        entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'
+          &&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
         const cG=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0
-          &&(!ini||r.date>=ini)&&(!fim||r.date<=fim))
-          .reduce((s,r)=>s+(r.racaoG||0),0);
+          &&(!ini||r.date>=ini)&&(!fim||r.date<=fim)).reduce((s,r)=>s+(r.racaoG||0),0);
         const cMov=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='saida'
-          &&(!ini||m.date>=ini)&&(!fim||m.date<=fim))
+          &&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
+        consumoD1=cG/1000+cMov;
+      } else {
+        saldoD1  =racaoSaldoAte(item.id,item.racaoNome,dayBeforeYest);
+        saldoHoje=racaoSaldoAte(item.id,item.racaoNome,today);
+        entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'&&m.date===yesterday)
           .reduce((s,m)=>s+m.qtd,0);
-        consumoPeriodo=parseFloat((cG/1000+cMov).toFixed(2));
+        const consumoD1G=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===yesterday)
+          .reduce((s,r)=>s+(r.racaoG||0),0);
+        const saidaMovD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='saida'&&m.date===yesterday)
+          .reduce((s,m)=>s+m.qtd,0);
+        consumoD1=consumoD1G/1000+saidaMovD1;
       }
     } else {
       const movs=estoqueMov.filter(m=>m.itemId===item.id);
-      // D-1 = saldo no início de ontem; Hoje = fim de ontem
-      saldoD1  =movs.filter(m=>m.date<=dayBeforeYest).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
-      entradaD1=movs.filter(m=>m.date===yesterday&&m.tipo==='entrada').reduce((s,m)=>s+m.qtd,0);
-      consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
-      saldoHoje=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       if(temFiltro){
-        consumoPeriodo=movs.filter(m=>m.tipo==='saida'&&(!ini||m.date>=ini)&&(!fim||m.date<=fim))
-          .reduce((s,m)=>s+m.qtd,0);
+        saldoD1  =diaAnteriorIni?movs.filter(m=>m.date<=diaAnteriorIni).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0):0;
+        saldoHoje=movs.filter(m=>m.date<=dataFimRef).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+        entradaD1=movs.filter(m=>m.tipo==='entrada'&&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
+        consumoD1=movs.filter(m=>m.tipo==='saida' &&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
+      } else {
+        saldoD1  =movs.filter(m=>m.date<=dayBeforeYest).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+        entradaD1=movs.filter(m=>m.date===yesterday&&m.tipo==='entrada').reduce((s,m)=>s+m.qtd,0);
+        consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
+        saldoHoje=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       }
     }
 
     const corSaldo=saldoHoje<0?'var(--danger)':'var(--text)';
     const badge=item.isRacao
       ?`<span style="font-size:10px;font-weight:700;background:rgba(22,163,74,0.12);color:#16a34a;border-radius:6px;padding:1px 5px;margin-left:5px;">🌾</span>`:'';
-    const tdPeriodo=temFiltro
-      ?`<td style="padding:12px 10px;text-align:center;font-size:13px;font-weight:700;color:${consumoPeriodo>0?'var(--danger)':'var(--text3)'};">${consumoPeriodo>0?'-'+fmt(consumoPeriodo):'—'}</td>`:'';
 
     return`<tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface2);':''}">
       <td style="padding:12px 14px;font-size:13px;font-weight:600;color:var(--text);">${esc(item.nome)}${badge}</td>
@@ -9718,23 +9727,23 @@ function renderEstoquePainel(){
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${fmt(saldoD1)}</td>
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${entradaD1>0?'#16a34a':'var(--text3)'};">${entradaD1>0?'+'+fmt(entradaD1):'—'}</td>
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${consumoD1>0?'var(--danger)':'var(--text3)'};">${consumoD1>0?'-'+fmt(consumoD1):'—'}</td>
-      ${tdPeriodo}
       <td style="padding:10px 8px;text-align:center;font-size:14px;font-weight:700;color:${corSaldo};">${fmt(saldoHoje)}</td>
     </tr>`;
   }).join('');
 
-  const thPeriodo=temFiltro
-    ?`<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Consumo Período</th>`:'';
+  const thD1    =temFiltro?'Est. Inicial':'Estoque D-1';
+  const thEnt   =temFiltro?'Entradas':'Entrada D-1';
+  const thSaida =temFiltro?'Saídas':'Consumo D-1';
+  const thAtual =temFiltro?'Saldo Final':'Saldo Atual';
 
   el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:var(--surface2);">
       <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);">Item</th>
       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Un.</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Estoque D-1</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#16a34a;">Entrada D-1</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--danger);">Consumo D-1</th>
-      ${thPeriodo}
-      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Saldo Atual</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">${thD1}</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#16a34a;">${thEnt}</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--danger);">${thSaida}</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">${thAtual}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
