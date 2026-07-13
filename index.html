@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.19</title>
+<title>KC System v7.20</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.19</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.20</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -9695,12 +9695,12 @@ function renderEstoquePainel(){
 
   const rows=allItems.map((item,i)=>{
     const unidade=item.unidade||'un';
-    let saldoD1,entradaD1=0,consumoD1=0,saldoHoje;
+    let saldoD1,entradaD1=0,consumoD1=0,saldoAbertura,entradaHoje=0,saidaHoje=0,saldoFechamento;
 
     if(item.isRacao){
       if(temFiltro){
-        saldoD1  =diaAnteriorIni?racaoSaldoAte(item.id,item.racaoNome,diaAnteriorIni):0;
-        saldoHoje=racaoSaldoAte(item.id,item.racaoNome,dataFimRef);
+        saldoD1     =diaAnteriorIni?racaoSaldoAte(item.id,item.racaoNome,diaAnteriorIni):0;
+        saldoAbertura=racaoSaldoAte(item.id,item.racaoNome,dataFimRef);
         entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'
           &&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
         const cG=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0
@@ -9709,8 +9709,8 @@ function renderEstoquePainel(){
           &&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
         consumoD1=cG/1000+cMov;
       } else {
-        saldoD1  =racaoSaldoAte(item.id,item.racaoNome,dayBeforeYest);
-        saldoHoje=racaoSaldoAte(item.id,item.racaoNome,today);
+        saldoD1     =racaoSaldoAte(item.id,item.racaoNome,dayBeforeYest);
+        saldoAbertura=racaoSaldoAte(item.id,item.racaoNome,yesterday);
         entradaD1=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'&&m.date===yesterday)
           .reduce((s,m)=>s+m.qtd,0);
         const consumoD1G=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===yesterday)
@@ -9719,22 +9719,35 @@ function renderEstoquePainel(){
           .reduce((s,m)=>s+m.qtd,0);
         consumoD1=consumoD1G/1000+saidaMovD1;
       }
+      // Sempre hoje
+      entradaHoje=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='entrada'&&m.date===today)
+        .reduce((s,m)=>s+m.qtd,0);
+      const saidaHojeG=records.filter(r=>!r.overridden&&r.racao===item.racaoNome&&r.racaoG>0&&r.date===today)
+        .reduce((s,r)=>s+(r.racaoG||0),0);
+      const saidaHojeMov=estoqueMov.filter(m=>m.itemId===item.id&&m.tipo==='saida'&&m.date===today)
+        .reduce((s,m)=>s+m.qtd,0);
+      saidaHoje=saidaHojeG/1000+saidaHojeMov;
+      saldoFechamento=racaoSaldoAte(item.id,item.racaoNome,today);
     } else {
       const movs=estoqueMov.filter(m=>m.itemId===item.id);
       if(temFiltro){
-        saldoD1  =diaAnteriorIni?movs.filter(m=>m.date<=diaAnteriorIni).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0):0;
-        saldoHoje=movs.filter(m=>m.date<=dataFimRef).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+        saldoD1     =diaAnteriorIni?movs.filter(m=>m.date<=diaAnteriorIni).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0):0;
+        saldoAbertura=movs.filter(m=>m.date<=dataFimRef).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
         entradaD1=movs.filter(m=>m.tipo==='entrada'&&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
         consumoD1=movs.filter(m=>m.tipo==='saida' &&(!ini||m.date>=ini)&&(!fim||m.date<=fim)).reduce((s,m)=>s+m.qtd,0);
       } else {
-        saldoD1  =movs.filter(m=>m.date<=dayBeforeYest).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+        saldoD1     =movs.filter(m=>m.date<=dayBeforeYest).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
+        saldoAbertura=movs.filter(m=>m.date<=yesterday).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
         entradaD1=movs.filter(m=>m.date===yesterday&&m.tipo==='entrada').reduce((s,m)=>s+m.qtd,0);
         consumoD1=movs.filter(m=>m.date===yesterday&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
-        saldoHoje=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
       }
+      // Sempre hoje
+      entradaHoje=movs.filter(m=>m.date===today&&m.tipo==='entrada').reduce((s,m)=>s+m.qtd,0);
+      saidaHoje  =movs.filter(m=>m.date===today&&m.tipo==='saida').reduce((s,m)=>s+m.qtd,0);
+      saldoFechamento=movs.filter(m=>m.date<=today).reduce((s,m)=>m.tipo==='entrada'?s+m.qtd:s-m.qtd,0);
     }
 
-    const corSaldo=saldoHoje<0?'var(--danger)':'var(--text)';
+    const corFechamento=saldoFechamento<0?'var(--danger)':'var(--accent)';
     const badge=item.isRacao
       ?`<span style="font-size:10px;font-weight:700;background:rgba(22,163,74,0.12);color:#16a34a;border-radius:6px;padding:1px 5px;margin-left:5px;">🌾</span>`:'';
 
@@ -9744,26 +9757,32 @@ function renderEstoquePainel(){
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:var(--text);">${fmt(saldoD1)}</td>
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${entradaD1>0?'#16a34a':'var(--text3)'};">${entradaD1>0?'+'+fmt(entradaD1):'—'}</td>
       <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${consumoD1>0?'var(--danger)':'var(--text3)'};">${consumoD1>0?'-'+fmt(consumoD1):'—'}</td>
-      <td style="padding:10px 8px;text-align:center;font-size:14px;font-weight:700;color:${corSaldo};">${fmt(saldoHoje)}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:var(--text);border-left:2px solid var(--border);">${fmt(saldoAbertura)}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${entradaHoje>0?'#16a34a':'var(--text3)'};">${entradaHoje>0?'+'+fmt(entradaHoje):'—'}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:13px;font-weight:600;color:${saidaHoje>0?'var(--danger)':'var(--text3)'};">${saidaHoje>0?'-'+fmt(saidaHoje):'—'}</td>
+      <td style="padding:10px 8px;text-align:center;font-size:14px;font-weight:700;color:${corFechamento};">${fmt(saldoFechamento)}</td>
     </tr>`;
   }).join('');
 
-  const thD1    =temFiltro?'Est. Inicial':'Estoque D-1';
-  const thEnt   =temFiltro?'Entradas':'Entrada D-1';
-  const thSaida =temFiltro?'Saídas':'Consumo D-1';
-  const thAtual =temFiltro?'Saldo Final':'Saldo Atual';
+  const thD1      =temFiltro?'Est. Inicial':'Estoque D-1';
+  const thEnt     =temFiltro?'Entradas':'Entrada D-1';
+  const thSaida   =temFiltro?'Saídas':'Consumo D-1';
+  const thAbertura=temFiltro?'Saldo Final':'Saldo Abertura D';
 
-  el.innerHTML=`<table style="width:100%;border-collapse:collapse;">
+  el.innerHTML=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;min-width:700px;">
     <thead><tr style="background:var(--surface2);">
       <th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);">Item</th>
       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">Un.</th>
       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">${thD1}</th>
       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#16a34a;">${thEnt}</th>
       <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--danger);">${thSaida}</th>
-      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);">${thAtual}</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text2);border-left:2px solid var(--border);">${thAbertura}</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:#16a34a;">Entrada D</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--danger);">Saída D</th>
+      <th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--accent);">Saldo Fechamento D</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-  </table>`;
+  </table></div>`;
 }
 
 // ============================================================
