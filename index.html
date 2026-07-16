@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.24</title>
+<title>KC System v7.25</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.24</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.25</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2136,19 +2136,18 @@ function renderColetaGraficos(){
   const _byLoteInfo=buildColetaByLote();
   Object.values(byDate).forEach(d=>{
     let totalOvosTotal=0,totalOvosFinal=0,goradosPctSum=0,countGorados=0;
-    let femeasReprodSum=0;
     d.lotes.forEach(lote=>{
       const info=_byLoteInfo[lote];if(!info)return;
       totalOvosTotal+=info.ovosTotal||0;
       totalOvosFinal+=info.ovosBons||0;
       if(info.goradosMedio!=null){goradosPctSum+=info.goradosMedio;countGorados++;}
-      femeasReprodSum+=info.femeasReprod||0;
     });
     d.ovosTotal  =totalOvosTotal||null;
     d.ovosFinal  =totalOvosFinal||null;
     d.goradosPct =countGorados?parseFloat((goradosPctSum/countGorados).toFixed(1)):null;
-    d.femeasReprod=femeasReprodSum||null;
-    d.pctDesova  =(femeasReprodSum&&d.femeas)?parseFloat((d.femeas/femeasReprodSum*100).toFixed(1)):null;
+    // femeasReprod: total de fêmeas em reprodução na data, via biometria (1 valor por data, sem double-count por lote)
+    d.femeasReprod=femeasAlocadasEm(d.date)||null;
+    d.pctDesova  =(d.femeasReprod&&d.femeas)?parseFloat((d.femeas/d.femeasReprod*100).toFixed(1)):null;
   });
 
   const dates=Object.keys(byDate).sort();
@@ -2360,9 +2359,15 @@ function renderColetaGraficos(){
         svgM+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="transparent" data-i="${i}" data-v="${v}" data-color="#0ea5e9" class="gcol-dot"/>`;
         svgM+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="#0ea5e9" pointer-events="none"/>`;
       });
+      // Média móvel (4 coletas) para % desova — linha tracejada no eixo secundário direito
+      const pctDMA=movingAvg(pctDData);
+      let maD='';let maF=true;
+      pctDMA.forEach((v,i)=>{if(v!=null){const p=`${sXM(i).toFixed(1)},${sRY(v).toFixed(1)}`;maD+=(maF?`M${p}`:`L${p}`);maF=false;}else{maF=true;}});
+      if(maD) svgM+=`<path d="${maD}" fill="none" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.9" pointer-events="none"/>`;
 
       const legM=`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:#0ea5e9;"></span>Fêmeas em reprodução</span>`+
-        `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);"><span style="display:inline-block;width:10px;height:10px;background:#7c3aed;opacity:0.4;border-radius:2px;"></span>% Desova</span>`;
+        `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:10px;height:10px;background:#7c3aed;opacity:0.4;border-radius:2px;"></span>% Desova</span>`+
+        `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);"><span style="display:inline-block;width:12px;height:2px;background:#a855f7;border-top:1px dashed #a855f7;"></span>Méd. móv. (4)</span>`;
       const wrM=document.createElement('div');wrM.style.cssText='position:relative;';
       wrM.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div>${legM}</div>
