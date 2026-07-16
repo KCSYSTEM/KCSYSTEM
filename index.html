@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.23</title>
+<title>KC System v7.24</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.23</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.24</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2347,6 +2347,7 @@ function renderColetaGraficos(){
         const x=sXM(i);const y=sRY(v);const bh=padM.t+iHM-y;
         svgM+=`<rect x="${(x-barW/2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" fill="#7c3aed" opacity="0.35" rx="2"/>`;
         svgM+=`<rect x="${(x-barW/2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.7" rx="2"/>`;
+        svgM+=`<rect x="${(x-barW/2).toFixed(1)}" y="${padM.t}" width="${barW.toFixed(1)}" height="${iHM}" fill="transparent" data-i="${i}" data-pct="${v}" class="gcol-bar" style="cursor:pointer;"/>`;
       });
       // Line (fêmeas em reprodução, primary left Y)
       let lineD='';let lfr=true;
@@ -2373,23 +2374,34 @@ function renderColetaGraficos(){
       tipM.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;';
       wrM.appendChild(tipM);
       wrM.addEventListener('mouseover',function(e){
-        const dot=e.target.closest('.gcol-dot');if(!dot)return;
-        const i=parseInt(dot.getAttribute('data-i')),v=parseFloat(dot.getAttribute('data-v'));
-        const pctV=pctDData[i];
-        tipM.style.display='block';tipM.style.borderLeft='3px solid #0ea5e9';
-        tipM.textContent=`${dates[i]} · ${fNum(Math.round(v))} fêmeas · ${pctV!=null?fNum(pctV,1)+'% desova':''}`;
-        const rect=wrM.querySelector('svg').getBoundingClientRect(),dotRect=dot.getBoundingClientRect();
-        tipM.style.left=`${Math.min(dotRect.left-rect.left+dotRect.width/2,rect.width-160)}px`;
-        tipM.style.top=`${dotRect.top-rect.top-36}px`;
+        const dot=e.target.closest('.gcol-dot');
+        const bar=e.target.closest('.gcol-bar');
+        const svgEl=wrM.querySelector('svg');
+        if(dot){
+          const i=parseInt(dot.getAttribute('data-i')),v=parseFloat(dot.getAttribute('data-v'));
+          const pctV=pctDData[i];
+          tipM.style.display='block';tipM.style.borderLeft='3px solid #0ea5e9';
+          tipM.textContent=`${dates[i]} · ${fNum(Math.round(v))} fêmeas${pctV!=null?' · '+fNum(pctV,1)+'% desova':''}`;
+          const rect=svgEl.getBoundingClientRect(),dotRect=dot.getBoundingClientRect();
+          tipM.style.left=`${Math.min(dotRect.left-rect.left+dotRect.width/2,rect.width-160)}px`;
+          tipM.style.top=`${dotRect.top-rect.top-36}px`;
+        } else if(bar){
+          const i=parseInt(bar.getAttribute('data-i')),pctV=parseFloat(bar.getAttribute('data-pct'));
+          tipM.style.display='block';tipM.style.borderLeft='3px solid #7c3aed';
+          tipM.textContent=`${dates[i]} · ${fNum(pctV,1)}% desova`;
+          const rect=svgEl.getBoundingClientRect(),barRect=bar.getBoundingClientRect();
+          tipM.style.left=`${Math.min(barRect.left-rect.left+barRect.width/2,rect.width-140)}px`;
+          tipM.style.top=`${barRect.top-rect.top-36}px`;
+        }
       });
-      wrM.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot'))return;tipM.style.display='none';});
+      wrM.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot')&&!e.target.closest('.gcol-bar'))return;tipM.style.display='none';});
       wrM.addEventListener('mouseleave',()=>tipM.style.display='none');
       cardMix.querySelector('#gcol-1b').appendChild(wrM);
     }
   }
 
   // ── Gráfico 5: Fêmeas — Alocação vs Desova (21 dias) ──
-  const _matrizIds=new Set(tanks.filter(t=>t.matrizes).map(t=>t.id));
+  const _matrizIds=new Set(tanks.filter(t=>t.matrizes&&!t.empty).map(t=>t.id));
   const _matrizRecsG5=records.filter(r=>_matrizIds.has(r.tankId)&&r.femeas!=null&&!r.overridden)
     .sort((a,b)=>a.date.localeCompare(b.date));
   const _allDesovaG5=[...coletaRecords.filter(r=>!r.overridden&&r.desovaFemeas!=null),
@@ -2420,7 +2432,8 @@ function renderColetaGraficos(){
     _card5.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${_gd5.title}</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Azul: fêmeas nos tanques de matrizes no dia (último registro conhecido). Laranja: soma das fêmeas que desovaram nos 21 dias anteriores.</div>
       <div id="${_gd5.id}"></div>`;
-    cont.appendChild(_card5);
+    const _gcol2Card=[...cont.children].find(c=>c.querySelector('#gcol-2'));
+    if(_gcol2Card) cont.insertBefore(_card5,_gcol2Card); else cont.appendChild(_card5);
     const W5=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),H5=160;
     const n5=_dG5.length,rot5=n5>20;
     const pad5={t:10,b:rot5?62:30,l:50,r:10};
