@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.27</title>
+<title>KC System v7.28</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.27</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.28</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2114,7 +2114,7 @@ function renderColetaGraficos(){
   const grafTo=document.getElementById('coleta-graf-to')?.value||'';
 
   // Monta dataset por data
-  const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote&&!coletaRecords.some(c=>c.id===r.id))];
+  const coletaRecs=coletaRecords.filter(r=>!r.overridden&&r.lote);
   if(!coletaRecs.length){
     cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">📈</div>
@@ -2566,9 +2566,7 @@ function renderColetaGraficos(){
 
 async function deleteColetaLote(lote){
   if(!confirm(`Deletar todos os registros do lote "${lote}"?\n\nEsta ação não pode ser desfeita.`))return;
-  const toDeleteColeta=coletaRecords.filter(r=>r.lote===lote);
-  const toDeleteRec=records.filter(r=>r.lote===lote&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null));
-  const toDelete=[...toDeleteColeta,...toDeleteRec];
+  const toDelete=coletaRecords.filter(r=>r.lote===lote);
   if(!toDelete.length){showToast('Nenhum registro encontrado','error');return;}
   showToast('Deletando...','ok');
   let erros=0;
@@ -2598,8 +2596,7 @@ function renderColetaHistorico(){
     ovosPorMl:{l:'Ovos/mL',fmt:v=>fNum(v)},
   };
 
-  const _allColeta=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&r.lote&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosPorMl!=null||r.ovosGorados!=null)&&!coletaRecords.some(c=>c.id===r.id))];
-  const coletaRecs=_allColeta.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+  const coletaRecs=coletaRecords.filter(r=>!r.overridden&&r.lote).sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
 
   if(!coletaRecs.length){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text3);font-size:13px;">Nenhum lançamento ainda.</div>';
@@ -2640,8 +2637,7 @@ function renderColetaPainel(){
   const cont=document.getElementById('coleta-painel-container');
   if(!cont)return;
 
-  // Records de desova (fêmeas/ml) E records de só-gorados (lançados separadamente)
-  const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&r.lote&&!coletaRecords.some(c=>c.id===r.id))];
+  const coletaRecs=coletaRecords.filter(r=>!r.overridden&&r.lote);
   const coletaDesovaRecs=coletaRecs.filter(r=>r.desovaFemeas!=null||r.desovaML!=null);
   if(!coletaDesovaRecs.length){
     cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
@@ -2867,9 +2863,7 @@ function renderColeta(){
     const byTs=(arr)=>arr.slice().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
 
     // Se há lote digitado e existem records desse lote → modo edição: usa tanques/hapas reais do lote
-    const loteExistente = coletaLote
-      ? [...coletaRecords.filter(r=>r.lote===coletaLote&&!r.overridden),...records.filter(r=>r.lote===coletaLote&&!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&!coletaRecords.some(c=>c.id===r.id))]
-      : [];
+    const loteExistente = coletaLote ? coletaRecords.filter(r=>r.lote===coletaLote&&!r.overridden) : [];
 
     if(coletaLote && loteExistente.length){
       // Constrói linhas a partir dos records reais do lote (tanques/hapas da época)
@@ -2907,7 +2901,7 @@ function renderColeta(){
       matTanks.forEach(t=>{
         (t.hapaNames||[]).forEach((nm,i)=>{
           const h=i+1;
-          const hapaRecs=[...coletaRecords.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden),...records.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null)&&!coletaRecords.some(c=>c.id===r.id))];
+          const hapaRecs=coletaRecords.filter(r=>r.tankId===t.id&&r.hapa==h&&!r.overridden);
           const lastReprodRec  = byTs(hapaRecs.filter(r=>r.femeasReprod!=null))[0];
           const lastFemeasRec  = byTs(hapaRecs.filter(r=>r.desovaFemeas!=null))[0];
           const lastMlRec      = byTs(hapaRecs.filter(r=>r.desovaML!=null))[0];
@@ -2932,7 +2926,7 @@ function renderColeta(){
 
   } else {
     // Por lote (ovosPorMl ou ovosGorados)
-    const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote),...records.filter(r=>!r.overridden&&(r.desovaFemeas!=null||r.desovaML!=null)&&r.lote&&!coletaRecords.some(c=>c.id===r.id))];
+    const coletaRecs=coletaRecords.filter(r=>!r.overridden&&r.lote);
     const byLote={};
     coletaRecs.forEach(r=>{
       if(!byLote[r.lote])byLote[r.lote]={lote:r.lote,femeas:0,ml:0,lastDate:''};
@@ -2952,7 +2946,7 @@ function renderColeta(){
         <th style="min-width:100px;">🔬 Ovos/mL</th>
       </tr></thead>`);
       tbody.innerHTML=lotes.map((l,i)=>{
-        const allLoteRecs=[...coletaRecords.filter(r=>r.lote===l.lote&&!r.overridden),...records.filter(r=>r.lote===l.lote&&!r.overridden&&r.ovosPorMl!=null)];
+        const allLoteRecs=coletaRecords.filter(r=>r.lote===l.lote&&!r.overridden);
         const last=allLoteRecs.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||'')).find(r=>r.ovosPorMl!=null);
         return`<tr>
           <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
@@ -2969,7 +2963,7 @@ function renderColeta(){
         <th style="min-width:110px;">💀 % Gorados (ex: 30)</th>
       </tr></thead>`);
       tbody.innerHTML=lotes.map((l,i)=>{
-        const allLoteRecs=[...coletaRecords.filter(r=>r.lote===l.lote&&!r.overridden),...records.filter(r=>r.lote===l.lote&&!r.overridden&&r.ovosGorados!=null)];
+        const allLoteRecs=coletaRecords.filter(r=>r.lote===l.lote&&!r.overridden);
         const last=allLoteRecs.sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||'')).find(r=>r.ovosGorados!=null);
         return`<tr>
           <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
@@ -7963,7 +7957,7 @@ function buildPipeline(){
   const coletaLotes = {}; // loteId_coleta → info
 
   // Primeiro: mapeia lotes coleta a partir do módulo Coleta
-  const coletaRecs=[...coletaRecords.filter(r=>!r.overridden&&r.lote&&r.desovaFemeas!=null),...records.filter(r=>!r.overridden&&r.lote&&r.desovaFemeas!=null&&!coletaRecords.some(c=>c.id===r.id))];
+  const coletaRecs=coletaRecords.filter(r=>!r.overridden&&r.lote&&r.desovaFemeas!=null);
   const byLoteColeta = {};
   coletaRecs.forEach(r=>{ if(!byLoteColeta[r.lote]) byLoteColeta[r.lote]={lote:r.lote,ovos:0,datas:[]}; });
 
@@ -8006,16 +8000,7 @@ function buildPipeline(){
 
 function buildColetaByLote(){
   const byLote = {};
-  // Lê de coletaRecords (nova tabela) + fallback para records legado.
-  // O fallback só vale para lotes que NUNCA migraram para a tabela nova — um resíduo
-  // antigo isolado (ex: um "ovos/mL" lançado sem corrigir a data) não pode contaminar
-  // um lote que já tem dados completos e corretos em coletaRecords.
-  const lotesJaMigrados = new Set(coletaRecords.filter(r=>!r.overridden&&r.lote).map(r=>r.lote));
-  const allColeta=[
-    ...coletaRecords.filter(r=>!r.overridden&&r.lote),
-    ...records.filter(r=>!r.overridden&&r.lote&&!lotesJaMigrados.has(r.lote)&&(r.desovaFemeas!=null||r.desovaML!=null||r.ovosGorados!=null||r.ovosPorMl!=null))
-      .filter(r=>!coletaRecords.some(c=>c.id===r.id)) // evita duplicatas
-  ];
+  const allColeta=coletaRecords.filter(r=>!r.overridden&&r.lote);
   allColeta.forEach(r=>{
     if(!byLote[r.lote]) byLote[r.lote]={
       ovosTotal:0, ovosBons:0, mlTotal:0, lastDate:'',
@@ -8327,7 +8312,7 @@ function editManejoFase(manejoId){
   const m = manejos.find(x=>x.id===manejoId);
   if(!m){ showToast('Manejo não encontrado','error'); return; }
 
-  const lotesColeta=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote)])].sort().reverse();
+  const lotesColeta=[...new Set(coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote))].sort().reverse();
   const lotesManejo = manejos.map(x=>x.lote_id).filter(Boolean);
   const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
   const fasesOpts = Object.entries(FASES).map(([k,v])=>`<option value="${k}" ${k===m.fase?'selected':''}>${v.icon} ${v.label}</option>`).join('');
@@ -8382,7 +8367,7 @@ function editManejoFase(manejoId){
   // Preenche origens existentes
   const origemList = document.getElementById('mf-origens-list');
   (m.origens||[]).forEach(o=>{
-    const todos=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote),...manejos.map(x=>x.lote_id).filter(Boolean)])].sort().reverse();
+    const todos=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...manejos.map(x=>x.lote_id).filter(Boolean)])].sort().reverse();
     const opts = todos.map(l=>`<option value="${l}" ${l===o.lote_id?'selected':''}>${l}</option>`).join('');
     const id = 'origem_'+Date.now()+Math.random().toString(36).slice(2,5);
     const row = document.createElement('div');
@@ -8456,7 +8441,7 @@ async function saveEdicaoFase(manejoId){
 // ─── Formulário Nova Fase ───────────────────────────────
 function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
   // Coleta todos os lotes disponíveis como origem
-  const lotesColeta=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote)])].sort().reverse();
+  const lotesColeta=[...new Set(coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote))].sort().reverse();
   const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
   const todosLotesOrigem = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
 
@@ -8556,7 +8541,7 @@ function preencheQtdOrigem(id){
 
 function addOrigemRow(loteDefault=''){
   const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
-  const lotesColeta=[...new Set([...coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote),...records.filter(r=>r.lote&&r.desovaFemeas!=null&&!r.overridden).map(r=>r.lote)])].sort().reverse();
+  const lotesColeta=[...new Set(coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote))].sort().reverse();
   const todos = [...new Set([...lotesColeta,...lotesManejo])].sort().reverse();
   const opts = todos.map(l=>`<option value="${l}" ${l===loteDefault?'selected':''}>${l}</option>`).join('');
   const id = 'origem_'+Date.now();
