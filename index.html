@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.25</title>
+<title>KC System v7.26</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.25</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.26</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2145,8 +2145,14 @@ function renderColetaGraficos(){
     d.ovosTotal  =totalOvosTotal||null;
     d.ovosFinal  =totalOvosFinal||null;
     d.goradosPct =countGorados?parseFloat((goradosPctSum/countGorados).toFixed(1)):null;
-    // femeasReprod: total de fêmeas em reprodução na data, via biometria (1 valor por data, sem double-count por lote)
-    d.femeasReprod=femeasAlocadasEm(d.date)||null;
+    // femeasReprod: soma explícita por hapa (coleta_records.femeas_reprod) quando disponível;
+    // fallback = femeasAlocadasEm uma única vez por data (evita double-count quando múltiplos lotes sem dado explícito)
+    let _femRepExp=0,_anyExp=false;
+    d.lotes.forEach(lote=>{
+      const info=_byLoteInfo[lote];if(!info)return;
+      if(info._femeasReprodByHapa&&Object.keys(info._femeasReprodByHapa).length){_femRepExp+=info.femeasReprod||0;_anyExp=true;}
+    });
+    d.femeasReprod=_anyExp?(_femRepExp||null):(femeasAlocadasEm(d.date)||null);
     d.pctDesova  =(d.femeasReprod&&d.femeas)?parseFloat((d.femeas/d.femeasReprod*100).toFixed(1)):null;
   });
 
@@ -2406,36 +2412,24 @@ function renderColetaGraficos(){
   }
 
   // ── Gráfico 5: Fêmeas — Alocação vs Desova (21 dias) ──
-  const _matrizIds=new Set(tanks.filter(t=>t.matrizes&&!t.empty).map(t=>t.id));
-  const _matrizRecsG5=records.filter(r=>_matrizIds.has(r.tankId)&&r.femeas!=null&&!r.overridden)
-    .sort((a,b)=>a.date.localeCompare(b.date));
-  const _allDesovaG5=[...coletaRecords.filter(r=>!r.overridden&&r.desovaFemeas!=null),
-    ...records.filter(r=>!r.overridden&&r.desovaFemeas!=null&&!coletaRecords.some(c=>c.id===r.id))];
-  const _dG5Set=new Set();
-  _matrizRecsG5.filter(r=>(!grafFrom||r.date>=grafFrom)&&(!grafTo||r.date<=grafTo)).forEach(r=>_dG5Set.add(r.date));
-  _allDesovaG5.filter(r=>(!grafFrom||r.date>=grafFrom)&&(!grafTo||r.date<=grafTo)).forEach(r=>_dG5Set.add(r.date));
-  const _dG5=[..._dG5Set].sort();
+  // g5 usa mesmas datas e fonte que gcol-1b (buildColetaByLote) para consistência com aba Manejo
+  const _dG5=dates;
   if(_dG5.length){
-    const _g5Aloc=_dG5.map(ds=>{
-      const rr=_matrizRecsG5.filter(r=>r.date<=ds);
-      const seen=new Set();let tot=0;
-      [...rr].reverse().forEach(r=>{const k=`${r.tankId}_${r.hapa??'x'}`;if(!seen.has(k)){seen.add(k);tot+=r.femeas||0;}});
-      return tot||null;
-    });
-    const _g5D21=_dG5.map(ds=>{
-      const cut=new Date(ds);cut.setDate(cut.getDate()-20);
+    const _g5Aloc=data.map(d=>d.femeasReprod);
+    const _g5D21=data.map(d=>{
+      const cut=new Date(d.date);cut.setDate(cut.getDate()-20);
       const cs=cut.toISOString().split('T')[0];
-      const s=_allDesovaG5.filter(r=>r.date>=cs&&r.date<=ds).reduce((a,r)=>a+(r.desovaFemeas||0),0);
+      const s=data.filter(x=>x.date>=cs&&x.date<=d.date).reduce((a,x)=>a+(x.femeas||0),0);
       return s||null;
     });
     const _gd5={id:'gcol-5',title:'Fêmeas — Alocação vs Desova (últimos 21 dias)',unit:'un',series:[
-      {label:'Alocadas nos tanques',color:'#0ea5e9',vals:_g5Aloc},
+      {label:'Em reprodução na coleta',color:'#0ea5e9',vals:_g5Aloc},
       {label:'Desovadas (soma 21 dias)',color:'#f97316',vals:_g5D21},
     ]};
     const _card5=document.createElement('div');
     _card5.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;';
     _card5.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${_gd5.title}</div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Azul: fêmeas nos tanques de matrizes no dia (último registro conhecido). Laranja: soma das fêmeas que desovaram nos 21 dias anteriores.</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Azul: fêmeas em reprodução na coleta (mesma base que aba Manejo). Laranja: soma das fêmeas que desovaram nos 21 dias anteriores.</div>
       <div id="${_gd5.id}"></div>`;
     const _gcol2Card=[...cont.children].find(c=>c.querySelector('#gcol-2'));
     if(_gcol2Card) cont.insertBefore(_card5,_gcol2Card); else cont.appendChild(_card5);
