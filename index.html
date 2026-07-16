@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.21</title>
+<title>KC System v7.22</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.21</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.22</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2132,24 +2132,23 @@ function renderColetaGraficos(){
     byDate[r.date].lotes.add(r.lote);
   });
 
-  // Enriquece com ovosPorMl e gorados por data (via lote)
+  // Enriquece com ovosTotal, gorados e ovosFinal via buildColetaByLote (suporta coletaRecords modernos)
+  const _byLoteInfo=buildColetaByLote();
   Object.values(byDate).forEach(d=>{
-    let totalOvosTotal=0,totalOvosFinal=0,goradosPct=null,countGorados=0;
+    let totalOvosTotal=0,totalOvosFinal=0,goradosPctSum=0,countGorados=0;
+    let femeasReprodSum=0;
     d.lotes.forEach(lote=>{
-      const rOvos=records.find(r=>r.lote===lote&&r.ovosPorMl!=null&&!r.overridden);
-      // gorados: média dos hapas da desova deste lote nesta data
-      const goradosRecs=coletaRecs.filter(r=>r.lote===lote&&r.date===d.date&&r.ovosGorados!=null);
-      const goradosMedio=goradosRecs.length?goradosRecs.reduce((s,r)=>s+(r.ovosGorados||0),0)/goradosRecs.length:null;
-      const mlLoteData=coletaRecs.filter(r=>r.lote===lote&&r.date===d.date).reduce((s,r)=>s+(r.desovaML||0),0);
-      if(rOvos){
-        const ot=mlLoteData*rOvos.ovosPorMl;
-        totalOvosTotal+=ot;
-        if(goradosMedio!=null){totalOvosFinal+=ot*(1-goradosMedio/100);goradosPct=(goradosPct||0)+goradosMedio;countGorados++;}
-      }
+      const info=_byLoteInfo[lote];if(!info)return;
+      totalOvosTotal+=info.ovosTotal||0;
+      totalOvosFinal+=info.ovosBons||0;
+      if(info.goradosMedio!=null){goradosPctSum+=info.goradosMedio;countGorados++;}
+      femeasReprodSum+=info.femeasReprod||0;
     });
-    d.ovosTotal=totalOvosTotal||null;
-    d.ovosFinal=totalOvosFinal||null;
-    d.goradosPct=countGorados?parseFloat((goradosPct/countGorados).toFixed(1)):null;
+    d.ovosTotal  =totalOvosTotal||null;
+    d.ovosFinal  =totalOvosFinal||null;
+    d.goradosPct =countGorados?parseFloat((goradosPctSum/countGorados).toFixed(1)):null;
+    d.femeasReprod=femeasReprodSum||null;
+    d.pctDesova  =(femeasReprodSum&&d.femeas)?parseFloat((d.femeas/femeasReprodSum*100).toFixed(1)):null;
   });
 
   const dates=Object.keys(byDate).sort();
@@ -2172,7 +2171,6 @@ function renderColetaGraficos(){
     {id:'gcol-1',title:'Fêmeas que Desovaram',unit:'un',
       series:[
         {label:'Fêmeas desovadas',color:'#7c3aed',vals:data.map(d=>d.femeas)},
-        {label:'Total fêmeas',color:'#d9b4fe',vals:data.map(()=>totalFemeasMatrizes||null),dashed:true},
         {label:'Média móvel (4)',color:'#c4b5fd',vals:movingAvg(data.map(d=>d.femeas)),dashed:true,thin:true},
       ]},
     {id:'gcol-2',title:'Ovos Total',unit:'un',
@@ -2291,8 +2289,103 @@ function renderColetaGraficos(){
     card.querySelector(`#${gd.id}`).appendChild(wrapper);
   });
 
+  // ── Gráfico 1b: Fêmeas em Reprodução × % Desova ──
+  {
+    const femRepData=data.map(d=>d.femeasReprod);
+    const pctDData  =data.map(d=>d.pctDesova);
+    const hasData   =femRepData.some(v=>v!=null)||pctDData.some(v=>v!=null);
+    if(hasData&&n){
+      const cardMix=document.createElement('div');
+      cardMix.style.cssText='background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;';
+      cardMix.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">Fêmeas em Reprodução × % Desova</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px;">Linha (eixo esq.): total fêmeas em reprodução. Barras (eixo dir.): % das fêmeas que desovaram.</div>
+        <div id="gcol-1b"></div>`;
+      // Insert right after gcol-1 card
+      const gcol1Card=[...cont.children].find(c=>c.querySelector('#gcol-1'));
+      if(gcol1Card&&gcol1Card.nextSibling) cont.insertBefore(cardMix,gcol1Card.nextSibling);
+      else cont.appendChild(cardMix);
+
+      const WM=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),HM=180;
+      const padM={t:10,b:n>20?62:30,l:52,r:48};
+      const iWM=WM-padM.l-padM.r,iHM=HM-padM.t-padM.b;
+      const leftVals=femRepData.filter(v=>v!=null);
+      const leftMax=leftVals.length?Math.max(...leftVals)*1.15:1;
+      const rightMax=100;
+      const sLY=v=>padM.t+iHM-(v/leftMax)*iHM;
+      const sRY=v=>padM.t+iHM-(v/rightMax)*iHM;
+      const sXM=i=>padM.l+(n===1?iWM/2:i/(n-1)*iWM);
+      const barW=n>1?(iWM/(n-1))*0.55:iWM*0.3;
+
+      let svgM='';
+      // Grid (left)
+      [0,0.25,0.5,0.75,1].forEach(f=>{
+        const y=padM.t+iHM*(1-f);const val=leftMax*f;
+        svgM+=`<line x1="${padM.l}" y1="${y}" x2="${WM-padM.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+        svgM+=`<text x="${padM.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${val>=1000?fNum(Math.round(val/1000))+'k':fNum(Math.round(val))}</text>`;
+      });
+      // Right Y axis labels (%)
+      [0,25,50,75,100].forEach(pct=>{
+        const y=sRY(pct);
+        svgM+=`<text x="${WM-padM.r+4}" y="${y+4}" text-anchor="start" font-size="9" fill="#7c3aed">${pct}%</text>`;
+      });
+      // Right Y axis line
+      svgM+=`<line x1="${WM-padM.r}" y1="${padM.t}" x2="${WM-padM.r}" y2="${padM.t+iHM}" stroke="var(--border)" stroke-width="1"/>`;
+      // X labels
+      const mlM=Math.min(8,n),stM=Math.max(1,Math.ceil(n/mlM));
+      dates.forEach((d,i)=>{
+        if(i%stM!==0&&i!==n-1)return;const x=sXM(i);
+        if(n>20){svgM+=`<text transform="rotate(-45,${x},${HM-padM.b+12})" x="${x}" y="${HM-padM.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${d}</text>`;}
+        else{svgM+=`<text x="${x}" y="${HM-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d}</text>`;}
+      });
+      // Bars (% desova, secondary right Y)
+      pctDData.forEach((v,i)=>{
+        if(v==null)return;
+        const x=sXM(i);const y=sRY(v);const bh=padM.t+iHM-y;
+        svgM+=`<rect x="${(x-barW/2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" fill="#7c3aed" opacity="0.35" rx="2"/>`;
+        svgM+=`<rect x="${(x-barW/2).toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.7" rx="2"/>`;
+      });
+      // Line (fêmeas em reprodução, primary left Y)
+      let lineD='';let lfr=true;
+      femRepData.forEach((v,i)=>{if(v!=null){const p=`${sXM(i).toFixed(1)},${sLY(v).toFixed(1)}`;lineD+=(lfr?`M${p}`:`L${p}`);lfr=false;}else{lfr=true;}});
+      if(lineD) svgM+=`<path d="${lineD}" fill="none" stroke="#0ea5e9" stroke-width="2"/>`;
+      // Dots on line
+      femRepData.forEach((v,i)=>{
+        if(v==null)return;
+        const cx=sXM(i),cy=sLY(v);
+        svgM+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="8" fill="transparent" data-i="${i}" data-v="${v}" data-color="#0ea5e9" class="gcol-dot"/>`;
+        svgM+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3" fill="#0ea5e9" pointer-events="none"/>`;
+      });
+
+      const legM=`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:#0ea5e9;"></span>Fêmeas em reprodução</span>`+
+        `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);"><span style="display:inline-block;width:10px;height:10px;background:#7c3aed;opacity:0.4;border-radius:2px;"></span>% Desova</span>`;
+      const wrM=document.createElement('div');wrM.style.cssText='position:relative;';
+      wrM.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div>${legM}</div>
+        <div style="font-size:9px;color:#0ea5e9;">← reprod.</div>
+        <div style="font-size:9px;color:#7c3aed;">% desova →</div>
+      </div>
+      <svg viewBox="0 0 ${WM} ${HM}" style="width:100%;display:block;">${svgM}</svg>`;
+      const tipM=document.createElement('div');
+      tipM.style.cssText='position:absolute;background:#0d1f35;color:#fff;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;pointer-events:none;display:none;white-space:nowrap;z-index:50;';
+      wrM.appendChild(tipM);
+      wrM.addEventListener('mouseover',function(e){
+        const dot=e.target.closest('.gcol-dot');if(!dot)return;
+        const i=parseInt(dot.getAttribute('data-i')),v=parseFloat(dot.getAttribute('data-v'));
+        const pctV=pctDData[i];
+        tipM.style.display='block';tipM.style.borderLeft='3px solid #0ea5e9';
+        tipM.textContent=`${dates[i]} · ${fNum(Math.round(v))} fêmeas · ${pctV!=null?fNum(pctV,1)+'% desova':''}`;
+        const rect=wrM.querySelector('svg').getBoundingClientRect(),dotRect=dot.getBoundingClientRect();
+        tipM.style.left=`${Math.min(dotRect.left-rect.left+dotRect.width/2,rect.width-160)}px`;
+        tipM.style.top=`${dotRect.top-rect.top-36}px`;
+      });
+      wrM.addEventListener('mouseout',e=>{if(!e.target.closest('.gcol-dot'))return;tipM.style.display='none';});
+      wrM.addEventListener('mouseleave',()=>tipM.style.display='none');
+      cardMix.querySelector('#gcol-1b').appendChild(wrM);
+    }
+  }
+
   // ── Gráfico 5: Fêmeas — Alocação vs Desova (21 dias) ──
-  const _matrizIds=new Set(tanks.filter(t=>t.matrizes&&!t.empty).map(t=>t.id));
+  const _matrizIds=new Set(tanks.filter(t=>t.matrizes).map(t=>t.id));
   const _matrizRecsG5=records.filter(r=>_matrizIds.has(r.tankId)&&r.femeas!=null&&!r.overridden)
     .sort((a,b)=>a.date.localeCompare(b.date));
   const _allDesovaG5=[...coletaRecords.filter(r=>!r.overridden&&r.desovaFemeas!=null),
@@ -8109,6 +8202,8 @@ function renderPipelineCard(p){
       if(coletaOvosBons>0) prevQtd=coletaOvosBons;
     }
     const pct = prevQtd ? Math.round(qtdTotal/prevQtd*100) : null;
+    const _ovTot = fase!=='coleta' ? (_coletaInfo?.ovosTotal||0) : 0;
+    const pctVsOvos = (_ovTot&&fase!=='coleta') ? Math.round(qtdTotal/_ovTot*100) : null;
     const destinos = itens.flatMap(i=>(i.destinos||[]).map(d=>d.tanque_id?tanks.find(t=>t.id===d.tanque_id)?.name||d.tanque_id:''));
     const destinosStr = [...new Set(destinos.filter(Boolean))].join(', ');
     const dataStr = fmtMonthShort(itens.map(i=>i.data).sort().pop()||'');
@@ -8152,7 +8247,7 @@ function renderPipelineCard(p){
       <div style="font-size:18px;">${icon}</div>
       <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;margin:2px 0;">${FASES[fase]?.label||fase}</div>
       <div style="font-size:13px;font-weight:800;color:var(--text);">${fNum(displayQtd)}</div>
-      ${pct!=null?`<div style="font-size:10px;color:${pct>=70?'#16a34a':pct>=50?'#d97706':'#dc2626'};font-weight:700;">${pct}%</div>`:''}
+      ${(pct!=null||pctVsOvos!=null)?`<div style="font-size:10px;color:${pct!=null?(pct>=70?'#16a34a':pct>=50?'#d97706':'#dc2626'):'var(--text3)'};font-weight:700;">${pct!=null?pct+'%':''}${pct!=null&&pctVsOvos!=null?' / ':''}<span style="color:var(--text3);font-weight:600;">${pctVsOvos!=null?pctVsOvos+'%🥚':''}</span></div>`:''}
       ${destinosStr?`<div style="font-size:9px;color:var(--text3);margin-top:2px;">${destinosStr}</div>`:''}
       ${dataStr?`<div style="font-size:9px;color:var(--text3);">${dataStr}</div>`:''}
       ${editBtn}
