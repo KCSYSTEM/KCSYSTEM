@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.43</title>
+<title>KC System v7.44</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.43</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.44</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -798,7 +798,7 @@ input[type="number"]{-moz-appearance:textfield;}
           <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
         </select>
         <select id="ponto-ano" onchange="renderPonto()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
-          <option value="2026" selected>2026</option><option value="2027">2027</option>
+          <option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
         </select>
         <label id="ponto-upload-wrap" style="display:none;padding:8px 14px;background:var(--accent);color:#fff;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">
           📂 Importar ponto
@@ -10652,6 +10652,9 @@ const PERFIS_META = {
         faixas:[{max:2.5,valor:50},{max:5,valor:40},{max:7.5,valor:30},{max:10,valor:20}] },
       { id:'sabados',           label:'Sábados — Ração, Lab. e Água', fonte:'manual', unidade:'% sáb.', formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:0,valor:0}] },
+      { id:'presenca',          label:'Presença', fonte:'auto', unidade:'%', formato:v=>v+'%',
+        regra:'100% de seg–sex úteis (excl. feriados) com ≥ 4h registradas. Qualquer falta ou atestado anula o bônus.',
+        faixas:[{min:100,valor:200},{min:0,valor:0}] },
     ]
   },
   arracador: {
@@ -10672,6 +10675,9 @@ const PERFIS_META = {
         faixas:[{min:100,valor:50},{min:90,valor:40},{min:80,valor:30},{min:0,valor:0}] },
       { id:'sabados',           label:'Sábados — Ração, Lab. e Água', fonte:'manual', unidade:'% sáb.', formato:v=>v+'%',
         faixas:[{min:100,valor:50},{min:0,valor:0}] },
+      { id:'presenca',          label:'Presença', fonte:'auto', unidade:'%', formato:v=>v+'%',
+        regra:'100% de seg–sex úteis (excl. feriados) com ≥ 4h registradas. Qualquer falta ou atestado anula o bônus.',
+        faixas:[{min:100,valor:200},{min:0,valor:0}] },
     ]
   }
 };
@@ -10792,12 +10798,38 @@ async function fetchMetasAuto(ano, mes) {
     renovacaoAguaPct = Math.round(atendidas / metasAguaList.length * 100);
   }
 
+  // Presença: % de seg–sex úteis (excl. feriados) com ≥4h registradas no ponto
+  loadPonto(); loadAtestados();
+  let presencaPct = null;
+  const _pUname = currentUser?.username?.toLowerCase();
+  const _pDados = pontoData[_pUname] || pontoData[currentUser?.username] || {};
+  const _pAtDados = pontoAtestados[_pUname] || pontoAtestados[currentUser?.username] || {};
+  if (_pUname) {
+    const _pHoje = new Date();
+    const _pEhMesAtual = ano === _pHoje.getFullYear() && mes === (_pHoje.getMonth()+1);
+    const _pUltimoDia = _pEhMesAtual ? _pHoje.getDate() : new Date(ano, mes, 0).getDate();
+    let _pUteis = 0, _pPresente = 0;
+    for (let d = 1; d <= _pUltimoDia; d++) {
+      const ds = `${ano}-${mesStr}-${String(d).padStart(2,'0')}`;
+      const dow = new Date(ano, mes-1, d).getDay();
+      if (dow === 0 || dow === 6 || FERIADOS.has(ds)) continue;
+      _pUteis++;
+      if (_pAtDados[ds]) continue;
+      const reg = _pDados[ds];
+      if (!reg?.batidas?.length) continue;
+      const { trabalhado } = calcDia(reg.batidas);
+      if (trabalhado !== null && trabalhado >= 240) _pPresente++;
+    }
+    if (_pUteis > 0) presencaPct = Math.round(_pPresente / _pUteis * 100);
+  }
+
   return {
     qtd_ovos:        Math.round(totalOvos),
     producao_larvas: Math.round(totalLarvas),
     qtd_alevinos:    Math.round(totalAlevinos),
     pesar_racao:     pesarRacaoPct,
     renovacao_agua:  renovacaoAguaPct,
+    presenca:        presencaPct,
   };
 }
 
@@ -10869,6 +10901,7 @@ async function renderMetas() {
   if (autoData.qtd_alevinos    != null) valores.qtd_alevinos    = autoData.qtd_alevinos;
   if (autoData.pesar_racao     != null) valores.pesar_racao     = autoData.pesar_racao;
   if (autoData.renovacao_agua  != null) valores.renovacao_agua  = autoData.renovacao_agua;
+  if (autoData.presenca        != null) valores.presenca        = autoData.presenca;
 
   // Dias úteis do mês (seg–sáb) para conversão de limpeza
   const _dtTmp = new Date(ano, mes-1, 1);
@@ -11028,6 +11061,12 @@ async function renderMetas() {
         <td style="padding:6px 14px;text-align:right;font-weight:700;color:${prizeCor};">R$ ${f.valor.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
       </tr>`;
     });
+    if (ind.regra) {
+      html += `<tr style="${bg}border-bottom:2px solid var(--border);">
+        <td></td>
+        <td colspan="2" style="padding:3px 10px 8px;color:var(--text3);font-style:italic;font-size:10px;">ℹ️ ${ind.regra}</td>
+      </tr>`;
+    }
   });
 
   html += `</tbody></table></div>`;
@@ -11441,6 +11480,15 @@ function fmtMin(min) {
   return (neg?'-':'')+h+'h'+(m>0?m+'min':'');
 }
 
+const FERIADOS=new Set([
+  ...[2025,2026,2027].flatMap(y=>[`${y}-01-01`,`${y}-04-21`,`${y}-05-01`,`${y}-07-09`,`${y}-09-07`,`${y}-10-12`,`${y}-11-02`,`${y}-11-15`,`${y}-11-20`,`${y}-12-25`]),
+  '2025-03-03','2025-03-04','2025-04-18','2025-06-19',
+  '2026-02-16','2026-02-17','2026-04-03','2026-06-04',
+  '2027-02-08','2027-02-09','2027-03-26','2027-05-27',
+]);
+const FERIADOS_NOMES={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','07-09':'Revolução Constitucionalista','09-07':'Independência','10-12':'N.Sra. Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal','2025-03-03':'Carnaval','2025-03-04':'Carnaval','2025-04-18':'Sexta-feira Santa','2025-06-19':'Corpus Christi','2026-02-16':'Carnaval','2026-02-17':'Carnaval','2026-04-03':'Sexta-feira Santa','2026-06-04':'Corpus Christi','2027-02-08':'Carnaval','2027-02-09':'Carnaval','2027-03-26':'Sexta-feira Santa','2027-05-27':'Corpus Christi'};
+function getNomeFeriado(key){return FERIADOS_NOMES[key]||FERIADOS_NOMES[key.slice(5)]||'Feriado';}
+
 function renderPonto() {
   const mes = parseInt(document.getElementById('ponto-mes')?.value);
   const ano = parseInt(document.getElementById('ponto-ano')?.value);
@@ -11454,12 +11502,11 @@ function renderPonto() {
   // Quais usuários mostrar — lista canônica PONTO_USERS (minúsculas)
   const usersToShow = isAdmin() ? PONTO_USERS : [currentUser?.username?.toLowerCase()].filter(Boolean);
 
-  // Dias úteis do mês (seg-sáb) — mês 0-indexed internamente
+  // Todos os dias do mês — domingo/feriado exibidos mas com saldo 0
   const diasUteis = [];
   const dt = new Date(ano, mes-1, 1);
   while (dt.getMonth() === mes-1) {
-    const dow = dt.getDay(); // 0=dom
-    if (dow !== 0) diasUteis.push(new Date(dt)); // exclui domingo
+    diasUteis.push(new Date(dt));
     dt.setDate(dt.getDate()+1);
   }
 
@@ -11482,6 +11529,7 @@ function renderPonto() {
       const key = d.toISOString().split('T')[0];
       if (key > todayStr) return; // dias futuros não entram no banco
       const dow = d.getDay();
+      if (dow === 0 || FERIADOS.has(key)) return; // domingo/feriado: saldo 0
       const ehSab = dow === 6;
       const esperado = ehSab ? 4*60 : 8*60; // sáb=4h, seg-sex=8h
       const reg = uDados[key];
@@ -11568,6 +11616,17 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
     const key = d.toISOString().split('T')[0];
     if (key > todayStr) return; // dias futuros não exibidos
     const dow = d.getDay();
+    if (dow === 0 || FERIADOS.has(key)) {
+      const nomeDia = FERIADOS.has(key) ? getNomeFeriado(key) : 'Domingo';
+      html += `
+      <tr style="background:#cdd2da;border-bottom:1px solid var(--border);">
+        <td style="padding:8px 14px;color:#6b7280;font-weight:600;">${dias[dow]} ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</td>
+        <td colspan="3" style="padding:8px;text-align:center;color:#6b7280;font-size:11px;font-style:italic;">${nomeDia}</td>
+        <td style="padding:8px;text-align:center;color:#6b7280;">—</td>
+        ${admin?'<td></td>':''}
+      </tr>`;
+      return;
+    }
     const ehSab = dow === 6;
     const esperado = ehSab ? 240 : 480; // sáb=4h, seg-sex=8h
     const reg = uDados[key];
