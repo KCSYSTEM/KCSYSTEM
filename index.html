@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.44</title>
+<title>KC System v7.45</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.44</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.45</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -701,6 +701,7 @@ input[type="number"]{-moz-appearance:textfield;}
             <div class="config-field"><label>Perfil</label>
               <select id="new-user-role">
                 <option value="usuario">Usuário</option>
+                <option value="encarregado">Encarregado</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
@@ -1422,6 +1423,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="config-field"><label>Perfil</label>
       <select id="edit-user-role">
         <option value="usuario">Usuário</option>
+        <option value="encarregado">Encarregado</option>
         <option value="admin">Administrador</option>
       </select>
     </div>
@@ -1460,7 +1462,7 @@ input[type="number"]{-moz-appearance:textfield;}
   <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);text-align:center;">
     <div style="font-size:40px;margin-bottom:10px;">💾</div>
     <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;">Backup semanal</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">É segunda-feira! Baixe um backup completo dos dados do sistema para manter uma cópia de segurança local.</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">Nenhum backup foi realizado nos últimos 7 dias. Baixe um backup completo dos dados do sistema para manter uma cópia de segurança local.</div>
     <button id="backup-reminder-btn" onclick="downloadBackupFromReminder()" style="width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;">⬇️ Baixar backup agora</button>
     <button onclick="document.getElementById('backup-reminder-overlay').style.display='none'" style="width:100%;padding:10px;border:none;background:transparent;color:var(--text3);font-size:13px;cursor:pointer;">Lembrar mais tarde</button>
   </div>
@@ -3851,6 +3853,7 @@ function hideSyncStatus(){
 // ===== AUTH =====
 function isAdmin(){return currentUser?.role==='admin';}
 function isDono(){return currentUser?.id==='daa372d7-d3f3-44ef-b3b7-6e7d7b5df2b0';}
+function isEncarregado(){return currentUser?.role==='encarregado';}
 async function enterApp(u,perfil){
   currentUser={id:perfil.id,username:perfil.username,name:perfil.nome,role:perfil.role};
   _modoComercial=!!(perfil.modo_comercial);
@@ -3862,7 +3865,7 @@ async function enterApp(u,perfil){
   document.getElementById('dd-name').textContent=currentUser.name;
   document.getElementById('dd-login').textContent='@'+currentUser.username;
   const roleEl=document.getElementById('dd-role');
-  if(roleEl){roleEl.textContent=isAdmin()?'Administrador':'Usuário';roleEl.style.display='inline-block';}
+  if(roleEl){roleEl.textContent=isAdmin()?'Administrador':isEncarregado()?'Encarregado':'Usuário';roleEl.style.display='inline-block';}
   // Mostra opções admin no menu hamburguer
   document.querySelectorAll('.mod-coleta-only,.mod-admin-only').forEach(el=>el.style.display=isAdmin()?'flex':'none');
   document.querySelectorAll('.mod-dono-only').forEach(el=>el.style.display=isDono()?'flex':'none');
@@ -3921,10 +3924,15 @@ function _mondayOfThisWeek(){
 }
 function checkBackupReminder(perfil){
   if(!isAdmin())return;
-  if(_nowBrasilia().getDay()!==1)return; // só na segunda-feira
-  const lastRaw=perfil?.last_backup_at??perfil?.lastBackupAt;
-  const last=lastRaw?new Date(lastRaw):null;
-  if(last&&last>=_mondayOfThisWeek())return; // este admin já baixou o backup esta semana
+  const sevenDaysAgo=new Date(_nowBrasilia());
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
+  const allBackups=Object.values(perfisCache)
+    .filter(u=>u.role==='admin'&&u.lastBackupAt)
+    .map(u=>new Date(u.lastBackupAt));
+  const curLast=perfil?.last_backup_at??perfil?.lastBackupAt;
+  if(curLast)allBackups.push(new Date(curLast));
+  const lastBackup=allBackups.length?new Date(Math.max(...allBackups)):null;
+  if(lastBackup&&lastBackup>sevenDaysAgo)return;
   document.getElementById('backup-reminder-overlay').style.display='flex';
 }
 async function downloadBackupFromReminder(){
@@ -5001,9 +5009,9 @@ async function resetRacoesParaPadrao(){
 }
 
 // ===== GERENCIAR USUÁRIOS =====
-const ROLE_LABEL={'admin':'Administrador','usuario':'Usuário'};
-const ROLE_COLOR={'admin':'var(--accent)','usuario':'var(--ok)'};
-const ROLE_BG={'admin':'rgba(26,58,107,0.1)','usuario':'rgba(22,163,74,0.1)'};
+const ROLE_LABEL={'admin':'Administrador','encarregado':'Encarregado','usuario':'Usuário'};
+const ROLE_COLOR={'admin':'var(--accent)','encarregado':'var(--warn)','usuario':'var(--ok)'};
+const ROLE_BG={'admin':'rgba(26,58,107,0.1)','encarregado':'rgba(217,119,6,0.1)','usuario':'rgba(22,163,74,0.1)'};
 let editingUserLogin=null;
 
 function renderUsersList(){
@@ -11499,8 +11507,10 @@ function renderPonto() {
   const saveBtn = document.getElementById('ponto-save-btn');
   if (saveBtn) saveBtn.style.display = isAdmin() ? 'inline-block' : 'none';
 
-  // Quais usuários mostrar — lista canônica PONTO_USERS (minúsculas)
-  const usersToShow = isAdmin() ? PONTO_USERS : [currentUser?.username?.toLowerCase()].filter(Boolean);
+  // Quais usuários mostrar — lista canônica PONTO_USERS (minúsculas), excluindo bloqueados
+  const usersToShow = (isAdmin() || isEncarregado())
+    ? PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado)
+    : [currentUser?.username?.toLowerCase()].filter(Boolean);
 
   // Todos os dias do mês — domingo/feriado exibidos mas com saldo 0
   const diasUteis = [];
