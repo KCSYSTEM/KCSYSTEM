@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.45</title>
+<title>KC System v7.46</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.45</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.46</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1437,6 +1437,16 @@ input[type="number"]{-moz-appearance:textfield;}
 <div id="toast"></div>
 
 <!-- Popup de solicitação de novo usuário -->
+<div id="create-user-error-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:360px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
+    <div style="font-size:20px;font-weight:800;color:#dc2626;margin-bottom:10px;">Erro ao criar usuário</div>
+    <div id="cue-msg" style="font-size:14px;color:var(--text);margin-bottom:20px;line-height:1.5;"></div>
+    <button onclick="document.getElementById('create-user-error-overlay').style.display='none'"
+            style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;">
+      Fechar
+    </button>
+  </div>
+</div>
 <div id="new-user-request-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:9999;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:20px;padding:28px 24px;max-width:370px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.35);">
     <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">📋 Novo Usuário</div>
@@ -5136,6 +5146,10 @@ function showNewUserRequest(){
   ov.style.display='flex';
   logAudit('novo_usuario_solicitado',`Solicitação de novo usuário: @${login} (${name})`);
 }
+function showCreateUserError(msg){
+  document.getElementById('cue-msg').textContent=msg;
+  document.getElementById('create-user-error-overlay').style.display='flex';
+}
 async function createUser(){
   if(!isAdmin()){showToast('Acesso restrito','error');return;}
   const login=document.getElementById('new-user-login').value.trim().toLowerCase().replace(/\s/g,'');
@@ -5144,33 +5158,34 @@ async function createUser(){
   const role=document.getElementById('new-user-role').value;
   if(!login){showToast('Digite o login','error');return;}
   if(!name){showToast('Digite o nome','error');return;}
-  if(pass.length<8){showToast('Senha deve ter no mínimo 8 caracteres','error');return;}
-  const email=`${login}@kcsystem.farm`;
-  const signupRes=await fetch(`${SB_URL}/auth/v1/signup`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','apikey':SB_KEY},
-    body:JSON.stringify({email,password:pass})
-  });
-  const signupJson=await signupRes.json();
-  const newUserId=signupJson?.user?.id||signupJson?.id;
-  if(!signupRes.ok||!newUserId){
-    const msg=(signupJson?.msg||signupJson?.message||signupJson?.error_description||'').toLowerCase();
-    if(signupRes.status===422||msg.includes('signup')||msg.includes('sign up')||msg.includes('disabled')){
-      showNewUserRequest();
-    } else {
-      showToast('Erro ao criar conta: '+(signupJson?.msg||signupJson?.message||signupJson?.error_description||'desconhecido'),'error');
+  if(pass.length<8){showToast('Senha mínima: 8 caracteres','error');return;}
+  const btn=document.querySelector('.btn-save[onclick="createUser()"]');
+  if(btn){btn.disabled=true;btn.textContent='Criando...';}
+  try{
+    const {data:{session}}=await _sb.auth.getSession();
+    if(!session?.access_token){showCreateUserError('Sessão expirada. Faça login novamente.');return;}
+    const res=await fetch(`${SB_URL}/functions/v1/create-user`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SB_KEY},
+      body:JSON.stringify({login,name,password:pass,role})
+    });
+    const json=await res.json();
+    if(!res.ok||!json.ok){
+      showCreateUserError(json.error||'Erro desconhecido ('+res.status+')');
+      return;
     }
-    return;
+    perfisCache[login]={id:json.id,name,role};
+    renderUsersList();
+    document.getElementById('new-user-login').value='';
+    document.getElementById('new-user-name').value='';
+    document.getElementById('new-user-pass').value='';
+    showToast(`Usuário ${name} criado ✓`,'ok');
+    logAudit('usuario_criado',`Usuário @${login} (${name}) criado`);
+  }catch(e){
+    showCreateUserError(e.message||'Erro de conexão');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Criar Usuário';}
   }
-  const ok=await sbUpsert('perfis',[{id:newUserId,username:login,nome:name,role}]);
-  if(!ok){showToast('Conta criada mas perfil não salvo — tente novamente','error');return;}
-  perfisCache[login]={id:newUserId,name,role};
-  renderUsersList();
-  document.getElementById('new-user-login').value='';
-  document.getElementById('new-user-name').value='';
-  document.getElementById('new-user-pass').value='';
-  showToast(`Usuário ${name} criado ✓`,'ok');
-  logAudit('usuario_criado',`Usuário @${login} (${name}) criado`);
 }
 function deleteUser(login){
   if(login===currentUser?.username){showToast('Não é possível remover seu próprio usuário','error');return;}
@@ -5691,7 +5706,13 @@ function _atualizaHorasTroca(rid){
   el.textContent=h!=null?fNum(h,1)+'h':'';
 }
 
+let _savingLancamentos=false;
 async function saveLancamentos(){
+  if(_savingLancamentos)return;
+  _savingLancamentos=true;
+  try{ await _saveLancamentosInner(); }finally{ _savingLancamentos=false; }
+}
+async function _saveLancamentosInner(){
   const param=document.getElementById('lanc-param')?.value;
   const date=document.getElementById('lanc-date')?.value;
   if(!param){showToast('Selecione um parâmetro','error');return;}
@@ -6060,6 +6081,17 @@ async function _doSaveLancamentos(toSave,param,date){
       const idx=records.findIndex(r=>r.id===existing.id);
       if(idx>=0) records[idx]=existing;
       if(await saveTankRecord_sb(existing))savedSb++;
+      // Limpa duplicatas: outros registros do mesmo tank+date (exceto o que acabou de ser salvo)
+      const dupsToDelete=records.filter(r=>
+        r.tankId===item.tankId&&r.date===date&&r.id!==existing.id&&
+        (item.hapaNum==null?!r.hapa:r.hapa==item.hapaNum)&&
+        !r.isTrocaAgua&&!r.overridden
+      );
+      for(const dup of dupsToDelete){
+        await sbDelete('tank_records',dup.id);
+        const di=records.findIndex(x=>x.id===dup.id);
+        if(di>=0)records.splice(di,1);
+      }
     } else {
       // ── Cria novo registro do dia ─────────────────────────
       const newRec={
