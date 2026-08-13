@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.48</title>
+<title>KC System v7.49</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.48</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.49</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -8423,7 +8423,14 @@ function renderPipelineCard(p){
           ? p.lote_coleta
           : (fasesAnteriores[fasesAnteriores.length-1]?.lote_id || p.lote_coleta);
         return `<button onclick="openManejoForm('${loteOrigem}','${proximaFase}')" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;cursor:pointer;">+ ${FASES[proximaFase]?.label||proximaFase}</button>`;
-      })():'<div style="flex:1;font-size:11px;color:#16a34a;text-align:center;padding:7px;">✅ Pipeline completo</div>'}
+      })():(()=>{
+        const fasesTransf = fases.filter(f=>f.fase==='transferencia');
+        const loteOrigem = fasesTransf.length
+          ? (fasesTransf[fasesTransf.length-1]?.lote_id || p.lote_coleta)
+          : p.lote_coleta;
+        return `<div style="flex:1;font-size:11px;color:#16a34a;font-weight:600;padding:7px;">✅ Pipeline completo</div>
+                <button onclick="openManejoForm('${loteOrigem}','venda')" style="background:none;border:1.5px solid #d97706;border-radius:7px;padding:7px 12px;font-size:12px;font-weight:700;color:#d97706;cursor:pointer;">+ Venda</button>`;
+      })()}
     </div>` : '';
 
   return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px;">
@@ -8508,6 +8515,13 @@ function editManejoFase(manejoId){
     <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">DATA</label>
     <input type="date" id="mf-data" value="${m.data||''}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;">
 
+    <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+      <span style="color:var(--text2);">📥 <b>Origem:</b> <span id="mf-ori-total" style="color:var(--accent);">—</span></span>
+      <span style="color:var(--border2);">→</span>
+      <span style="color:var(--text2);">📤 <b>Destino:</b> <span id="mf-dst-total" style="color:var(--accent);">—</span></span>
+      <span id="mf-match-badge"></span>
+    </div>
+
     <div id="mf-destinos-section">
       <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">TANQUE(S) DESTINO</label>
       <div id="mf-destinos-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
@@ -8561,6 +8575,7 @@ function editManejoFase(manejoId){
     destList.appendChild(row);
   });
   if(!(m.destinos||[]).length) addDestinoRow();
+  setTimeout(updateManejoSummary, 0);
 }
 
 async function saveEdicaoFase(manejoId){
@@ -8639,6 +8654,13 @@ function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
     <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">DATA</label>
     <input type="date" id="mf-data" value="${new Date().toISOString().split('T')[0]}" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:12px;">
 
+    <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+      <span style="color:var(--text2);">📥 <b>Origem:</b> <span id="mf-ori-total" style="color:var(--accent);">—</span></span>
+      <span style="color:var(--border2);">→</span>
+      <span style="color:var(--text2);">📤 <b>Destino:</b> <span id="mf-dst-total" style="color:var(--accent);">—</span></span>
+      <span id="mf-match-badge"></span>
+    </div>
+
     <div id="mf-destinos-section">
       <label style="font-size:11px;font-weight:700;color:var(--text3);display:block;margin-bottom:4px;">TANQUE(S) DESTINO</label>
       <div id="mf-destinos-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
@@ -8698,6 +8720,27 @@ function getQtdLote(loteId){
   return null;
 }
 
+function updateManejoSummary(){
+  const oriTotal=[...document.querySelectorAll('#mf-origens-list input[id$="_qtd"]')]
+    .reduce((s,el)=>s+(parseFloat(el.value)||0),0);
+  const dstTotal=[...document.querySelectorAll('#mf-destinos-list input[id$="_qtd"]')]
+    .reduce((s,el)=>s+(parseFloat(el.value)||0),0);
+  const oriEl=document.getElementById('mf-ori-total');
+  const dstEl=document.getElementById('mf-dst-total');
+  const badgeEl=document.getElementById('mf-match-badge');
+  if(!oriEl||!dstEl)return;
+  oriEl.textContent=oriTotal>0?fNum(oriTotal):'—';
+  dstEl.textContent=dstTotal>0?fNum(dstTotal):'—';
+  if(badgeEl){
+    if(oriTotal>0&&dstTotal>0){
+      const diff=dstTotal-oriTotal;
+      if(Math.abs(diff)<1)badgeEl.innerHTML='<span style="color:#16a34a;font-weight:700;">✓ OK</span>';
+      else if(diff<0)badgeEl.innerHTML=`<span style="color:#d97706;font-weight:700;">⚠ faltam ${fNum(Math.abs(diff))}</span>`;
+      else badgeEl.innerHTML=`<span style="color:#dc2626;font-weight:700;">⚠ ${fNum(diff)} a mais</span>`;
+    }else{badgeEl.innerHTML='';}
+  }
+}
+
 function preencheQtdOrigem(id){
   const loteEl = document.getElementById(id+'_lote');
   const qtdEl  = document.getElementById(id+'_qtd');
@@ -8718,8 +8761,8 @@ function addOrigemRow(loteDefault=''){
     <select id="${id}_lote" onchange="preencheQtdOrigem('${id}')" style="flex:2;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
       ${opts}
     </select>
-    <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
+    <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" oninput="updateManejoSummary()" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <button onclick="this.parentElement.remove();updateManejoSummary()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
   document.getElementById('mf-origens-list').appendChild(row);
   // Auto-preenche qtd do lote selecionado ao abrir
   if(loteDefault) preencheQtdOrigem(id);
@@ -8734,9 +8777,9 @@ function addDestinoRow(){
     <select id="${id}_tank" style="flex:2;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
       ${tankOpts}
     </select>
-    <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
+    <input type="number" id="${id}_qtd" placeholder="Qtd" min="0" oninput="updateManejoSummary()" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
     <input type="number" id="${id}_peso" placeholder="Peso (g)" min="0" step="0.1" style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);">
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
+    <button onclick="this.parentElement.remove();updateManejoSummary()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#dc2626;padding:4px;">×</button>`;
   document.getElementById('mf-destinos-list').appendChild(row);
 }
 
@@ -10190,6 +10233,18 @@ function _veicMedidaUnit(veicId){
   const v=veiculos.find(x=>x.id===veicId);
   return v?v.medida:'km';
 }
+function parseHorasInput(val){
+  if(val===''||val==null)return NaN;
+  const s=String(val).trim();
+  if(s.includes(':')){const[h,m]=s.split(':').map(Number);return(isNaN(h)||isNaN(m))?NaN:h+m/60;}
+  return parseFloat(s);
+}
+function fmtHoras(h){
+  if(h==null||isNaN(h))return'—';
+  const hh=Math.floor(h),mm=Math.round((h-hh)*60);
+  return`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+}
 
 function renderVeiculoRegistros(){
   const el=document.getElementById('vview-registros');
@@ -10214,8 +10269,10 @@ function renderVeiculoRegistros(){
       if(m.odometroAtual!=null)medidas.push(`${fNum(m.odometroAtual,0)} ${unid}`);
     } else if(m.tipo==='uso'){
       const delta=(m.medidaFim!=null&&m.medidaInicio!=null)?m.medidaFim-m.medidaInicio:null;
-      if(delta!=null)medidas.push(`${fNum(delta,1)} ${unid}`);
-      if(m.medidaInicio!=null)medidas.push(`${fNum(m.medidaInicio,0)}→${fNum(m.medidaFim,0)}`);
+      if(delta!=null)medidas.push(unid==='horas'?`${fmtHoras(delta)} h`:`${fNum(delta,1)} ${unid}`);
+      if(m.medidaInicio!=null)medidas.push(unid==='horas'
+        ?`${fmtHoras(m.medidaInicio)}→${fmtHoras(m.medidaFim)}`
+        :`${fNum(m.medidaInicio,0)}→${fNum(m.medidaFim,0)}`);
     } else {
       if(m.kmRodado)medidas.push(`${fNum(m.kmRodado,0)} km`);
     }
@@ -10574,12 +10631,29 @@ function vmovToggleFields(){
   document.getElementById('vmov-row-reemb').style.display=isReemb?'flex':'none';
   if(document.getElementById('vmov-label-odometro'))
     document.getElementById('vmov-label-odometro').textContent=`ODÔMETRO ATUAL (${unit})`;
+  const horasMode=isUso&&unit==='horas';
+  const unitLabel=horasMode?'HH:MM':unit;
   if(document.getElementById('vmov-label-ini'))
-    document.getElementById('vmov-label-ini').textContent=`INÍCIO (${unit})`;
+    document.getElementById('vmov-label-ini').textContent=`INÍCIO (${unitLabel})`;
   if(document.getElementById('vmov-label-fim'))
-    document.getElementById('vmov-label-fim').textContent=`FIM (${unit})`;
+    document.getElementById('vmov-label-fim').textContent=`FIM (${unitLabel})`;
   if(document.getElementById('vmov-label-motorista'))
     document.getElementById('vmov-label-motorista').textContent=isReemb?'FUNCIONÁRIO':'MOTORISTA / USUÁRIO';
+  ['vmov-ini','vmov-fim'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(horasMode&&el.type!=='text'){
+      const cur=parseFloat(el.value);
+      el.type='text';el.removeAttribute('min');el.removeAttribute('step');el.removeAttribute('inputmode');
+      el.placeholder='HH:MM';
+      if(!isNaN(cur)&&cur>=0)el.value=fmtHoras(cur);
+    }else if(!horasMode&&el.type!=='number'){
+      const cur=parseHorasInput(el.value);
+      el.type='number';el.setAttribute('min','0');el.setAttribute('step','0.1');el.setAttribute('inputmode','decimal');
+      el.placeholder='';
+      if(!isNaN(cur)&&cur>=0)el.value=cur;
+    }
+  });
 }
 
 function vmovCalcReemb(){
@@ -10619,9 +10693,10 @@ async function confirmAddVeiculoMov(){
     const veicId=document.getElementById('vmov-veic')?.value;
     if(!veicId){showToast('Selecione o veículo','error');return;}
     const v=veiculos.find(x=>x.id===veicId);
-    const medidaInicio=parseFloat(document.getElementById('vmov-ini')?.value);
-    const medidaFim=parseFloat(document.getElementById('vmov-fim')?.value);
-    if(isNaN(medidaInicio)||isNaN(medidaFim)){showToast('Informe início e fim','error');return;}
+    const isHorasV=v?.medida==='horas';
+    const medidaInicio=isHorasV?parseHorasInput(document.getElementById('vmov-ini')?.value):parseFloat(document.getElementById('vmov-ini')?.value);
+    const medidaFim=isHorasV?parseHorasInput(document.getElementById('vmov-fim')?.value):parseFloat(document.getElementById('vmov-fim')?.value);
+    if(isNaN(medidaInicio)||isNaN(medidaFim)){showToast('Informe início e fim (HH:MM)','error');return;}
     if(medidaFim<medidaInicio){showToast('Fim deve ser maior que início','error');return;}
     Object.assign(mov,{veiculoId:veicId,veiculoNome:v?.nome||'',medidaInicio,medidaFim});
   } else {
@@ -10919,6 +10994,7 @@ async function renderMetas() {
   if (!wrap) { setTimeout(renderMetas, 100); return; }
 
   wrap.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px;">⏳ Carregando dados...</div>';
+  await loadMetasFromSupabase();
 
   const storeKey = metaKey(perfilId, ano, mes);
   let valoresManuais = {};
