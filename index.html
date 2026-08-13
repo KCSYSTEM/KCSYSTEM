@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.49</title>
+<title>KC System v7.50</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.49</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.50</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -912,7 +912,15 @@ input[type="number"]{-moz-appearance:textfield;}
       <div id="fin-venda-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-venda-form-title">➕ Nova Venda</div>
         <div class="fin-form-grid">
-          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Cliente</label><input id="fv-cliente" type="text" placeholder="Nome do cliente" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Cliente</label><input id="fv-cliente" type="text" list="fv-clientes-list" oninput="fvClienteInput()" placeholder="Nome do cliente" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"><datalist id="fv-clientes-list"></datalist></div>
+          <div>
+            <div style="display:flex;align-items:center;gap:0;margin-bottom:4px;">
+              <label style="font-size:11px;font-weight:600;color:var(--text2);flex:1;">CPF / CNPJ</label>
+              <button id="fv-doc-tipo-cnpj" onclick="fvDocTipo('cnpj')" style="padding:2px 8px;font-size:10px;font-weight:700;border:1.5px solid var(--accent);border-radius:5px 0 0 5px;background:var(--accent);color:#fff;cursor:pointer;">CNPJ</button>
+              <button id="fv-doc-tipo-cpf" onclick="fvDocTipo('cpf')" style="padding:2px 8px;font-size:10px;font-weight:700;border:1.5px solid var(--border);border-radius:0 5px 5px 0;background:var(--bg);color:var(--text2);cursor:pointer;">CPF</button>
+            </div>
+            <input id="fv-doc" type="text" placeholder="00.000.000/0001-00" maxlength="18" autocomplete="off" oninput="fgDocMask(this)" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;">
+          </div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Lote</label><input id="fv-lote" type="text" placeholder="Ex: L-001" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Quantidade (milheiros)</label><input id="fv-qtd" type="number" min="0" step="0.001" placeholder="0,000" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Biometria (g/peixe)</label><input id="fv-bio" type="number" min="0" step="0.1" placeholder="0,0" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
@@ -8902,7 +8910,7 @@ function showFinanceiroView(v){
   const navEl=document.getElementById('fnav-'+v);
   if(viewEl){viewEl.style.display='flex';viewEl.style.flexDirection='column';}
   if(navEl){navEl.classList.add('active');navEl.style.color='var(--accent)';navEl.style.borderTop='2px solid var(--accent)';navEl.style.marginTop='-2px';navEl.style.background='var(--accent-dim)';}
-  if(v==='vendas'){renderFinVendasHist();}
+  if(v==='vendas'){renderFinVendasHist();_renderFornecedoresList();}
   else if(v==='gastos'){_finPopulateRespSelect();_finPopulateTipoSelect();renderFinGastosHist();}
   else if(v==='painel'){renderFinPainel();}
   else if(v==='caixinha'){renderFinCaixinha();}
@@ -8937,10 +8945,9 @@ async function _backfillFornecedores(){
   fornecedores.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 }
 function _renderFornecedoresList(){
-  const dl=document.getElementById('fg-fornecedores-list');
-  if(!dl)return;
-  const seen=new Set();
-  dl.innerHTML=fornecedores.filter(f=>{const k=f.nome.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;}).map(f=>`<option value="${esc(f.nome)}">`).join('');
+  const opts=()=>{const seen=new Set();return fornecedores.filter(f=>{const k=f.nome.toLowerCase();if(seen.has(k))return false;seen.add(k);return true;}).map(f=>`<option value="${esc(f.nome)}">`).join('');};
+  const dl=document.getElementById('fg-fornecedores-list');if(dl)dl.innerHTML=opts();
+  const dl2=document.getElementById('fv-clientes-list');if(dl2)dl2.innerHTML=opts();
 }
 function fgNomeInput(){
   const nome=(document.getElementById('fg-nome')?.value||'').trim();
@@ -8951,6 +8958,32 @@ function fgNomeInput(){
     docEl.value=f.doc||'';
     fgDocTipo(f.doc_tipo||'cnpj');
   }
+}
+function fvClienteInput(){
+  const nome=(document.getElementById('fv-cliente')?.value||'').trim();
+  const matches=fornecedores.filter(x=>x.nome.toLowerCase()===nome.toLowerCase());
+  const f=matches.find(x=>x.doc)||matches[0];
+  const docEl=document.getElementById('fv-doc');
+  if(f&&docEl){
+    docEl.value=f.doc||'';
+    fvDocTipo(f.doc_tipo||'cnpj');
+  }
+}
+function fvDocTipo(t){
+  const cnpjBtn=document.getElementById('fv-doc-tipo-cnpj');
+  const cpfBtn=document.getElementById('fv-doc-tipo-cpf');
+  const docEl=document.getElementById('fv-doc');
+  if(!cnpjBtn||!cpfBtn||!docEl)return;
+  if(t==='cpf'){
+    cnpjBtn.style.background='var(--bg)';cnpjBtn.style.borderColor='var(--border)';cnpjBtn.style.color='var(--text2)';
+    cpfBtn.style.background='var(--accent)';cpfBtn.style.borderColor='var(--accent)';cpfBtn.style.color='#fff';
+    docEl.placeholder='000.000.000-00';docEl.maxLength=14;
+  }else{
+    cnpjBtn.style.background='var(--accent)';cnpjBtn.style.borderColor='var(--accent)';cnpjBtn.style.color='#fff';
+    cpfBtn.style.background='var(--bg)';cpfBtn.style.borderColor='var(--border)';cpfBtn.style.color='var(--text2)';
+    docEl.placeholder='00.000.000/0001-00';docEl.maxLength=18;
+  }
+  docEl.dataset.docTipo=t;
 }
 async function _saveFornecedor(nome,docTipo,doc){
   if(!nome) return;
@@ -9049,7 +9082,8 @@ function finCalcVenda(){
 
 function finCancelarVenda(){
   _finVendaEditId=null;
-  ['fv-cliente','fv-lote','fv-qtd','fv-bio','fv-vunit','fv-quebra','fv-vtotal','fv-impostos','fv-dvenda','fv-dvenc','fv-dpag','fv-nf','fv-gta','fv-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['fv-cliente','fv-doc','fv-lote','fv-qtd','fv-bio','fv-vunit','fv-quebra','fv-vtotal','fv-impostos','fv-dvenda','fv-dvenc','fv-dpag','fv-nf','fv-gta','fv-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  fvDocTipo('cnpj');
   const fpEl=document.getElementById('fv-fpag');if(fpEl)fpEl.value='';
   const snf=document.getElementById('fv-semnf');if(snf)snf.checked=false;
   const nf=document.getElementById('fv-nf');if(nf){nf.disabled=false;nf.style.background='var(--bg)';}
@@ -9063,9 +9097,10 @@ function finEditVenda(id){
   const v=finVendas.find(x=>x.id===id);if(!v)return;
   _finVendaEditId=id;
   const set=(elId,val)=>{const el=document.getElementById(elId);if(el)el.value=val||'';};
-  set('fv-cliente',v.cliente);set('fv-lote',v.lote);set('fv-qtd',v.qtd);set('fv-bio',v.bio);set('fv-vunit',v.vunit);
+  set('fv-cliente',v.cliente);set('fv-doc',v.doc);set('fv-lote',v.lote);set('fv-qtd',v.qtd);set('fv-bio',v.bio);set('fv-vunit',v.vunit);
   set('fv-quebra',v.quebra);set('fv-dvenda',v.dvenda);set('fv-dvenc',v.dvenc);set('fv-dpag',v.dpag);
   set('fv-fpag',v.fpag);set('fv-obs',v.obs);
+  fvDocTipo(v.doc_tipo||'cnpj');
   const snf=document.getElementById('fv-semnf');if(snf)snf.checked=!!v.semNF;
   fvSemNF();
   if(!v.semNF){set('fv-nf',v.nf);set('fv-gta',v.gta);}
@@ -9092,7 +9127,10 @@ async function finSalvarVenda(){
   }
   const id=_finVendaEditId||('fv_'+Date.now());
   const semNF=document.getElementById('fv-semnf')?.checked||false;
-  const venda={id,cliente,lote:get('fv-lote')||null,qtd,bio:parseFloat(document.getElementById('fv-bio')?.value)||null,vunit,quebra,total,impostos:semNF?0:total*0.04,semNF,dvenda,dvenc,dpag,fpag:get('fv-fpag'),diasAtraso,nf:semNF?'':get('fv-nf'),gta:semNF?'':get('fv-gta'),obs:get('fv-obs'),criadoEm:_finVendaEditId?finVendas.find(x=>x.id===_finVendaEditId)?.criadoEm:new Date().toISOString()};
+  const docEl=document.getElementById('fv-doc');
+  const docTipo=docEl?.dataset.docTipo||'cnpj';
+  const doc=docEl?.value.trim()||null;
+  const venda={id,cliente,doc_tipo:docTipo,doc,lote:get('fv-lote')||null,qtd,bio:parseFloat(document.getElementById('fv-bio')?.value)||null,vunit,quebra,total,impostos:semNF?0:total*0.04,semNF,dvenda,dvenc,dpag,fpag:get('fv-fpag'),diasAtraso,nf:semNF?'':get('fv-nf'),gta:semNF?'':get('fv-gta'),obs:get('fv-obs'),criadoEm:_finVendaEditId?finVendas.find(x=>x.id===_finVendaEditId)?.criadoEm:new Date().toISOString()};
   _startActionPopup(_finVendaEditId?'Atualizando venda...':'Salvando venda...');
   try{
     const ok=await sbUpsert('financeiro_vendas',{id,data:venda});
@@ -10285,7 +10323,10 @@ function renderVeiculoRegistros(){
       <td style="padding:10px 12px;font-size:12px;color:var(--text);">${medidas.join(' · ')}</td>
       <td style="padding:10px 12px;font-size:12px;font-weight:700;color:var(--accent);">${valorStr}</td>
       <td style="padding:10px 12px;font-size:11px;color:var(--text3);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(m.obs||'')}</td>
-      <td style="padding:10px 12px;">${podeExcluir?`<button onclick="deleteVeiculoMov('${m.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;padding:0;">🗑</button>`:''}</td>
+      <td style="padding:10px 12px;white-space:nowrap;">
+        <button onclick="openAddVeiculoMov('${m.id}')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:16px;padding:0 4px;" title="Editar">✏️</button>
+        ${podeExcluir?`<button onclick="deleteVeiculoMov('${m.id}')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:16px;padding:0 4px;" title="Excluir">🗑</button>`:''}
+      </td>
     </tr>`;
   }).join('');
   el.innerHTML=`
@@ -10644,7 +10685,18 @@ function vmovToggleFields(){
     if(horasMode&&el.type!=='text'){
       const cur=parseFloat(el.value);
       el.type='text';el.removeAttribute('min');el.removeAttribute('step');el.removeAttribute('inputmode');
-      el.placeholder='HH:MM';
+      el.placeholder='HH:MM';el.maxLength=5;
+      el.oninput=function(){
+        let v=this.value.replace(/[^0-9:]/g,'');
+        // Auto-insere ":" após 2 dígitos
+        if(v.length===2&&!v.includes(':')&&!this._deleting)v+=':';
+        // Limita HH a 2 dígitos e MM a 2 dígitos
+        const parts=v.split(':');
+        if(parts[0]&&parts[0].length>2)parts[0]=parts[0].slice(0,2);
+        if(parts[1]&&parts[1].length>2)parts[1]=parts[1].slice(0,2);
+        this.value=parts.join(':').slice(0,5);
+      };
+      el.onkeydown=function(e){this._deleting=(e.key==='Backspace'||e.key==='Delete');};
       if(!isNaN(cur)&&cur>=0)el.value=fmtHoras(cur);
     }else if(!horasMode&&el.type!=='number'){
       const cur=parseHorasInput(el.value);
@@ -10993,11 +11045,17 @@ async function renderMetas() {
   if (!wrap) { setTimeout(renderMetas, 100); return; }
 
   wrap.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px;">⏳ Carregando dados...</div>';
-  await loadMetasFromSupabase();
+  const metasRows = await loadMetasFromSupabase();
 
   const storeKey = metaKey(perfilId, ano, mes);
   let valoresManuais = {};
-  try { valoresManuais = JSON.parse(localStorage.getItem(storeKey) || '{}'); } catch(e){}
+  if (metasRows) {
+    // Usa dados direto do Supabase — não depende do localStorage como intermediário
+    const match = metasRows.find(r => r.id === storeKey);
+    valoresManuais = match?.data || {};
+  } else {
+    try { valoresManuais = JSON.parse(localStorage.getItem(storeKey) || '{}'); } catch(e){}
+  }
 
   let autoData = {};
   try { autoData = await fetchMetasAuto(ano, mes); } catch(e){ console.warn('fetchMetasAuto error:', e); }
@@ -11230,13 +11288,15 @@ async function loadMetasFromSupabase() {
     const rows = await sbGet('metas', 'select=id,data');
     if (!rows) {
       if (isAdmin()) showToast('⚠️ Metas: tabela não encontrada no servidor.', 'error');
-      return;
+      return null;
     }
     rows.forEach(r => {
       if (r.id && r.data) localStorage.setItem(r.id, JSON.stringify(r.data));
     });
+    return rows;
   } catch(e) {
     console.warn('loadMetasFromSupabase error', e);
+    return null;
   }
 }
 
