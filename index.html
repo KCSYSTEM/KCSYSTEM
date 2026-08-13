@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.50</title>
+<title>KC System v7.51</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.50</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.51</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -912,7 +912,7 @@ input[type="number"]{-moz-appearance:textfield;}
       <div id="fin-venda-form-wrap" style="background:var(--surface);border-radius:14px;border:1.5px solid var(--border);padding:16px;">
         <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;" id="fin-venda-form-title">➕ Nova Venda</div>
         <div class="fin-form-grid">
-          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Cliente</label><input id="fv-cliente" type="text" list="fv-clientes-list" oninput="fvClienteInput()" placeholder="Nome do cliente" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"><datalist id="fv-clientes-list"></datalist></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Cliente</label><input id="fv-cliente" type="text" list="fv-clientes-list" autocomplete="off" oninput="fvClienteInput()" onchange="fvClienteInput()" placeholder="Nome do cliente" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"><datalist id="fv-clientes-list"></datalist></div>
           <div>
             <div style="display:flex;align-items:center;gap:0;margin-bottom:4px;">
               <label style="font-size:11px;font-weight:600;color:var(--text2);flex:1;">CPF / CNPJ</label>
@@ -1560,13 +1560,13 @@ function fNum(val,decimals=null){
   return n.toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
 }
 // Formata por campo com casas decimais fixas definidas
-const FIELD_DECIMALS={temp:1,o2:1,amonia:2,ph:2,racaoIdealG:2,racaoG:2,sobra:2};
+const FIELD_DECIMALS={temp:1,o2:1,amonia:2,ph:2,sobra:2};
 function fField(field,val){
   if(val==null||val===''||isNaN(val))return'—';
+  // racaoIdealG e racaoG são armazenados em gramas → exibe em kg
+  if(field==='racaoIdealG'||field==='racaoG')return gToKg(val,2)+' kg';
   const dec=FIELD_DECIMALS[field];
   if(dec!=null)return fNum(val,dec);
-  // Para ração em g → exibe em kg
-  if(field==='racaoIdealG'||field==='racaoG')return gToKg(val,2);
   return fNum(val);
 }
 function numOrNull(s){const v=parseFloat(s);return isNaN(v)?null:v;}
@@ -8955,8 +8955,8 @@ function fgNomeInput(){
   const f=matches.find(x=>x.doc)||matches[0];
   const docEl=document.getElementById('fg-doc');
   if(f&&docEl&&!docEl.value){
-    docEl.value=f.doc||'';
     fgDocTipo(f.doc_tipo||'cnpj');
+    docEl.value=f.doc||'';
   }
 }
 function fvClienteInput(){
@@ -8965,8 +8965,8 @@ function fvClienteInput(){
   const f=matches.find(x=>x.doc)||matches[0];
   const docEl=document.getElementById('fv-doc');
   if(f&&docEl){
-    docEl.value=f.doc||'';
     fvDocTipo(f.doc_tipo||'cnpj');
+    docEl.value=f.doc||'';
   }
 }
 function fvDocTipo(t){
@@ -11074,7 +11074,7 @@ async function renderMetas() {
   while (_dtTmp.getMonth() === mes-1) { if (_dtTmp.getDay() !== 0) nDiasUteis++; _dtTmp.setDate(_dtTmp.getDate()+1); }
 
   // Total peixes em reprodução para conversão de escape
-  const totalPeixesReprod = tanks.filter(t => t.matrizes && !t.empty).reduce((s, t) => {
+  let totalPeixesReprod = tanks.filter(t => t.matrizes && !t.empty).reduce((s, t) => {
     const hapaCount = Number(t.hapas) || 0;
     if (hapaCount > 0) {
       let sub = 0;
@@ -11083,6 +11083,28 @@ async function renderMetas() {
     }
     const lr = lastRec(t.id); return s+(lr?.machos||0)+(lr?.femeas||0);
   }, 0);
+  // Fallback: records locais podem não ter machos/femeas (ex: Giovana sem cache antigo)
+  // Busca direto do Supabase os registros mais recentes de tanques matrizes
+  if (!totalPeixesReprod) {
+    try {
+      const matrizIds = tanks.filter(t => t.matrizes && !t.empty).map(t => t.id);
+      if (matrizIds.length) {
+        const freshRecs = await sbGet('tank_records',
+          `select=tank_id,hapa,machos,femeas,timestamp&overridden=is.false&order=timestamp.desc&limit=2000`);
+        if (freshRecs) {
+          const latest = {};
+          freshRecs.forEach(r => {
+            if (!matrizIds.includes(r.tank_id)) return;
+            if (r.machos == null && r.femeas == null) return;
+            const k = `${r.tank_id}_${r.hapa??'null'}`;
+            if (!(k in latest)) latest[k] = r;
+          });
+          totalPeixesReprod = Object.values(latest)
+            .reduce((s, r) => s + (Number(r.machos)||0) + (Number(r.femeas)||0), 0);
+        }
+      }
+    } catch(e) { console.warn('totalPeixesReprod fallback error', e); }
+  }
 
   // Converte inputs brutos (dias / peixes) para o valor de display (%)
   perfil.indicadores.forEach(ind => {
