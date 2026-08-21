@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.54</title>
+<title>KC System v7.55</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.54</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.55</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -6320,7 +6320,7 @@ async function injectBioQty2604(){
     // Envia ao Supabase em lotes de 200
     for(let i=0;i<newRecs.length;i+=200){
       const chunk=newRecs.slice(i,i+200);
-      await sbUpsert('tank_records',chunk.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r})));
+      await sbUpsert('tank_records',chunk.map(r=>recToTankRow(r)));
     }
     console.log(`injectBioQty2604: ${newRecs.length} registros inseridos.`);
   }
@@ -6463,9 +6463,8 @@ async function injectQualidadeAgua(){
   });
 
   if(newRecs.length){
-    const rows=newRecs.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r}));
-    for(let i=0;i<rows.length;i+=200){
-      await sbUpsert('tank_records',rows.slice(i,i+200));
+    for(let i=0;i<newRecs.length;i+=200){
+      await sbUpsert('tank_records',newRecs.slice(i,i+200).map(r=>recToTankRow(r)));
     }
     console.log(`injectQualidadeAgua: ${newRecs.length} registros processados.`);
   }
@@ -7222,8 +7221,7 @@ async function injectHistoricalData(){
     }));
     newRecs.forEach(r=>records.push(r));
     // Envia ao Supabase em lote
-    const rows=newRecs.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r}));
-    await sbUpsert('tank_records',rows);
+    await sbUpsert('tank_records',newRecs.map(r=>recToTankRow(r)));
   }
 
   await inject('tank_geo-elevada_40','Tanque 40','tq40',[
