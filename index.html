@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.53</title>
+<title>KC System v7.54</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.53</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.54</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1604,7 +1604,9 @@ let _backupReminderTimer=null;
 function mc3(v){return _modoComercial?(v??0)*3:(v??0);}
 // Array separado para registros de coleta/desova (lidos de coleta_records no Supabase)
 let coletaRecords=[];
-try{const cc=localStorage.getItem('kc_coleta_records');if(cc)coletaRecords=JSON.parse(cc);}catch(e){}
+// Remove caches de records que enchiam o localStorage — dados vêm do Supabase
+localStorage.removeItem('kc_records');
+localStorage.removeItem('kc_coleta_records');
 // Módulo Estoques
 let estoqueItens=[], estoqueMov=[];
 let veiculos=[], veiculoMov=[], _veiculoSubView='registros', _veiculoFiltro={ini:'',fim:'',veicId:''};
@@ -2048,7 +2050,6 @@ async function saveRacoes_sb(){
 // especifico deve chamar saveOneTank_sb(tank) explicitamente)
 function save(){
   try{localStorage.setItem('kc_tanks',JSON.stringify(tanks));}catch(_){}
-  try{localStorage.setItem('kc_records',JSON.stringify(records));}catch(_){}
   try{localStorage.setItem('kc_racoes',JSON.stringify(racoes));}catch(_){}
   saveRacoes_sb().catch(()=>{});
 }
@@ -2056,7 +2057,6 @@ function save(){
 // Salva apenas um registro novo/atualizado; retorna true/false (Supabase ok?)
 async function saveOneRecord(rec){
   records.push(rec);
-  try{localStorage.setItem('kc_records',JSON.stringify(records));}catch(e){console.warn('localStorage quota',e);}
   let ok;
   if(isColetaRec(rec)){
     ok=await saveColetaRecord_sb(rec);
@@ -2646,8 +2646,6 @@ async function deleteColetaLote(lote){
     try{await sbDelete('tank_records',r.id);records=records.filter(x=>x.id!==r.id);}
     catch(e){erros++;}
   }
-  localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
-  localStorage.setItem('kc_records',JSON.stringify(records));
   if(erros)showToast(`${toDelete.length-erros} deletados, ${erros} erros`,'error');
   else showToast(`Lote "${lote}" deletado ✓`,'ok');
   renderColetaPainel();
@@ -3113,7 +3111,6 @@ async function saveColeta(){
       saved++;
       showSaveProgress(saved,toSave.length);
     }
-    try{localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));}catch(_){}
   } else {
     const inputs=document.querySelectorAll('#coleta-tbody input[data-lote]');
     for(const inp of inputs){
@@ -3142,7 +3139,6 @@ async function saveColeta(){
       saved++;
       showSaveProgress(saved,toSave.length);
     }
-    try{localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));}catch(_){}
   }
 
   try{renderColeta();}catch(e){console.warn('renderColeta error',e);}
@@ -3456,7 +3452,7 @@ async function startRealtime(){
         if(table==='tank_records'){
           if(eventType==='DELETE'){
             const delId=row.id;
-            if(delId){records=records.filter(r=>r.id!==delId);localStorage.setItem('kc_records',JSON.stringify(records));renderTankView();}
+            if(delId){records=records.filter(r=>r.id!==delId);renderTankView();}
           } else {
             const rec=tankRowToRec(row);
             onRealtimeRecord(rec);
@@ -3467,7 +3463,6 @@ async function startRealtime(){
           if(!colRec.overridden){
             const ei=coletaRecords.findIndex(r=>r.id===colRec.id);
             if(ei>=0)coletaRecords[ei]=colRec;else coletaRecords.push(colRec);
-            localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
           }
         }
         if(table==='records'&&row.data){
@@ -3532,7 +3527,6 @@ function onRealtimeRecord(rec){
     records.push(rec);
   }
 
-  localStorage.setItem('kc_records',JSON.stringify(records));
   renderTankView();updateMapSub();
 
   // Atualiza view ativa
@@ -3621,7 +3615,6 @@ async function refreshRecordsFromSupabase(){
       }
     });
     if(updated){
-      localStorage.setItem('kc_records',JSON.stringify(records));
       try{renderTankView();updateMapSub();}catch(e){}
       const av=document.querySelector('.view.active')?.id;
       if(av==='view-painel')try{renderPainel();}catch(e){}
@@ -3713,7 +3706,6 @@ async function load(){
       coletaRecords=allColeta.map(coletaRowToRec);
       // Remove coleta do array records (estava misturado antes — garante sem duplicatas)
       records=records.filter(r=>!isColetaRec(r));
-      localStorage.setItem('kc_coleta_records',JSON.stringify(coletaRecords));
     }
   }catch(e){console.warn('load coleta_records error',e);}
 
@@ -3757,7 +3749,6 @@ async function load(){
 
   // ── 8. Cache local ────────────────────────────────────────
   try{localStorage.setItem('kc_tanks',JSON.stringify(tanks));}catch(_){}
-  try{localStorage.setItem('kc_records',JSON.stringify(records));}catch(e){console.warn('localStorage cheio — records não cacheados localmente',e);}
   try{localStorage.setItem('kc_racoes',JSON.stringify(racoes));}catch(_){}
 
   }catch(e){
@@ -3917,10 +3908,9 @@ async function enterApp(u,perfil){
 }
 
 function _loadFromLocalStorage(){
-  // Carrega do cache local imediatamente (sem await)
-  const t=localStorage.getItem('kc_tanks'),r=localStorage.getItem('kc_records'),rc=localStorage.getItem('kc_racoes');
+  // Carrega do cache local imediatamente (sem await) — apenas tanks e racoes (records vêm do Supabase)
+  const t=localStorage.getItem('kc_tanks'),rc=localStorage.getItem('kc_racoes');
   if(t)tanks=JSON.parse(t);
-  if(r)records=JSON.parse(r);
   if(rc)racoes=JSON.parse(rc);
   else if(!racoes.length)racoes=DEFAULT_RACOES.map((x,i)=>({...x,id:'r'+i}));
   // Garante tanques dos grupos
@@ -5735,7 +5725,6 @@ async function _saveLancamentosInner(){
           const existing=records.find(r=>r.tankId===tankId&&r.date===date&&r.trocaAguaIdealH!=null&&!r.isTrocaAgua&&!r.overridden);
           if(existing){
             existing.trocaAguaIdealH=v;
-            try{localStorage.setItem('kc_records',JSON.stringify(records));}catch(_){}
             await saveTankRecord_sb(existing);
           } else {
             const rec={
@@ -6333,7 +6322,6 @@ async function injectBioQty2604(){
       const chunk=newRecs.slice(i,i+200);
       await sbUpsert('tank_records',chunk.map(r=>({id:r.id,tank_id:r.tankId,tank_name:r.tankName,date:r.date,username:r.username,user_name:r.user,timestamp:r.timestamp,data:r})));
     }
-    localStorage.setItem('kc_records',JSON.stringify(records));
     console.log(`injectBioQty2604: ${newRecs.length} registros inseridos.`);
   }
   localStorage.setItem(KEY,'1');
@@ -6479,7 +6467,6 @@ async function injectQualidadeAgua(){
     for(let i=0;i<rows.length;i+=200){
       await sbUpsert('tank_records',rows.slice(i,i+200));
     }
-    localStorage.setItem('kc_records',JSON.stringify(records));
     console.log(`injectQualidadeAgua: ${newRecs.length} registros processados.`);
   }
   localStorage.setItem(KEY,'1');
@@ -6907,8 +6894,7 @@ async function _doImportBackup(backup){
       saveLimits();
     }
 
-    // Persiste local
-    localStorage.setItem('kc_records', JSON.stringify(records));
+    // Persiste local (tanks e racoes apenas — records vêm do Supabase)
     localStorage.setItem('kc_tanks', JSON.stringify(tanks));
     localStorage.setItem('kc_racoes', JSON.stringify(racoes));
 
@@ -7487,7 +7473,6 @@ async function injectHistoricalData(){
     {date:'2026-04-19',bio:331,qty:2192,idealG:5804,realG:5804},
   ]);
 
-  localStorage.setItem('kc_records',JSON.stringify(records));
   console.log('Dados históricos injetados.');
 }
 
