@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.56</title>
+<title>KC System v7.57</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.56</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.57</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -8361,7 +8361,7 @@ function renderPipelineCard(p){
     if(isAdmin()){
       if(fase==='coleta'){
         editBtn = `<button onclick="editColeta('${p.lote_coleta}')" style="margin-top:4px;background:none;border:1px solid ${cor};border-radius:5px;padding:2px 7px;font-size:10px;color:${cor};cursor:pointer;">✏️ editar</button>`;
-      } else {
+      } else if(fase!=='venda'||itens.length===1){
         const manejoId = itens.map(i=>i.id).filter(Boolean)[0];
         if(manejoId) editBtn = `<button onclick="editManejoFase('${manejoId}')" style="margin-top:4px;background:none;border:1px solid ${cor};border-radius:5px;padding:2px 7px;font-size:10px;color:${cor};cursor:pointer;">✏️ editar</button>`;
       }
@@ -8391,6 +8391,15 @@ function renderPipelineCard(p){
     }
 
     const displayQtd=(fase==='transferencia'||fase==='venda')?mc3(qtdTotal):qtdTotal;
+    let vendaLotesHtml='';
+    if(fase==='venda'&&itens.length>1){
+      vendaLotesHtml=`<div style="margin-top:6px;display:flex;flex-direction:column;gap:3px;">`+
+        itens.map(v=>{
+          const vBtn=isAdmin()&&v.id?`<button onclick="editManejoFase('${v.id}')" style="background:none;border:1px solid #d97706;border-radius:4px;padding:1px 5px;font-size:9px;color:#d97706;cursor:pointer;">✏️</button>`:'';
+          return`<div style="font-size:10px;background:rgba(217,119,6,0.07);border-radius:5px;padding:3px 6px;display:flex;justify-content:space-between;align-items:center;gap:4px;"><span style="font-weight:700;color:#d97706;">${v.lote_id||'—'}</span><span>${fNum(mc3(v.qtd_total||0))}</span>${vBtn}</div>`;
+        }).join('')+
+        `</div>`;
+    }
     return `<div style="text-align:center;flex:1;min-width:80px;">
       <div style="font-size:18px;">${icon}</div>
       <div style="font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;margin:2px 0;">${FASES[fase]?.label||fase}</div>
@@ -8399,6 +8408,7 @@ function renderPipelineCard(p){
       ${destinosStr?`<div style="font-size:9px;color:var(--text3);margin-top:2px;">${destinosStr}</div>`:''}
       ${dataStr?`<div style="font-size:9px;color:var(--text3);">${dataStr}</div>`:''}
       ${editBtn}
+      ${vendaLotesHtml}
       ${coletaDetails}
     </div>`;
   }).join(`<div style="font-size:16px;color:var(--border2);align-self:center;padding-top:4px;">›</div>`);
