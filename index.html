@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.58</title>
+<title>KC System v7.59</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.58</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.59</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -763,9 +763,7 @@ input[type="number"]{-moz-appearance:textfield;}
         <select id="meta-ano" onchange="renderMetas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
           <option value="2026" selected>2026</option><option value="2027">2027</option>
         </select>
-        <select id="meta-perfil-select" onchange="renderMetas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
-          <option value="padrao">👷 Colaborador Padrão</option>
-          <option value="arracador">🌾 Arraçoador</option>
+        <select id="meta-colab-select" onchange="renderMetas()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;">
         </select>
       </div>
     </div>
@@ -1435,6 +1433,12 @@ input[type="number"]{-moz-appearance:textfield;}
         <option value="admin">Administrador</option>
       </select>
     </div>
+    <div class="config-field"><label>Tipo de meta</label>
+      <select id="edit-user-meta-perfil">
+        <option value="padrao">👷 Colaborador Padrão</option>
+        <option value="arracador">🌾 Arraçoador</option>
+      </select>
+    </div>
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn-save" style="flex:1;" onclick="saveEditUser()">Salvar</button>
       <button class="btn-secondary" style="width:auto;padding:12px 18px;" onclick="closeEditUser()">Cancelar</button>
@@ -1529,9 +1533,9 @@ let perfisCache={};
 let auditLogs=[];
 
 async function loadPerfis(){
-  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours,last_backup_at,modo_comercial,bloqueado');
+  const rows=await sbGet('perfis','select=id,username,nome,role,must_change_password,restrict_hours,last_backup_at,modo_comercial,bloqueado,meta_perfil');
   perfisCache={};
-  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password,restrictHours:r.restrict_hours,lastBackupAt:r.last_backup_at,bloqueado:!!r.bloqueado};});
+  if(rows)rows.forEach(r=>{perfisCache[r.username]={id:r.id,name:r.nome,role:r.role,mustChangePwd:r.must_change_password,restrictHours:r.restrict_hours,lastBackupAt:r.last_backup_at,bloqueado:!!r.bloqueado,metaPerfil:r.meta_perfil||'padrao'};});
 }
 const LIMITS={temp:{min:24,max:30},o2:{min:5,max:12},amonia:{min:0,max:0.5},ph:{min:6.5,max:8.5},mort:{max:50},qty:{min:0},bio:{min:0},racaoPct:{min:70},goradosPct:{max:20}};
 function esc(s){const e=document.createElement('span');e.textContent=s==null?'':String(s);return e.innerHTML;}
@@ -3546,7 +3550,7 @@ function onRealtimePerfil(data,type){
   if(type==='DELETE'){
     delete perfisCache[data.username];
   } else {
-    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role,mustChangePwd:data.must_change_password,restrictHours:data.restrict_hours,lastBackupAt:data.last_backup_at};
+    perfisCache[data.username]={id:data.id,name:data.nome,role:data.role,mustChangePwd:data.must_change_password,restrictHours:data.restrict_hours,lastBackupAt:data.last_backup_at,metaPerfil:data.meta_perfil||'padrao'};
   }
 }
 
@@ -5095,6 +5099,7 @@ function openEditUser(login){
   document.getElementById('edit-user-pass').value='';
   document.getElementById('edit-user-role').value=u.role;
   document.getElementById('edit-user-role').disabled=false;
+  document.getElementById('edit-user-meta-perfil').value=u.metaPerfil||'padrao';
   document.getElementById('edit-user-overlay').classList.add('show');
 }
 function closeEditUser(){
@@ -5106,6 +5111,7 @@ async function saveEditUser(){
   const name=document.getElementById('edit-user-name').value.trim();
   const pass=document.getElementById('edit-user-pass').value;
   const role=document.getElementById('edit-user-role').value;
+  const metaPerfil=document.getElementById('edit-user-meta-perfil').value;
   if(!name){showToast('Nome não pode ser vazio','error');return;}
   if(pass){
     if(pass.length<8){showToast('Senha muito curta (mín. 8 caracteres)','error');return;}
@@ -5114,8 +5120,8 @@ async function saveEditUser(){
     if(error){showToast('Erro ao alterar senha: '+error.message,'error');return;}
   }
   const u=perfisCache[editingUserLogin];
-  await sbUpsert('perfis',[{id:u.id,username:editingUserLogin,nome:name,role}]);
-  perfisCache[editingUserLogin]={...u,name,role};
+  await sbUpsert('perfis',[{id:u.id,username:editingUserLogin,nome:name,role,meta_perfil:metaPerfil}]);
+  perfisCache[editingUserLogin]={...u,name,role,metaPerfil};
   renderUsersList();closeEditUser();
   showToast('Usuário atualizado ✓','ok');
 }
@@ -10806,7 +10812,7 @@ const PERFIS_META = {
   padrao: {
     label: 'Colaborador Padrão',
     indicadores: [
-      { id:'qtd_ovos',           label:'Quantidade de Ovos',      fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
+      { id:'qtd_ovos',           label:'Quantidade de Ovos Bons', fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
         faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
       { id:'producao_larvas',   label:'Quantidade de Larvas',    fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
         faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
@@ -10830,7 +10836,7 @@ const PERFIS_META = {
   arracador: {
     label: 'Arraçoador',
     indicadores: [
-      { id:'qtd_ovos',          label:'Quantidade de Ovos',          fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
+      { id:'qtd_ovos',          label:'Quantidade de Ovos Bons',     fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
         faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
       { id:'producao_larvas',   label:'Quantidade de Larvas',        fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
         faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
@@ -10852,48 +10858,27 @@ const PERFIS_META = {
   }
 };
 
-// Storage key: metaValues_{perfilId}_{ano}_{mes}
-function metaKey(perfilId, ano, mes) {
-  return `metaValues_${perfilId}_${ano}_${String(mes).padStart(2,'0')}`;
+// Storage key: metaValues_{username}_{ano}_{mes} — metas são individuais por colaborador
+function metaKey(username, ano, mes) {
+  return `metaValues_${username}_${ano}_${String(mes).padStart(2,'0')}`;
 }
 
 // ── Buscar dados automáticos para as metas ─────────────────
-async function fetchMetasAuto(ano, mes) {
+async function fetchMetasAuto(ano, mes, targetUsername) {
   const mesStr    = String(mes).padStart(2,'0');
   const mesPrefix = `${ano}-${mesStr}-`;
 
-  // Lê apenas de coletaRecords (Supabase) filtrado pela data DO MÊS — evita
-  // acúmulo de dados legado de tank_records e somas de meses anteriores.
-  const mesColeta = coletaRecords.filter(r => !r.overridden && r.date?.startsWith(mesPrefix));
-
-  // Ovos: ml × ovosPorMl por registro
-  let totalOvos = 0;
-  mesColeta.forEach(r => {
-    if (r.ovosPorMl != null && r.desovaML != null)
-      totalOvos += Math.round(r.ovosPorMl * r.desovaML);
-  });
-
-  // Larvas: ovos × (1 - gorados%) por lote, usando só registros do mês
-  const byLote = {};
-  mesColeta.forEach(r => {
-    if (!r.lote) return;
-    if (!byLote[r.lote]) byLote[r.lote] = { ovosTotal: 0, _goradosByHapa: {} };
-    const l = byLote[r.lote];
-    if (r.ovosPorMl != null && r.desovaML != null)
-      l.ovosTotal += Math.round(r.ovosPorMl * r.desovaML);
-    if (r.ovosGorados != null) {
-      const hk = (r.tankId||'lote') + '_' + (r.hapa??'x');
-      if (!l._goradosByHapa[hk] || (r.timestamp||'') > (l._goradosByHapa[hk].ts||''))
-        l._goradosByHapa[hk] = { val: r.ovosGorados, ts: r.timestamp||'' };
-    }
-  });
-  let totalLarvas = 0;
-  Object.values(byLote).forEach(l => {
-    const goradosVals = Object.values(l._goradosByHapa).map(x => x.val);
-    const goradosMedio = goradosVals.length
-      ? goradosVals.reduce((s,v) => s+v, 0) / goradosVals.length : null;
-    const naoGoradosPct = goradosMedio != null ? (100 - goradosMedio) : 100;
-    totalLarvas += Math.round(l.ovosTotal * naoGoradosPct / 100);
+  // Ovos Bons e Larvas: mesma fonte usada na aba Manejo (buildPipeline), filtrada
+  // pela data de início do lote (data da coleta) dentro do mês — garante que os
+  // números batam com os já validados em Manejo em vez de reestimar a partir de
+  // ovos×%gorados.
+  const pipelineMetas = buildPipeline();
+  const lotesDoMesMetas = Object.values(pipelineMetas).filter(p => (p.data_inicio||'').startsWith(mesPrefix));
+  let totalOvos = 0, totalLarvas = 0;
+  lotesDoMesMetas.forEach(p => {
+    const coleta = p.fases.find(f => f.fase === 'coleta');
+    if (coleta) totalOvos += coleta.ovosBons || 0;
+    p.fases.filter(f => f.fase === 'larva').forEach(f => { totalLarvas += f.qtd_total || 0; });
   });
 
   // Alevinos: manejos de transferência do mês
@@ -10971,9 +10956,10 @@ async function fetchMetasAuto(ano, mes) {
   // Presença: % de seg–sex úteis (excl. feriados) com ≥4h registradas no ponto
   loadPonto(); loadAtestados();
   let presencaPct = null;
-  const _pUname = currentUser?.username?.toLowerCase();
-  const _pDados = pontoData[_pUname] || pontoData[currentUser?.username] || {};
-  const _pAtDados = pontoAtestados[_pUname] || pontoAtestados[currentUser?.username] || {};
+  const _pUnameRaw = targetUsername || currentUser?.username;
+  const _pUname = _pUnameRaw?.toLowerCase();
+  const _pDados = pontoData[_pUname] || pontoData[_pUnameRaw] || {};
+  const _pAtDados = pontoAtestados[_pUname] || pontoAtestados[_pUnameRaw] || {};
   if (_pUname) {
     const _pHoje = new Date();
     const _pEhMesAtual = ano === _pHoje.getFullYear() && mes === (_pHoje.getMonth()+1);
@@ -11047,9 +11033,30 @@ function calcValorIndicador(ind, valor) {
 
 // ── Render Metas ─────────────────────────────────────────────
 async function renderMetas() {
-  const mes      = parseInt(document.getElementById('meta-mes')?.value || (new Date().getMonth()+1));
-  const ano      = parseInt(document.getElementById('meta-ano')?.value || new Date().getFullYear());
-  const perfilId = document.getElementById('meta-perfil-select')?.value || 'padrao';
+  const mes    = parseInt(document.getElementById('meta-mes')?.value || (new Date().getMonth()+1));
+  const ano    = parseInt(document.getElementById('meta-ano')?.value || new Date().getFullYear());
+  const admin  = isAdmin();
+
+  // Seletor de colaborador — só admin escolhe; usuário comum sempre vê a própria meta
+  const colabSelect = document.getElementById('meta-colab-select');
+  if (colabSelect) {
+    if (admin) {
+      colabSelect.style.display = 'inline-block';
+      const prevVal = colabSelect.value;
+      colabSelect.innerHTML = PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado).map(u => {
+        const info = PONTO_EXTRA_USERS[u] || perfisCache[u] || { name: u };
+        return `<option value="${u}">${esc(info.name)}</option>`;
+      }).join('');
+      if (prevVal) colabSelect.value = prevVal;
+    } else {
+      colabSelect.style.display = 'none';
+    }
+  }
+  const targetUsername = admin
+    ? (colabSelect?.value || currentUser?.username?.toLowerCase())
+    : currentUser?.username?.toLowerCase();
+
+  const perfilId = perfisCache[targetUsername]?.metaPerfil || 'padrao';
   const perfil   = PERFIS_META[perfilId] || PERFIS_META['padrao'];
   if (!perfil) return;
 
@@ -11059,7 +11066,7 @@ async function renderMetas() {
   wrap.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px;">⏳ Carregando dados...</div>';
   const metasRows = await loadMetasFromSupabase();
 
-  const storeKey = metaKey(perfilId, ano, mes);
+  const storeKey = metaKey(targetUsername, ano, mes);
   let valoresManuais = {};
   if (metasRows) {
     // Usa dados direto do Supabase — não depende do localStorage como intermediário
@@ -11070,7 +11077,7 @@ async function renderMetas() {
   }
 
   let autoData = {};
-  try { autoData = await fetchMetasAuto(ano, mes); } catch(e){ console.warn('fetchMetasAuto error:', e); }
+  try { autoData = await fetchMetasAuto(ano, mes, targetUsername); } catch(e){ console.warn('fetchMetasAuto error:', e); }
 
   const valores = { ...valoresManuais };
   if (autoData.qtd_ovos        != null) valores.qtd_ovos        = autoData.qtd_ovos;
@@ -11280,7 +11287,8 @@ async function renderMetas() {
   if (adminPanel) {
     adminPanel.style.display = podeAdmin ? 'block' : 'none';
     if (podeAdmin && adminInputs) {
-      if (adminMesAno) adminMesAno.textContent = meses[mes]+' '+ano;
+      const _uInfoAdmin = PONTO_EXTRA_USERS[targetUsername] || perfisCache[targetUsername] || { name: targetUsername };
+      if (adminMesAno) adminMesAno.textContent = meses[mes]+' '+ano+' — '+_uInfoAdmin.name;
       adminInputs.innerHTML = '';
       const indsEditaveis = perfil.indicadores.filter(i => i.fonte === 'manual' || i.fonte === 'admin');
       indsEditaveis.forEach(ind => {
@@ -11302,14 +11310,17 @@ async function renderMetas() {
 async function salvarMetas() {
   const mes      = parseInt(document.getElementById('meta-mes')?.value);
   const ano      = parseInt(document.getElementById('meta-ano')?.value);
-  const perfilId = document.getElementById('meta-perfil-select')?.value || 'padrao';
+  const targetUsername = isAdmin()
+    ? (document.getElementById('meta-colab-select')?.value || currentUser?.username?.toLowerCase())
+    : currentUser?.username?.toLowerCase();
+  const perfilId = perfisCache[targetUsername]?.metaPerfil || 'padrao';
   const perfil   = PERFIS_META[perfilId] || PERFIS_META['padrao'];
   const valores  = {};
   perfil.indicadores.forEach(ind => {
     const el = document.getElementById('meta-input-'+ind.id);
     if (el && el.value !== '') valores[ind.id] = el.value;
   });
-  const key = metaKey(perfilId, ano, mes);
+  const key = metaKey(targetUsername, ano, mes);
   try{localStorage.setItem(key, JSON.stringify(valores));}catch(_){}
   _startActionPopup('Salvando metas...');
   const ok = await sbUpsert('metas', [{ id: key, data: valores }]);
@@ -11359,6 +11370,45 @@ const PONTO_EXTRA_USERS = {
   'bili':  { name: 'Everson' },
 };
 
+// ── Inserção forçada de batida faltante (dias com 3 de 4 batidas) ──────────
+// Regra: entrada padrão 08:00, saída padrão 17:00, almoço sempre 1h.
+function _pontoToMin(h) { const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm; }
+function _pontoToHHMM(min) { const h = Math.floor(min / 60), m = min % 60; return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'); }
+
+function calcularBatidaForcada(batidas3) {
+  const mins = batidas3.map(_pontoToMin).sort((a, b) => a - b);
+  const [t1, t2] = mins, t3 = mins[2];
+  let inserida;
+  if (t1 > 10 * 60)      inserida = 8 * 60;        // faltou a entrada
+  else if (t3 < 15 * 60) inserida = 17 * 60;       // faltou a saída
+  else if (t2 <= 12 * 60 + 30) inserida = t2 + 60; // bateu a pausa, faltou a volta
+  else                    inserida = t2 - 60;      // bateu a volta, faltou a pausa
+  return {
+    batidas: [...mins, inserida].sort((a, b) => a - b).map(_pontoToHHMM),
+    inserida: _pontoToHHMM(inserida),
+  };
+}
+
+// Varre pontoData e força a batida faltante em todo dia com exatamente 3 batidas
+// (inclui sábados — só domingo e feriado ficam de fora, dias sem expediente).
+// Enriquecimento em memória (não grava sozinho no Supabase) — reaplicado a cada load,
+// então cobre retroativamente qualquer mês já importado e também os futuros.
+function aplicarBatidasForcadas() {
+  const todayStr = new Date().toISOString().split('T')[0];
+  Object.values(pontoData).forEach(dias => {
+    Object.entries(dias).forEach(([key, reg]) => {
+      if (!reg || !Array.isArray(reg.batidas) || reg.batidas.length !== 3) return;
+      if (key < PONTO_DATA_INICIO || key > todayStr) return;
+      const dow = new Date(key + 'T00:00:00').getDay();
+      if (dow === 0 || (typeof FERIADOS !== 'undefined' && FERIADOS.has(key))) return;
+      if (reg.manuais && reg.manuais.length) return; // já processado
+      const { batidas, inserida } = calcularBatidaForcada(reg.batidas);
+      reg.batidas = batidas;
+      reg.manuais = [inserida];
+    });
+  });
+}
+
 // pontoData: { [username]: { [YYYY-MM-DD]: { batidas: ['HH:MM',...] } } }
 let pontoData = {};
 // pontoAtestados: { [username]: { [YYYY-MM-DD]: true } }
@@ -11379,6 +11429,7 @@ function normalizePontoKeys() {
     }
   });
   pontoData = norm;
+  aplicarBatidasForcadas();
 }
 
 function loadPonto() {
@@ -11439,6 +11490,7 @@ function deleteBatida(uname, dateKey, hora) {
   const target = pontoData[uname] || pontoData[uname.toLowerCase()];
   if (!target || !target[dateKey]) return;
   target[dateKey].batidas = target[dateKey].batidas.filter(h => h !== hora);
+  if (target[dateKey].manuais) target[dateKey].manuais = target[dateKey].manuais.filter(h => h !== hora);
   if (!target[dateKey].batidas.length) delete target[dateKey];
   savePonto();
   renderPonto();
@@ -11871,7 +11923,7 @@ function renderPontoDetalhe(uname, ano, mes, diasUteis) {
         <td style="padding:8px 14px;color:var(--text);font-weight:600;">${dias[dow]} ${dia}/${mesStr}${ehSab?' 🟡':''}</td>
         <td style="padding:8px;text-align:center;color:var(--text2);">${
           batidas.length
-            ? batidas.map(h => `<span style="white-space:nowrap;margin:0 2px;">${h}${admin?`<button onclick="deleteBatida('${uname}','${key}','${h}')" title="Remover batida" style="margin-left:3px;padding:0 4px;border:none;border-radius:4px;background:#fee2e2;color:#ef4444;font-size:10px;cursor:pointer;font-weight:700;">✕</button>`:''}</span>`).join(' ')
+            ? batidas.map(h => `<span style="white-space:nowrap;margin:0 2px;">${h}${(reg?.manuais||[]).includes(h)?`<span title="Inserção automática (batida faltante)" style="margin-left:2px;">🤖</span>`:''}${admin?`<button onclick="deleteBatida('${uname}','${key}','${h}')" title="Remover batida" style="margin-left:3px;padding:0 4px;border:none;border-radius:4px;background:#fee2e2;color:#ef4444;font-size:10px;cursor:pointer;font-weight:700;">✕</button>`:''}</span>`).join(' ')
             : '—'
         }</td>
         <td style="padding:8px;text-align:center;font-weight:700;color:${trabalhado!==null?'var(--text)':'var(--text2)'};">${fmtMin(trabalhado)}</td>
