@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.59</title>
+<title>KC System v7.60</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.59</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.60</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -5546,10 +5546,16 @@ function renderLancamentos(){
       lastVal=dayRec?.[lastValKey]??'';
     }
 
+    // Tanque com hapas + Ração Ideal: soma ao vivo por tanque, pra pegar o erro clássico
+    // de digitar o total do tanque repetido em cada hapa antes de salvar.
+    const isHapaIdealRow=!!(r.hapaNum&&param==='racaoIdealG');
+    const tankTotalId='lanc-hapa-total-'+r.tankId.replace(/[^a-z0-9]/gi,'_');
+    const totalUpdateCall=isHapaIdealRow?`atualizaTotalHapaIdeal('${r.tankId}','${tankTotalId}');`:'';
+
     const mainInput=`<input class="lancamento-input" type="number"
       id="lanc-input-${i}" data-tank="${r.tankId}" data-hapa="${r.hapaNum||''}" data-hapas="${r.hapas}"
       step="${isDual?'0.1':cfg.step}" inputmode="${isDual?'decimal':cfg.inputmode}" placeholder="${isDual?'—temp':'—'}"
-      oninput="this.classList.toggle('filled',this.value!=='')">`;
+      oninput="this.classList.toggle('filled',this.value!=='');${totalUpdateCall}">`;
 
     const o2Input=isDual?`<td><input class="lancamento-input" type="number"
       id="lanc-input-o2-${i}" data-tank="${r.tankId}" data-hapa="${r.hapaNum||''}" data-hapas="${r.hapas}" data-dual="o2"
@@ -5557,10 +5563,16 @@ function renderLancamentos(){
       oninput="this.classList.toggle('filled',this.value!=='')"></td>`:'';
 
     if(!isRacao){
+      const isLastHapaDoGrupo=isHapaIdealRow&&(i===rows.length-1||rows[i+1].tankId!==r.tankId);
+      const totalRow=isLastHapaDoGrupo?`
+      <tr class="lanc-hapa-total-row" style="background:var(--accent-dim);">
+        <td colspan="2" style="padding:6px 10px;text-align:right;font-size:11px;font-weight:700;color:var(--accent);">🧮 Total do tanque:</td>
+        <td id="${tankTotalId}" style="padding:6px 10px;font-size:12px;font-weight:800;color:var(--accent);font-family:'JetBrains Mono',monospace;">—</td>
+      </tr>`:'';
       return`<tr class="${r.hapaNum?'has-hapas':''}">
         ${tankCell}<td>${mainInput}</td>${o2Input}
         <td style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${lastVal!==''?(typeof lastVal==='number'?fField(param,lastVal):lastVal):'—'}</td>
-      </tr>`;
+      </tr>${totalRow}`;
     }
 
     // Modo ração — com toggle tambor/balde (balde é padrão — tambor inputs escuros desde o início)
@@ -5624,6 +5636,21 @@ function renderLancamentos(){
   tbody.insertAdjacentHTML('beforebegin',header);
   tbody.innerHTML=rowsHtml;
   document.getElementById('lanc-progress').style.display='none';
+}
+
+// Soma ao vivo da Ração Ideal digitada nos hapas de um tanque — ajuda a pegar na hora
+// o erro clássico de repetir o total do tanque em cada caixinha de hapa.
+function atualizaTotalHapaIdeal(tankId,totalElId){
+  const el=document.getElementById(totalElId);
+  if(!el)return;
+  const inputs=[...document.querySelectorAll('.lancamento-input[data-hapa]')]
+    .filter(inp=>inp.dataset.tank===tankId&&inp.dataset.hapa!=='');
+  let soma=0,algum=false;
+  inputs.forEach(inp=>{
+    const v=parseFloat(inp.value);
+    if(!isNaN(v)){soma+=v;algum=true;}
+  });
+  el.textContent=algum?fNum(soma,3)+' kg':'—';
 }
 
 // Estado dos toggles por id de linha
