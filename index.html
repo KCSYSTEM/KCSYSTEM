@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.62</title>
+<title>KC System v7.63</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.62</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.63</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -10848,9 +10848,9 @@ const PERFIS_META = {
     label: 'Colaborador Padrão',
     indicadores: [
       { id:'qtd_ovos',           label:'Quantidade de Ovos Bons', fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
-        faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
+        faixas:[{min:1200000,valor:50},{min:1000000,valor:40},{min:800000,valor:30},{min:600000,valor:20},{min:400000,valor:10},{min:0,valor:0}] },
       { id:'producao_larvas',   label:'Quantidade de Larvas',    fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
-        faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
+        faixas:[{min:1000000,valor:50},{min:800000,valor:40},{min:600000,valor:30},{min:400000,valor:20},{min:200000,valor:10},{min:0,valor:0}] },
       { id:'qtd_alevinos',      label:'Quantidade de Alevinos',  fonte:'auto',   unidade:'alevinos',formato:_fmtProd,
         faixas:[{min:800000,valor:100},{min:600000,valor:80},{min:400000,valor:60},{min:300000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
       { id:'escape_matrizes',   label:'Escape de Matrizes',      fonte:'admin',  inputLabel:'Peixes escapados', inputUnidade:'peixes', inputMode:'escapados',
@@ -10865,16 +10865,16 @@ const PERFIS_META = {
         faixas:[{min:100,valor:50},{min:0,valor:0}] },
       { id:'presenca',          label:'Presença', fonte:'auto', unidade:'%', formato:v=>v+'%',
         regra:'100% de seg–sex úteis (excl. feriados) com ≥ 4h registradas. Qualquer falta ou atestado anula o bônus.',
-        faixas:[{min:100,valor:200},{min:0,valor:0}] },
+        faixas:[{min:100,valor:300},{min:0,valor:0}] },
     ]
   },
   arracador: {
     label: 'Arraçoador',
     indicadores: [
       { id:'qtd_ovos',          label:'Quantidade de Ovos Bons',     fonte:'auto',   unidade:'ovos',    formato:_fmtProd,
-        faixas:[{min:1200000,valor:100},{min:1000000,valor:80},{min:800000,valor:60},{min:600000,valor:40},{min:400000,valor:20},{min:0,valor:0}] },
+        faixas:[{min:1200000,valor:50},{min:1000000,valor:40},{min:800000,valor:30},{min:600000,valor:20},{min:400000,valor:10},{min:0,valor:0}] },
       { id:'producao_larvas',   label:'Quantidade de Larvas',        fonte:'auto',   unidade:'larvas',  formato:_fmtProd,
-        faixas:[{min:1000000,valor:100},{min:800000,valor:80},{min:600000,valor:60},{min:400000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
+        faixas:[{min:1000000,valor:50},{min:800000,valor:40},{min:600000,valor:30},{min:400000,valor:20},{min:200000,valor:10},{min:0,valor:0}] },
       { id:'qtd_alevinos',      label:'Quantidade de Alevinos',      fonte:'auto',   unidade:'alevinos',formato:_fmtProd,
         faixas:[{min:800000,valor:100},{min:600000,valor:80},{min:400000,valor:60},{min:300000,valor:40},{min:200000,valor:20},{min:0,valor:0}] },
       { id:'renovacao_agua',    label:'Renovação de Água',           fonte:'auto',   unidade:'% dias',  formato:v=>v+'%',
@@ -10888,7 +10888,7 @@ const PERFIS_META = {
         faixas:[{min:100,valor:50},{min:0,valor:0}] },
       { id:'presenca',          label:'Presença', fonte:'auto', unidade:'%', formato:v=>v+'%',
         regra:'100% de seg–sex úteis (excl. feriados) com ≥ 4h registradas. Qualquer falta ou atestado anula o bônus.',
-        faixas:[{min:100,valor:200},{min:0,valor:0}] },
+        faixas:[{min:100,valor:300},{min:0,valor:0}] },
     ]
   }
 };
@@ -10998,7 +10998,7 @@ async function fetchMetasAuto(ano, mes, targetUsername) {
   if (_pUname) {
     const _pHoje = new Date();
     const _pEhMesAtual = ano === _pHoje.getFullYear() && mes === (_pHoje.getMonth()+1);
-    const _pUltimoDia = _pEhMesAtual ? _pHoje.getDate() : new Date(ano, mes, 0).getDate();
+    const _pUltimoDia = _pEhMesAtual ? _pHoje.getDate() - 1 : new Date(ano, mes, 0).getDate();
     let _pUteis = 0, _pPresente = 0;
     for (let d = 1; d <= _pUltimoDia; d++) {
       const ds = `${ano}-${mesStr}-${String(d).padStart(2,'0')}`;
