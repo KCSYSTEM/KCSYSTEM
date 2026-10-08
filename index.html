@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.67</title>
+<title>KC System v7.68</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.67</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.68</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -11771,10 +11771,10 @@ function fmtMin(min) {
 const FERIADOS=new Set([
   ...[2025,2026,2027].flatMap(y=>[`${y}-01-01`,`${y}-04-21`,`${y}-05-01`,`${y}-07-09`,`${y}-09-07`,`${y}-10-12`,`${y}-11-02`,`${y}-11-15`,`${y}-11-20`,`${y}-12-25`]),
   '2025-03-03','2025-03-04','2025-04-18','2025-06-19',
-  '2026-02-16','2026-02-17','2026-04-03','2026-06-04',
+  '2026-02-16','2026-02-17','2026-04-03','2026-06-04','2026-10-08',
   '2027-02-08','2027-02-09','2027-03-26','2027-05-27',
 ]);
-const FERIADOS_NOMES={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','07-09':'Revolução Constitucionalista','09-07':'Independência','10-12':'N.Sra. Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal','2025-03-03':'Carnaval','2025-03-04':'Carnaval','2025-04-18':'Sexta-feira Santa','2025-06-19':'Corpus Christi','2026-02-16':'Carnaval','2026-02-17':'Carnaval','2026-04-03':'Sexta-feira Santa','2026-06-04':'Corpus Christi','2027-02-08':'Carnaval','2027-02-09':'Carnaval','2027-03-26':'Sexta-feira Santa','2027-05-27':'Corpus Christi'};
+const FERIADOS_NOMES={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','07-09':'Revolução Constitucionalista','09-07':'Independência','10-12':'N.Sra. Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal','2025-03-03':'Carnaval','2025-03-04':'Carnaval','2025-04-18':'Sexta-feira Santa','2025-06-19':'Corpus Christi','2026-02-16':'Carnaval','2026-02-17':'Carnaval','2026-04-03':'Sexta-feira Santa','2026-06-04':'Corpus Christi','2026-10-08':'Feriado municipal Urânia (folga)','2027-02-08':'Carnaval','2027-02-09':'Carnaval','2027-03-26':'Sexta-feira Santa','2027-05-27':'Corpus Christi'};
 function getNomeFeriado(key){return FERIADOS_NOMES[key]||FERIADOS_NOMES[key.slice(5)]||'Feriado';}
 
 function renderPonto() {
