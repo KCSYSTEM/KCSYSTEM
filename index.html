@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.70</title>
+<title>KC System v7.71</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.70</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.71</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -4902,12 +4902,70 @@ async function toggleModoComercial(on){
 
 // Se o tanque estava ativo numa data específica — usa os stamps de ativação/desativação
 // para reconstituir o histórico, em vez do estado atual (t.empty), que só reflete "agora".
+// activatedAt/deactivatedAt guardam só a ÚLTIMA ativação/desativação (são sobrescritos),
+// então o histórico vem de:
+//  1) registros de evento gravados por toggleEmptyTank ('empty_<tankId>_<ts>', obs "VAZIO"/"reativado");
+//  2) estado atual do tanque (empty/activatedAt/deactivatedAt) como último evento;
+//  3) "blocos de atividade": dias com lançamento separados por até 7 dias — cobre
+//     reativações antigas não registradas sem tornar o tanque ativo para sempre.
+const _TANK_GAP_DIAS=7;
+let _tankHistCache=null, _tankHistSig='';
+function _tankHist(t){
+  const sig=records.length+'|'+(records[records.length-1]?.id||'');
+  if(sig!==_tankHistSig){_tankHistCache=new Map();_tankHistSig=sig;}
+  const key=t.id+'|'+(t.empty?1:0)+'|'+(t.activatedAt||'')+'|'+(t.deactivatedAt||'');
+  if(_tankHistCache.has(key))return _tankHistCache.get(key);
+
+  const prefix='empty_'+t.id+'_';
+  const eventos=[], dias=new Set();
+  records.forEach(r=>{
+    if(r.tankId!==t.id||!r.date)return;
+    if(r.id?.startsWith(prefix))eventos.push({date:r.date,ts:+r.id.slice(prefix.length)||0,on:!/VAZIO/i.test(r.obs||'')});
+    else dias.add(r.date);
+  });
+  eventos.sort((a,b)=>a.date.localeCompare(b.date)||a.ts-b.ts);
+  const diasOrd=[...dias].sort();
+
+  // Blocos de atividade
+  const blocos=[];
+  const diff=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
+  diasOrd.forEach(d=>{
+    const b=blocos[blocos.length-1];
+    if(b&&diff(b.fim,d)<=_TANK_GAP_DIAS)b.fim=d;else blocos.push({ini:d,fim:d});
+  });
+
+  // Estado atual como último evento, quando os eventos gravados não o refletem
+  const ult=eventos[eventos.length-1];
+  if(!t.empty&&(!ult||!ult.on)){
+    const d=t.activatedAt&&(!ult||t.activatedAt>=ult.date)?t.activatedAt
+      :(blocos.find(b=>!ult||b.ini>ult.date)?.ini||null);
+    if(d)eventos.push({date:d,ts:Infinity,on:true,inferido:true});
+  } else if(t.empty&&t.deactivatedAt&&(!ult||ult.on)&&(!ult||t.deactivatedAt>=ult.date)){
+    eventos.push({date:t.deactivatedAt,ts:Infinity,on:false,inferido:true});
+  }
+  eventos.sort((a,b)=>a.date.localeCompare(b.date)||a.ts-b.ts);
+
+  const primeiroOn=eventos.find(e=>e.on)?.date;
+  const inicio=[diasOrd[0],primeiroOn,!t.empty?t.activatedAt:null].filter(Boolean).sort()[0]||null;
+  const h={eventos,dias,blocos,inicio};
+  _tankHistCache.set(key,h);
+  return h;
+}
+
+// Primeiro dia em que o tanque existiu em operação (para não listar tanque antes de existir)
+function tankFirstDay(t){return _tankHist(t).inicio;}
+
 function tankWasActiveOn(t,ds){
-  if(!t.empty)return !t.activatedAt||t.activatedAt<=ds;
-  if(!t.deactivatedAt)return false;
-  // Para tanques vazios, activatedAt pode ter sido sobrescrito na desativação —
-  // usa só deactivatedAt como limite superior.
-  return ds<t.deactivatedAt;
+  const h=_tankHist(t);
+  if(h.dias.has(ds))return true;                                  // teve lançamento no dia
+  if(h.blocos.some(b=>b.ini<=ds&&ds<=b.fim))return true;          // dentro de um bloco de atividade
+  let ultimo=null;
+  for(const e of h.eventos){if(e.date<=ds)ultimo=e;else break;}
+  if(ultimo)return ultimo.on;
+  // Antes do primeiro evento: se ele foi uma desativação, o tanque estava ativo até ali
+  const prim=h.eventos[0];
+  if(prim)return !prim.on&&!!h.inicio&&h.inicio<=ds;
+  return !t.empty&&!!h.inicio&&h.inicio<=ds;
 }
 
 function updateHapaNameFields(){
@@ -6569,10 +6627,10 @@ function renderPainel(){
 
   // Define, filtra e separa tanques
   const activeTanks=tanks.filter(t=>{
-    // Tanque ainda não ativado na data selecionada: não exibe (evita linha sem dados)
-    // Tanques já desativados (empty=true) ignoram esta guarda — activatedAt pode ter sido
-    // sobrescrito na desativação; deactivatedAt é quem define o limite superior deles.
-    if(!t.empty&&t.activatedAt&&t.activatedAt>date)return false;
+    // Tanque que ainda não existia em operação na data selecionada: não exibe.
+    // (Não usa activatedAt — ele é sobrescrito a cada reativação e escondia o passado.)
+    const inicio=tankFirstDay(t);
+    if(!inicio||inicio>date)return false;
     // Tanque com hapas: verifica se há registros em qualquer hapa
     const names=t.hapaNames;
     if(names?.length){
