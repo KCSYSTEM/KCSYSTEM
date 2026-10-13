@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.77</title>
+<title>KC System v7.78</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.77</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.78</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2309,6 +2309,10 @@ function renderColetaGraficos(){
     d.goradosPct =countGorados?parseFloat((goradosPctSum/countGorados).toFixed(1)):null;
     d.femeasReprod=[...d.lotes].reduce((s,l)=>s+(_byLoteInfo[l]?.femeasReprod||0),0)||null;
     d.pctDesova  =(d.femeasReprod&&d.femeas)?parseFloat((d.femeas/d.femeasReprod*100).toFixed(1)):null;
+    // Razões dos totais do dia (média ponderada, não média das razões por hapa)
+    d.ovosTotalPorFemea=(d.ovosTotal&&d.femeas)?Math.round(d.ovosTotal/d.femeas):null;
+    d.ovosBonsPorFemea =(d.ovosFinal&&d.femeas)?Math.round(d.ovosFinal/d.femeas):null;
+    d.ovosPorMl        =(d.ovosTotal&&d.ml)?Math.round(d.ovosTotal/d.ml):null;
   });
 
   const dates=Object.keys(byDate).sort();
@@ -2361,6 +2365,21 @@ function renderColetaGraficos(){
       series:[
         {label:'Ovos Finais',color:'#16a34a',vals:data.map(d=>d.ovosFinal)},
         {label:'Média móvel (4)',color:'#86efac',vals:movingAvg(data.map(d=>d.ovosFinal)),dashed:true,thin:true},
+      ]},
+    {id:'gcol-4a',title:'Ovos Totais por Fêmea Desovada',unit:'ovos/fêmea',
+      series:[
+        {label:'Ovos totais / fêmea',color:'#0891b2',vals:data.map(d=>d.ovosTotalPorFemea)},
+        {label:'Média móvel (4)',color:'#67e8f9',vals:movingAvg(data.map(d=>d.ovosTotalPorFemea)),dashed:true,thin:true},
+      ]},
+    {id:'gcol-4b',title:'Ovos Bons por Fêmea Desovada',unit:'ovos/fêmea',
+      series:[
+        {label:'Ovos bons / fêmea',color:'#15803d',vals:data.map(d=>d.ovosBonsPorFemea)},
+        {label:'Média móvel (4)',color:'#86efac',vals:movingAvg(data.map(d=>d.ovosBonsPorFemea)),dashed:true,thin:true},
+      ]},
+    {id:'gcol-4c',title:'Ovos por mL',unit:'ovos/mL',
+      series:[
+        {label:'Ovos / mL',color:'#ca8a04',vals:data.map(d=>d.ovosPorMl)},
+        {label:'Média móvel (4)',color:'#fde68a',vals:movingAvg(data.map(d=>d.ovosPorMl)),dashed:true,thin:true},
       ]},
   ];
 
