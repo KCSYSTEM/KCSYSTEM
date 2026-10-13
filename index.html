@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.74</title>
+<title>KC System v7.75</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.74</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.75</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1192,6 +1192,10 @@ input[type="number"]{-moz-appearance:textfield;}
           <input type="date" id="coleta-graf-to" onchange="renderColetaGraficos()" style="flex:1;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;color:var(--text);font-size:13px;outline:none;">
           <button onclick="document.getElementById('coleta-graf-from').value='';document.getElementById('coleta-graf-to').value='';renderColetaGraficos();" style="background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:8px 10px;font-size:11px;color:var(--text2);cursor:pointer;white-space:nowrap;">Limpar</button>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;padding:10px 13px 0;font-size:12px;color:var(--text2);cursor:pointer;user-select:none;">
+          <input type="checkbox" id="coleta-graf-aditivo" onchange="renderColetaGraficos()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+          🧪 Somente hapas alimentados com aditivo
+        </label>
         <div id="coleta-graficos-container" style="padding:13px 13px 80px;display:flex;flex-direction:column;gap:20px;"></div>
       </div>
     </div>
@@ -2201,6 +2205,36 @@ function showColetaView(v){
   if(v==='manejos')renderManejos();
 }
 
+// Retorna fn(coletaRec) → true se o hapa da coleta estava sendo alimentado com aditivo:
+// aditivo em pelo menos metade dos lançamentos de ração (real/sobra) dos 7 dias até a data da coleta.
+// Usar maioria (e não só o dia anterior) evita que um esquecimento de marcar o aditivo mude a classificação.
+const _ADT_JANELA_DIAS=7;
+function coletaHapaComAditivoFn(){
+  const porHapa={}; // 'tankId_hapa' → {date: bool}
+  records.forEach(r=>{
+    if(r.overridden||!r.date||!r.tankId)return;
+    if(r.racaoKg==null&&r.sobraKg==null&&!r.racaoLancada)return;
+    const k=r.tankId+'_'+(r.hapa??'');
+    const m=porHapa[k]||(porHapa[k]={});
+    m[r.date]=m[r.date]||!!(r.aditivos?.length);
+  });
+  const cache={};
+  return r=>{
+    const ck=r.tankId+'_'+(r.hapa??'')+'_'+r.date;
+    if(ck in cache)return cache[ck];
+    const m=porHapa[r.tankId+'_'+(r.hapa??'')]||porHapa[r.tankId+'_'];
+    let res=false;
+    if(m&&r.date){
+      const ini=new Date(r.date+'T12:00:00');ini.setDate(ini.getDate()-_ADT_JANELA_DIAS);
+      const iniS=ini.toISOString().slice(0,10);
+      const dias=Object.keys(m).filter(d=>d>=iniS&&d<=r.date);
+      const com=dias.filter(d=>m[d]).length;
+      res=dias.length>0&&com*2>=dias.length;
+    }
+    return cache[ck]=res;
+  };
+}
+
 function renderColetaGraficos(){
   const cont=document.getElementById('coleta-graficos-container');
   if(!cont)return;
@@ -2208,8 +2242,20 @@ function renderColetaGraficos(){
   const grafFrom=document.getElementById('coleta-graf-from')?.value||'';
   const grafTo=document.getElementById('coleta-graf-to')?.value||'';
 
+  // Filtro 🧪: só coletas de hapas que estavam recebendo aditivo (cruza com a ração lançada no Painel de Operação)
+  const soAditivo=!!document.getElementById('coleta-graf-aditivo')?.checked;
+  const _adtFiltro=soAditivo?coletaHapaComAditivoFn():null;
+
   // Monta dataset por data
-  const coletaRecs=coletaRecords.filter(r=>!r.overridden&&r.lote);
+  const _coletaTodos=coletaRecords.filter(r=>!r.overridden&&r.lote);
+  const coletaRecs=_adtFiltro?_coletaTodos.filter(_adtFiltro):_coletaTodos;
+  if(soAditivo&&_coletaTodos.length&&!coletaRecs.length){
+    cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
+      <div style="font-size:40px;margin-bottom:12px;">🧪</div>
+      <div style="font-size:15px;font-weight:700;">Nenhuma coleta de hapa com aditivo</div>
+    </div>`;
+    return;
+  }
   if(!coletaRecs.length){
     cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">📈</div>
@@ -2228,7 +2274,7 @@ function renderColetaGraficos(){
   });
 
   // Enriquece com ovosTotal, gorados e ovosFinal via buildColetaByLote (suporta coletaRecords modernos)
-  const _byLoteInfo=buildColetaByLote();
+  const _byLoteInfo=buildColetaByLote(_adtFiltro);
   Object.values(byDate).forEach(d=>{
     let totalOvosTotal=0,totalOvosFinal=0,goradosPctSum=0,countGorados=0;
     d.lotes.forEach(lote=>{
@@ -2254,6 +2300,18 @@ function renderColetaGraficos(){
   },0);
 
   cont.innerHTML='';
+  if(soAditivo){
+    const _hapasAdt=[...new Set(coletaRecs.filter(r=>(!grafFrom||r.date>=grafFrom)&&(!grafTo||r.date<=grafTo)).map(r=>{
+      const t=tanks.find(x=>x.id===r.tankId);
+      return (t?.name||r.tankName||r.tankId)+' · '+(t?.hapaNames?.[r.hapa-1]||('H'+r.hapa));
+    }))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    const aviso=document.createElement('div');
+    aviso.style.cssText='background:var(--accent-dim);border:1.5px solid var(--accent2);border-radius:12px;padding:10px 12px;font-size:11px;color:var(--text2);line-height:1.5;';
+    aviso.innerHTML=`<b>🧪 Somente hapas com aditivo</b> — ${coletaRecs.length} de ${_coletaTodos.length} lançamentos de coleta.<br>
+      Conta como "com aditivo" o hapa que teve aditivo em pelo menos metade dos lançamentos de ração dos 7 dias até a coleta (Painel de Operação).<br>
+      <span style="color:var(--text3);">Hapas no período: ${_hapasAdt.join(', ')||'—'}</span>`;
+    cont.appendChild(aviso);
+  }
   // Média móvel de N pontos
   const movingAvg=(vals,n=4)=>vals.map((_,i)=>{
     const window=vals.slice(Math.max(0,i-n+1),i+1).filter(v=>v!=null);
@@ -2575,6 +2633,14 @@ function renderColetaGraficos(){
   }
 
   // ── Gráficos 6–9: Eficiência do Pipeline por Coleta (um gráfico por série) ──
+  // Larva/povoamento/transferência não são separados por hapa — com o filtro 🧪 esses gráficos não se aplicam
+  if(soAditivo){
+    const nota=document.createElement('div');
+    nota.style.cssText='font-size:11px;color:var(--text3);text-align:center;padding:4px 10px;';
+    nota.textContent='Gráficos de eficiência do pipeline (larva → venda) ocultos: as fases depois da coleta juntam todos os hapas do lote e não dá para separar os com aditivo.';
+    cont.appendChild(nota);
+    return;
+  }
   const _pipe6=buildPipeline();
   const _loteEntries6=Object.values(_pipe6)
     .filter(p=>(!grafFrom||p.data_inicio>=grafFrom)&&(!grafTo||p.data_inicio<=grafTo))
@@ -8311,9 +8377,9 @@ function buildPipeline(){
   return pipeline;
 }
 
-function buildColetaByLote(){
+function buildColetaByLote(recFilter){
   const byLote = {};
-  const allColeta=coletaRecords.filter(r=>!r.overridden&&r.lote);
+  const allColeta=coletaRecords.filter(r=>!r.overridden&&r.lote&&(!recFilter||recFilter(r)));
   allColeta.forEach(r=>{
     if(!byLote[r.lote]) byLote[r.lote]={
       ovosTotal:0, ovosBons:0, mlTotal:0, lastDate:'',
