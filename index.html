@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.73</title>
+<title>KC System v7.74</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.73</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.74</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -8465,6 +8465,33 @@ function getQtdProporcionalParaRoot(m, rootLote){
   return Math.round(m.qtd_total * qtdDesteRoot / totalOrigemQtd);
 }
 
+// ─── Alerta de data suspeita no ciclo ─────────────────────
+// Intervalo máximo esperado entre a etapa de ORIGEM e a etapa seguinte. Acima disso
+// (ou data anterior à origem, ou no futuro) a data provavelmente foi digitada errada
+// (ex.: ano 2026 no lugar de 2025).
+const _MANEJO_MAX_DIAS={coleta:30,larva:45,povoamento:180,transferencia:180,venda:180};
+function _diasEntre(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);}
+function _fmtDataBr(d){return d?d.split('-').reverse().join('/'):'—';}
+function alertasDataManejo(m,coletaPanel){
+  if(!m?.data||m.fase==='coleta')return[];
+  const out=[];
+  const hoje=new Date().toISOString().slice(0,10);
+  if(m.data>hoje)out.push(`Data ${_fmtDataBr(m.data)} está no futuro.`);
+  (m.origens||[]).forEach(o=>{
+    if(!o?.lote_id)return;
+    let faseOrig=null,dtOrig=null;
+    const ms=manejos.filter(x=>!x.overridden&&x.lote_id===o.lote_id&&x.data);
+    if(ms.length){faseOrig=ms[0].fase;dtOrig=ms.map(x=>x.data).sort()[0];}
+    else if(coletaPanel?.[o.lote_id]?.lastDate){faseOrig='coleta';dtOrig=coletaPanel[o.lote_id].lastDate;}
+    if(!dtOrig)return;
+    const dias=_diasEntre(dtOrig,m.data);
+    const lim=_MANEJO_MAX_DIAS[faseOrig]??180;
+    if(dias<0)out.push(`Data ${_fmtDataBr(m.data)} é ANTERIOR à origem ${o.lote_id} (${_fmtDataBr(dtOrig)}).`);
+    else if(dias>lim)out.push(`${dias} dias desde a origem ${o.lote_id} (${_fmtDataBr(dtOrig)}) — o normal é até ${lim} dias.`);
+  });
+  return out;
+}
+
 // ─── Render card pipeline ───────────────────────────────
 function renderPipelineCard(p){
   const fasesOrdem = ['coleta','larva','povoamento','transferencia','venda'];
@@ -8492,6 +8519,7 @@ function renderPipelineCard(p){
   // Busca métricas detalhadas da coleta para este lote
   const _coletaPanel = buildColetaByLote();
   const _coletaInfo  = _coletaPanel[p.lote_coleta] || null;
+  let _cardTemAlerta = false;
 
   const etapas = fasesRender.map(({fase,itens})=>{
     const cor = fasesCores[fase];
@@ -8509,6 +8537,11 @@ function renderPipelineCard(p){
     const destinos = itens.flatMap(i=>(i.destinos||[]).map(d=>d.tanque_id?tanks.find(t=>t.id===d.tanque_id)?.name||d.tanque_id:''));
     const destinosStr = [...new Set(destinos.filter(Boolean))].join(', ');
     const dataStr = fmtMonthShort(itens.map(i=>i.data).sort().pop()||'');
+    const _alertas = itens.flatMap(i=>alertasDataManejo(i,_coletaPanel).map(t=>(itens.length>1&&i.lote_id?i.lote_id+': ':'')+t));
+    if(_alertas.length) _cardTemAlerta=true;
+    const alertaHtml = _alertas.length ? `<div title="${esc(_alertas.join(' | '))}" style="margin-top:4px;background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:4px 6px;font-size:9px;line-height:1.35;color:#b91c1c;text-align:left;">
+        <b>⚠️ Data parece errada</b><br>${_alertas.map(esc).join('<br>')}<br><span style="color:#7f1d1d;">Confira a data e corrija em ✏️ editar.</span>
+      </div>` : '';
 
     // Botão editar: coleta usa lote_coleta como referência, demais usam id do manejo
     let editBtn = '';
@@ -8560,7 +8593,8 @@ function renderPipelineCard(p){
       <div style="font-size:13px;font-weight:800;color:var(--text);">${fNum(displayQtd)}</div>
       ${(pct!=null||pctVsOvos!=null)?`<div style="font-size:10px;color:${pct!=null?(pct>=70?'#16a34a':pct>=50?'#d97706':'#dc2626'):'var(--text3)'};font-weight:700;">${pct!=null?pct+'%':''}${pct!=null&&pctVsOvos!=null?' / ':''}<span style="color:var(--text3);font-weight:600;">${pctVsOvos!=null?pctVsOvos+'%🥚':''}</span></div>`:''}
       ${destinosStr?`<div style="font-size:9px;color:var(--text3);margin-top:2px;">${destinosStr}</div>`:''}
-      ${dataStr?`<div style="font-size:9px;color:var(--text3);">${dataStr}</div>`:''}
+      ${dataStr?`<div style="font-size:9px;color:${_alertas.length?'#b91c1c;font-weight:700':'var(--text3)'};">${_alertas.length?'⚠️ ':''}${dataStr}</div>`:''}
+      ${alertaHtml}
       ${editBtn}
       ${vendaLotesHtml}
       ${coletaDetails}
@@ -8589,10 +8623,11 @@ function renderPipelineCard(p){
       })()}
     </div>` : '';
 
-  return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px;">
+  return `<div style="background:var(--surface);border:1.5px solid ${_cardTemAlerta?'#fca5a5':'var(--border)'};border-radius:12px;padding:12px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div>
         <span style="font-size:13px;font-weight:800;color:var(--text);">📦 ${p.lote_coleta}</span>
+        ${_cardTemAlerta?'<span title="Há etapa com data suspeita neste ciclo" style="font-size:10px;font-weight:700;color:#b91c1c;background:#fef2f2;border:1px solid #fca5a5;border-radius:99px;padding:1px 7px;margin-left:6px;">❗ data suspeita</span>':''}
         <span style="font-size:11px;color:var(--text3);margin-left:8px;">${fmtMonthShort(p.data_inicio?.slice(0,10)||'')}</span>
       </div>
       ${efic!=null?`<span style="font-size:12px;font-weight:700;background:${efic>=40?'#f0fdf4':efic>=25?'#fffbeb':'#fef2f2'};color:${efic>=40?'#16a34a':efic>=25?'#d97706':'#dc2626'};padding:3px 8px;border-radius:99px;">★ ${efic}% geral</span>`:''}
