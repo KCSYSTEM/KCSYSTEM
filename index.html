@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.76</title>
+<title>KC System v7.77</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.76</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.77</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2206,9 +2206,11 @@ function showColetaView(v){
 }
 
 const ADITIVOS_LISTA=['biofish','polygain','aquasan','lothar'];
-const aditivoNome=a=>a.charAt(0).toUpperCase()+a.slice(1);
+const ADT_NENHUM='_nenhum';
+const aditivoNome=a=>a===ADT_NENHUM?'Sem aditivo':a.charAt(0).toUpperCase()+a.slice(1);
 // Retorna fn(coletaRec) → true se o hapa da coleta estava recebendo TODOS os aditivos marcados:
 // cada aditivo presente em pelo menos metade dos lançamentos de ração (real/sobra) dos 7 dias até a coleta.
+// [ADT_NENHUM] → hapa sem nenhum aditivo em MAIS da metade desses lançamentos (empate conta como com aditivo).
 // Usar maioria (e não só o dia anterior) evita que um esquecimento de marcar o aditivo mude a classificação.
 const _ADT_JANELA_DIAS=7;
 function coletaHapaComAditivoFn(aditivosSel){
@@ -2231,10 +2233,20 @@ function coletaHapaComAditivoFn(aditivosSel){
       const ini=new Date(r.date+'T12:00:00');ini.setDate(ini.getDate()-_ADT_JANELA_DIAS);
       const iniS=ini.toISOString().slice(0,10);
       const dias=Object.keys(m).filter(d=>d>=iniS&&d<=r.date);
-      res=dias.length>0&&aditivosSel.every(ad=>dias.filter(d=>m[d].has(ad)).length*2>=dias.length);
+      res=dias.length>0&&(aditivosSel.includes(ADT_NENHUM)
+        ?dias.filter(d=>!m[d].size).length*2>dias.length
+        :aditivosSel.every(ad=>dias.filter(d=>m[d].has(ad)).length*2>=dias.length));
     }
     return cache[ck]=res;
   };
+}
+
+// "Sem aditivo" é exclusivo: marcar ele desmarca os aditivos e vice-versa
+function coletaGrafAdtToggle(el){
+  if(el.checked)document.querySelectorAll('.coleta-graf-adt:checked').forEach(x=>{
+    if(x!==el&&((el.value===ADT_NENHUM)!==(x.value===ADT_NENHUM)))x.checked=false;
+  });
+  renderColetaGraficos();
 }
 
 function renderColetaGraficos(){
@@ -2247,8 +2259,8 @@ function renderColetaGraficos(){
   // Filtro 🧪: só coletas de hapas que estavam recebendo aditivo (cruza com a ração lançada no Painel de Operação)
   const _adtBox=document.getElementById('coleta-graf-adt-box');
   if(_adtBox&&!_adtBox.children.length){
-    _adtBox.innerHTML=ADITIVOS_LISTA.map(a=>`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;white-space:nowrap;">
-      <input type="checkbox" class="coleta-graf-adt" value="${a}" onchange="renderColetaGraficos()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">${aditivoNome(a)}</label>`).join('');
+    _adtBox.innerHTML=[...ADITIVOS_LISTA,ADT_NENHUM].map(a=>`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;white-space:nowrap;">
+      <input type="checkbox" class="coleta-graf-adt" value="${a}" onchange="coletaGrafAdtToggle(this)" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">${aditivoNome(a)}</label>`).join('');
   }
   const _adtSel=[...document.querySelectorAll('.coleta-graf-adt:checked')].map(x=>x.value);
   const soAditivo=_adtSel.length>0;
@@ -2261,7 +2273,7 @@ function renderColetaGraficos(){
   if(soAditivo&&_coletaTodos.length&&!coletaRecs.length){
     cont.innerHTML=`<div style="text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">🧪</div>
-      <div style="font-size:15px;font-weight:700;">Nenhuma coleta de hapa com ${_adtNomes}</div>
+      <div style="font-size:15px;font-weight:700;">Nenhuma coleta de hapa ${_adtSel[0]===ADT_NENHUM?'sem aditivo':'com '+_adtNomes}</div>
     </div>`;
     return;
   }
@@ -2316,8 +2328,10 @@ function renderColetaGraficos(){
     }))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
     const aviso=document.createElement('div');
     aviso.style.cssText='background:var(--accent-dim);border:1.5px solid var(--accent2);border-radius:12px;padding:10px 12px;font-size:11px;color:var(--text2);line-height:1.5;';
-    aviso.innerHTML=`<b>🧪 Somente hapas com ${_adtNomes}</b> — ${coletaRecs.length} de ${_coletaTodos.length} lançamentos de coleta.<br>
-      Entra o hapa que recebeu ${_adtSel.length>1?'todos os aditivos marcados':_adtNomes} em pelo menos metade dos lançamentos de ração dos 7 dias até a coleta (Painel de Operação). Outros aditivos não marcados não importam.<br>
+    aviso.innerHTML=`<b>🧪 Somente hapas ${_adtSel[0]===ADT_NENHUM?'sem aditivo':'com '+_adtNomes}</b> — ${coletaRecs.length} de ${_coletaTodos.length} lançamentos de coleta.<br>
+      ${_adtSel[0]===ADT_NENHUM
+        ?'Entra o hapa que ficou sem nenhum aditivo em mais da metade dos lançamentos de ração dos 7 dias até a coleta (Painel de Operação).'
+        :`Entra o hapa que recebeu ${_adtSel.length>1?'todos os aditivos marcados':_adtNomes} em pelo menos metade dos lançamentos de ração dos 7 dias até a coleta (Painel de Operação). Outros aditivos não marcados não importam.`}<br>
       <span style="color:var(--text3);">Hapas no período: ${_hapasAdt.join(', ')||'—'}</span>`;
     cont.appendChild(aviso);
   }
