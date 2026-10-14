@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.78</title>
+<title>KC System v7.79</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.78</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.79</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2241,6 +2241,23 @@ function coletaHapaComAditivoFn(aditivosSel){
   };
 }
 
+// Eixo Y com divisões redondas e inteiras: passo 1/2/5 × 10ⁿ, 3 a 6 divisões, escolhe o topo mais justo acima do pico
+function _eixoRedondo(pico){
+  if(!(pico>0))return {max:1,ticks:[0,1]};
+  const mag0=Math.pow(10,Math.floor(Math.log10(pico)));
+  let melhor=null;
+  [mag0/100,mag0/10,mag0,mag0*10].forEach(mag=>[1,2,5].forEach(m=>{
+    const passo=Math.round(m*mag);if(passo<1)return;
+    const max=Math.ceil(pico/passo)*passo,n=max/passo;
+    if(n<3||n>6)return;
+    if(!melhor||max<melhor.max||(max===melhor.max&&n<melhor.n))melhor={max,passo,n};
+  }));
+  if(!melhor)melhor={max:Math.max(1,Math.ceil(pico)),passo:1};
+  const ticks=[];for(let v=0;v<=melhor.max;v+=melhor.passo)ticks.push(v);
+  return {max:melhor.max,ticks};
+}
+function _fmtEixo(v){return v>=1000?(v%1000===0?fNum(v/1000):fNum(v/1000,1))+'k':fNum(v);}
+
 // "Sem aditivo" é exclusivo: marcar ele desmarca os aditivos e vice-versa
 function coletaGrafAdtToggle(el){
   if(el.checked)document.querySelectorAll('.coleta-graf-adt:checked').forEach(x=>{
@@ -2400,18 +2417,18 @@ function renderColetaGraficos(){
 
     // Calcula max para escala
     const allVals=gd.series.flatMap(s=>s.vals).filter(v=>v!=null);
-    const maxV=allVals.length?Math.max(...allVals)*1.1:1;
+    const _eixo=_eixoRedondo(allVals.length?Math.max(...allVals):0);
+    const maxV=_eixo.max;
     const minV=0;
     const scaleY=v=>pad.t+iH-(v-minV)/(maxV-minV||1)*iH;
     const scaleX=i=>pad.l+(n===1?iW/2:i/(n-1)*iW);
 
     let paths='';
     // Grid lines
-    [0,0.25,0.5,0.75,1].forEach(f=>{
-      const y=pad.t+iH*(1-f);
-      const val=(minV+(maxV-minV)*f);
+    _eixo.ticks.forEach(val=>{
+      const y=scaleY(val);
       paths+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
-      paths+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${val>=1000?fNum(Math.round(val/1000))+'k':fNum(val)}</text>`;
+      paths+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${_fmtEixo(val)}</text>`;
     });
     // X labels — máx 8, rotacionados se necessário
     const maxLabels=Math.min(8,n);
@@ -2506,7 +2523,8 @@ function renderColetaGraficos(){
       const padM={t:10,b:n>20?62:30,l:52,r:48};
       const iWM=WM-padM.l-padM.r,iHM=HM-padM.t-padM.b;
       const leftVals=femRepData.filter(v=>v!=null);
-      const leftMax=leftVals.length?Math.max(...leftVals)*1.15:1;
+      const _eixoM=_eixoRedondo(leftVals.length?Math.max(...leftVals):0);
+      const leftMax=_eixoM.max;
       const rightMax=100;
       const sLY=v=>padM.t+iHM-(v/leftMax)*iHM;
       const sRY=v=>padM.t+iHM-(v/rightMax)*iHM;
@@ -2515,10 +2533,10 @@ function renderColetaGraficos(){
 
       let svgM='';
       // Grid (left)
-      [0,0.25,0.5,0.75,1].forEach(f=>{
-        const y=padM.t+iHM*(1-f);const val=leftMax*f;
+      _eixoM.ticks.forEach(val=>{
+        const y=sLY(val);
         svgM+=`<line x1="${padM.l}" y1="${y}" x2="${WM-padM.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
-        svgM+=`<text x="${padM.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${val>=1000?fNum(Math.round(val/1000))+'k':fNum(Math.round(val))}</text>`;
+        svgM+=`<text x="${padM.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${_fmtEixo(val)}</text>`;
       });
       // Right Y axis labels (%)
       [0,25,50,75,100].forEach(pct=>{
@@ -2626,14 +2644,15 @@ function renderColetaGraficos(){
     const pad5={t:10,b:rot5?62:30,l:50,r:10};
     const iW5=W5-pad5.l-pad5.r,iH5=H5-pad5.t-pad5.b;
     const aV5=_gd5.series.flatMap(s=>s.vals).filter(v=>v!=null);
-    const mxV5=aV5.length?Math.max(...aV5)*1.1:1;
+    const _eixo5=_eixoRedondo(aV5.length?Math.max(...aV5):0);
+    const mxV5=_eixo5.max;
     const sY5=v=>pad5.t+iH5-(v)/(mxV5||1)*iH5;
     const sX5=i=>pad5.l+(n5===1?iW5/2:i/(n5-1)*iW5);
     let p5='';
-    [0,0.25,0.5,0.75,1].forEach(f=>{
-      const y=pad5.t+iH5*(1-f);const val=mxV5*f;
+    _eixo5.ticks.forEach(val=>{
+      const y=sY5(val);
       p5+=`<line x1="${pad5.l}" y1="${y}" x2="${W5-pad5.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
-      p5+=`<text x="${pad5.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${fNum(Math.round(val))}</text>`;
+      p5+=`<text x="${pad5.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${_fmtEixo(val)}</text>`;
     });
     const ml5=Math.min(8,n5),st5=Math.max(1,Math.ceil(n5/ml5));
     _dG5.forEach((d,i)=>{
@@ -2719,12 +2738,13 @@ function renderColetaGraficos(){
       const pad={t:10,b:rot?62:30,l:38,r:10};
       const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
       const allV=vals.filter(v=>v!=null);
-      const maxV=allV.length?Math.max(...allV)*1.1:100;
+      const _eixoP=_eixoRedondo(allV.length?Math.max(...allV):100);
+      const maxV=_eixoP.max;
       const sY=v=>pad.t+iH-(v/maxV)*iH;
       const sX=i=>pad.l+(n===1?iW/2:i/(n-1)*iW);
       let svg='';
-      [0,0.25,0.5,0.75,1].forEach(f=>{
-        const val=maxV*f,y=sY(val);
+      _eixoP.ticks.forEach(val=>{
+        const y=sY(val);
         svg+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
         svg+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${Math.round(val)}%</text>`;
       });
