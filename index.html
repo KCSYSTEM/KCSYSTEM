@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.82</title>
+<title>KC System v7.83</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.82</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.83</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -2256,6 +2256,20 @@ function _eixoRedondo(pico){
   const ticks=[];for(let v=0;v<=melhor.max;v+=melhor.passo)ticks.push(v);
   return {max:melhor.max,ticks};
 }
+// Faixa redonda e inteira em torno de [mín, máx] (não começa em 0) — usada no eixo de temperatura
+function _eixoFaixa(mn,mx){
+  let melhor=null;
+  [1,2,5,10].forEach(passo=>{
+    const lo=Math.floor(mn/passo)*passo;let hi=Math.ceil(mx/passo)*passo;
+    if(hi===lo)hi+=passo;
+    const n=(hi-lo)/passo;
+    if(n<2||n>6)return;
+    if(!melhor||hi-lo<melhor.max-melhor.min)melhor={min:lo,max:hi,passo};
+  });
+  if(!melhor)melhor={min:Math.floor(mn),max:Math.ceil(mx)+1,passo:Math.max(1,Math.ceil((mx-mn)/4))};
+  const ticks=[];for(let v=melhor.min;v<=melhor.max;v+=melhor.passo)ticks.push(v);
+  return {min:melhor.min,max:melhor.max,ticks};
+}
 function _fmtEixo(v){return v>=1000?(v%1000===0?fNum(v/1000):fNum(v/1000,1))+'k':fNum(v);}
 
 // "Sem aditivo" é exclusivo: marcar ele desmarca os aditivos e vice-versa
@@ -2305,7 +2319,8 @@ function renderColetaGraficos(){
   // Agrupa por data (com filtro de período)
   const byDate={};
   coletaRecs.filter(r=>(!grafFrom||r.date>=grafFrom)&&(!grafTo||r.date<=grafTo)).forEach(r=>{
-    if(!byDate[r.date])byDate[r.date]={date:r.date,femeas:0,ml:0,lotes:new Set()};
+    if(!byDate[r.date])byDate[r.date]={date:r.date,femeas:0,ml:0,lotes:new Set(),tanques:new Set()};
+    if(r.tankId)byDate[r.date].tanques.add(r.tankId);
     byDate[r.date].femeas+=(r.desovaFemeas||0);
     byDate[r.date].ml+=(r.desovaML||0);
     byDate[r.date].lotes.add(r.lote);
@@ -2313,6 +2328,24 @@ function renderColetaGraficos(){
 
   // Enriquece com ovosTotal, gorados e ovosFinal via buildColetaByLote (suporta coletaRecords modernos)
   const _byLoteInfo=buildColetaByLote(_adtFiltro);
+  // Temperatura (Painel de Operação): média das leituras dos tanques da coleta nos 7 dias até a data;
+  // sem leitura desses tanques na janela → média de todos os tanques na mesma janela. Ignora leituras fora de 10–40 °C.
+  const _tempPorData={};
+  records.forEach(r=>{
+    if(r.overridden||!r.date)return;
+    const t=parseFloat(r.temp);if(!(t>=10&&t<=40))return;
+    (_tempPorData[r.date]||(_tempPorData[r.date]=[])).push({tankId:r.tankId,t});
+  });
+  const _tempColeta=(data,tanques)=>{
+    const dt=new Date(data+'T12:00:00');dt.setDate(dt.getDate()-6);
+    const lt=[],todas=[];
+    for(let k=0;k<7;k++){
+      (_tempPorData[dt.toISOString().slice(0,10)]||[]).forEach(x=>{todas.push(x.t);if(tanques.has(x.tankId))lt.push(x.t);});
+      dt.setDate(dt.getDate()+1);
+    }
+    const base=lt.length?lt:todas;
+    return base.length?parseFloat((base.reduce((a,b)=>a+b,0)/base.length).toFixed(1)):null;
+  };
   Object.values(byDate).forEach(d=>{
     let totalOvosTotal=0,totalOvosFinal=0,goradosPctSum=0,countGorados=0;
     d.lotes.forEach(lote=>{
@@ -2330,6 +2363,7 @@ function renderColetaGraficos(){
     d.ovosTotalPorFemea=(d.ovosTotal&&d.femeas)?Math.round(d.ovosTotal/d.femeas):null;
     d.ovosBonsPorFemea =(d.ovosFinal&&d.femeas)?Math.round(d.ovosFinal/d.femeas):null;
     d.ovosPorMl        =(d.ovosTotal&&d.ml)?Math.round(d.ovosTotal/d.ml):null;
+    d.temp             =_tempColeta(d.date,d.tanques);
   });
 
   const dates=Object.keys(byDate).sort();
@@ -2363,17 +2397,17 @@ function renderColetaGraficos(){
   });
 
   const grafDefs=[
-    {id:'gcol-1',title:'Fêmeas que Desovaram',unit:'un',
+    {id:'gcol-1',temp:true,title:'Fêmeas que Desovaram',unit:'un',
       series:[
         {label:'Fêmeas desovadas',color:'#7c3aed',vals:data.map(d=>d.femeas)},
         {label:'Média móvel (4)',color:'#c4b5fd',vals:movingAvg(data.map(d=>d.femeas)),dashed:true,thin:true},
       ]},
-    {id:'gcol-2',title:'Ovos Total',unit:'un',
+    {id:'gcol-2',temp:true,title:'Ovos Total',unit:'un',
       series:[
         {label:'Ovos Total',color:'#2563eb',vals:data.map(d=>d.ovosTotal)},
         {label:'Média móvel (4)',color:'#93c5fd',vals:movingAvg(data.map(d=>d.ovosTotal)),dashed:true,thin:true},
       ]},
-    {id:'gcol-3',title:'% Ovos Gorados',unit:'%',
+    {id:'gcol-3',temp:true,title:'% Ovos Gorados',unit:'%',
       series:[
         {label:'Gorados %',color:'#e53e3e',vals:data.map(d=>d.goradosPct)},
         {label:'Média móvel (4)',color:'#fca5a5',vals:movingAvg(data.map(d=>d.goradosPct)),dashed:true,thin:true},
@@ -2383,17 +2417,17 @@ function renderColetaGraficos(){
         {label:'Ovos Finais',color:'#16a34a',vals:data.map(d=>d.ovosFinal)},
         {label:'Média móvel (4)',color:'#86efac',vals:movingAvg(data.map(d=>d.ovosFinal)),dashed:true,thin:true},
       ]},
-    {id:'gcol-4a',title:'Ovos Totais por Fêmea Desovada',unit:'ovos/fêmea',
+    {id:'gcol-4a',temp:true,title:'Ovos Totais por Fêmea Desovada',unit:'ovos/fêmea',
       series:[
         {label:'Ovos totais / fêmea',color:'#0891b2',vals:data.map(d=>d.ovosTotalPorFemea)},
         {label:'Média móvel (4)',color:'#67e8f9',vals:movingAvg(data.map(d=>d.ovosTotalPorFemea)),dashed:true,thin:true},
       ]},
-    {id:'gcol-4b',title:'Ovos Bons por Fêmea Desovada',unit:'ovos/fêmea',
+    {id:'gcol-4b',temp:true,title:'Ovos Bons por Fêmea Desovada',unit:'ovos/fêmea',
       series:[
         {label:'Ovos bons / fêmea',color:'#15803d',vals:data.map(d=>d.ovosBonsPorFemea)},
         {label:'Média móvel (4)',color:'#86efac',vals:movingAvg(data.map(d=>d.ovosBonsPorFemea)),dashed:true,thin:true},
       ]},
-    {id:'gcol-4c',title:'Ovos por mL',unit:'ovos/mL',
+    {id:'gcol-4c',temp:true,title:'Ovos por mL',unit:'ovos/mL',
       series:[
         {label:'Ovos / mL',color:'#ca8a04',vals:data.map(d=>d.ovosPorMl)},
         {label:'Média móvel (4)',color:'#fde68a',vals:movingAvg(data.map(d=>d.ovosPorMl)),dashed:true,thin:true},
@@ -2411,7 +2445,9 @@ function renderColetaGraficos(){
     const W=Math.max(280,Math.min(cont.clientWidth>0?cont.clientWidth-60:340,600)),H=160;
     const n=dates.length;
     const rotate=n>20;
-    const pad={t:10,b:rotate?62:30,l:50,r:10};
+    const _temps=gd.temp?data.map(d=>d.temp):null;
+    const _comTemp=!!_temps?.some(v=>v!=null);
+    const pad={t:10,b:rotate?62:30,l:50,r:_comTemp?38:10};
     const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
     if(!n){card.querySelector(`#${gd.id}`).innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px;">Sem dados</div>';return;}
 
@@ -2430,6 +2466,17 @@ function renderColetaGraficos(){
       paths+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
       paths+=`<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text3)">${_fmtEixo(val)}</text>`;
     });
+    // Eixo secundário (direita): temperatura °C — faixa redonda em torno de mín/máx, não começa em 0
+    let _eixoT=null,scaleYT=null;
+    if(_comTemp){
+      const tv=_temps.filter(v=>v!=null);
+      _eixoT=_eixoFaixa(Math.min(...tv),Math.max(...tv));
+      scaleYT=v=>pad.t+iH-(v-_eixoT.min)/(_eixoT.max-_eixoT.min||1)*iH;
+      _eixoT.ticks.forEach(val=>{
+        paths+=`<text x="${W-pad.r+4}" y="${scaleYT(val)+4}" text-anchor="start" font-size="9" fill="#f97316">${val}°</text>`;
+      });
+      paths+=`<line x1="${W-pad.r}" y1="${pad.t}" x2="${W-pad.r}" y2="${pad.t+iH}" stroke="var(--border)" stroke-width="1"/>`;
+    }
     // X labels — máx 8, rotacionados se necessário
     const maxLabels=Math.min(8,n);
     const step=Math.max(1,Math.ceil(n/maxLabels));
@@ -2437,11 +2484,24 @@ function renderColetaGraficos(){
       if(i%step!==0&&i!==n-1)return;
       const x=scaleX(i);
       if(rotate){
-        paths+=`<text transform="rotate(-45,${x},${H-pad.b+12})" x="${x}" y="${H-pad.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${d}</text>`;
+        paths+=`<text transform="rotate(-45,${x},${H-pad.b+12})" x="${x}" y="${H-pad.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${_fmtDataBr(d)}</text>`;
       } else {
-        paths+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d}</text>`;
+        paths+=`<text x="${x}" y="${H-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${_fmtDataBr(d)}</text>`;
       }
     });
+
+    if(_comTemp){
+      // Temperatura: linha laranja fina tracejada no eixo da direita
+      let dT='',fT=true;
+      _temps.forEach((v,i)=>{if(v!=null){const p=`${scaleX(i).toFixed(1)},${scaleYT(v).toFixed(1)}`;dT+=(fT?`M${p}`:`L${p}`);fT=false;}else{fT=true;}});
+      paths+=`<path d="${dT}" fill="none" stroke="#f97316" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.85"/>`;
+      _temps.forEach((v,i)=>{
+        if(v==null)return;
+        const cx=scaleX(i),cy=scaleYT(v);
+        paths+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="7" fill="transparent" data-i="${i}" data-v="${v}" data-u="°C (média 7 dias)" data-color="#f97316" class="gcol-dot"/>`;
+        paths+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2" fill="#f97316" pointer-events="none"/>`;
+      });
+    }
 
     gd.series.forEach(s=>{
       const pts=s.vals.map((v,i)=>v!=null?`${scaleX(i)},${scaleY(v)}`:null);
@@ -2463,7 +2523,8 @@ function renderColetaGraficos(){
       }
     });
 
-    const legenda=gd.series.map(s=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:${s.color};"></span>${s.label}</span>`).join('');
+    const legenda=gd.series.map(s=>`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;height:2px;background:${s.color};"></span>${s.label}</span>`).join('')
+      +(_comTemp?`<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2);margin-right:10px;"><span style="display:inline-block;width:12px;border-top:2px dashed #f97316;"></span>🌡️ Temperatura °C (eixo dir.)</span>`:'');
 
     const wrapper=document.createElement('div');
     wrapper.style.cssText='position:relative;';
@@ -2485,7 +2546,7 @@ function renderColetaGraficos(){
       const color=dot.getAttribute('data-color');
       tip.style.display='block';
       tip.style.borderLeft=`3px solid ${color}`;
-      tip.textContent=`${_fmtDataBr(dates[i])} · ${fNum(v)} ${gd.unit}`;
+      tip.textContent=`${_fmtDataBr(dates[i])} · ${fNum(v)} ${dot.getAttribute('data-u')||gd.unit}`;
       const rect=wrapper.querySelector('svg').getBoundingClientRect();
       const dotRect=dot.getBoundingClientRect();
       const x=(dotRect.left-rect.left+dotRect.width/2);
@@ -2549,8 +2610,8 @@ function renderColetaGraficos(){
       const mlM=Math.min(8,n),stM=Math.max(1,Math.ceil(n/mlM));
       dates.forEach((d,i)=>{
         if(i%stM!==0&&i!==n-1)return;const x=sXM(i);
-        if(n>20){svgM+=`<text transform="rotate(-45,${x},${HM-padM.b+12})" x="${x}" y="${HM-padM.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${d}</text>`;}
-        else{svgM+=`<text x="${x}" y="${HM-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d}</text>`;}
+        if(n>20){svgM+=`<text transform="rotate(-45,${x},${HM-padM.b+12})" x="${x}" y="${HM-padM.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${_fmtDataBr(d)}</text>`;}
+        else{svgM+=`<text x="${x}" y="${HM-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${_fmtDataBr(d)}</text>`;}
       });
       // Bars (% desova, secondary right Y)
       pctDData.forEach((v,i)=>{
@@ -2657,8 +2718,8 @@ function renderColetaGraficos(){
     const ml5=Math.min(8,n5),st5=Math.max(1,Math.ceil(n5/ml5));
     _dG5.forEach((d,i)=>{
       if(i%st5!==0&&i!==n5-1)return;const x=sX5(i);
-      if(rot5){p5+=`<text transform="rotate(-45,${x},${H5-pad5.b+12})" x="${x}" y="${H5-pad5.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${d}</text>`;}
-      else{p5+=`<text x="${x}" y="${H5-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${d}</text>`;}
+      if(rot5){p5+=`<text transform="rotate(-45,${x},${H5-pad5.b+12})" x="${x}" y="${H5-pad5.b+12}" text-anchor="end" font-size="8" fill="var(--text3)">${_fmtDataBr(d)}</text>`;}
+      else{p5+=`<text x="${x}" y="${H5-4}" text-anchor="middle" font-size="9" fill="var(--text3)">${_fmtDataBr(d)}</text>`;}
     });
     _gd5.series.forEach(s=>{
       const pts=s.vals.map((v,i)=>v!=null?`${sX5(i)},${sY5(v)}`:null);
