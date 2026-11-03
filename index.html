@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.91</title>
+<title>KC System v7.92</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.91</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.92</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1175,7 +1175,7 @@ input[type="number"]{-moz-appearance:textfield;}
       <div id="view-col-manejos" class="view">
         <div class="view-header" style="flex-wrap:wrap;gap:8px;">
           <div><div class="view-title">Manejos</div><div class="view-sub">Pipeline de produção de alevinos</div></div>
-          <button onclick="openManejoForm()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Nova Fase</button>
+          <button id="btn-novo-manejo" onclick="openManejoForm()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Nova Fase</button>
         </div>
         <div id="manejos-filtro" style="padding:0 13px 8px;"></div>
         <div id="manejos-resumo" style="padding:0 13px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;"></div>
@@ -2111,7 +2111,7 @@ function switchModule(mod){
     document.getElementById('module-dropdown').style.display='none';
     return;
   }
-  if((mod==='coleta'||mod==='config'||mod==='financeiro')&&!isAdmin()){
+  if((mod==='coleta'&&!isAdmin()&&!isEncarregado())||((mod==='config'||mod==='financeiro')&&!isAdmin())){
     showToast('Módulo restrito a administradores','error');
     document.getElementById('module-dropdown').style.display='none';
     return;
@@ -2155,8 +2155,8 @@ function switchModule(mod){
     if(fabEl&&currentUser?.role==='admin')fabEl.style.display='';
   } else if(mod==='coleta'){
     colEl.style.display='flex';
-    showColetaView('matrizes');
-    _pendingColetaView='painel';
+    if(isEncarregado()){showColetaView('manejos');}
+    else{showColetaView('matrizes');_pendingColetaView='painel';}
   } else if(mod==='config'){
     opEl.style.display=''; navEl.style.display='';
     showView('settings');
@@ -2198,6 +2198,10 @@ document.addEventListener('click',function(e){
 });
 
 function showColetaView(v){
+  const soManejos=isEncarregado();
+  if(soManejos)v='manejos';
+  document.querySelectorAll('.coleta-nav-item').forEach(el=>el.style.display=(soManejos&&el.id!=='nav-col-manejos')?'none':'');
+  const btnNovo=document.getElementById('btn-novo-manejo');if(btnNovo)btnNovo.style.display=isAdmin()?'':'none';
   document.querySelectorAll('#modulo-coleta .view').forEach(el=>{
     el.classList.remove('active');
     el.style.display='none';
@@ -4185,6 +4189,7 @@ async function enterApp(u,perfil){
   if(roleEl){roleEl.textContent=isVisualizador()?'Visualizador':isAdmin()?'Administrador':isEncarregado()?'Encarregado':'Usuário';roleEl.style.display='inline-block';}
   // Mostra opções admin no menu hamburguer
   document.querySelectorAll('.mod-coleta-only,.mod-admin-only').forEach(el=>el.style.display=isAdmin()?'flex':'none');
+  const modColeta=document.getElementById('mod-btn-coleta');if(modColeta&&isEncarregado())modColeta.style.display='flex'; // encarregado: só Manejos, leitura
   document.querySelectorAll('.mod-estoque-access').forEach(el=>el.style.display=(isAdmin()||isEncarregado())?'flex':'none');
   document.querySelectorAll('.mod-dono-only').forEach(el=>el.style.display=isDono()?'flex':'none');
   const modCfg=document.getElementById('mod-btn-config');if(modCfg&&isVisualizador())modCfg.style.display='none';
@@ -8281,7 +8286,7 @@ async function loadManejos(){
     const res = await sbGet('manejos','select=data&order=id.asc&deleted_at=is.null');
     if(res&&res.length) manejos = res.map(r=>r.data).filter(Boolean);
     // Limpa duplicatas existentes — mantém só o mais recente por fase+lote_raiz
-    await _limparManejosDuplicados();
+    if(isAdmin()&&!isVisualizador()) await _limparManejosDuplicados(); // limpeza grava — só admin
   }catch(e){ console.warn('loadManejos',e); }
 }
 
@@ -8383,6 +8388,7 @@ async function saveManejo(m){
 }
 
 async function deleteManejo(id){
+  if(!isAdmin())return;
   const _dm=manejos.find(x=>x.id===id);
   showConfirm('Excluir manejo','Este manejo será removido do pipeline. É possível recuperá-lo pela Lixeira nas Configurações.',async()=>{
     _startActionPopup('Removendo manejo...');
@@ -8960,6 +8966,7 @@ function editColeta(loteId){
 
 // ─── Editar fase existente ──────────────────────────────
 function editManejoFase(manejoId){
+  if(!isAdmin())return;
   const m = manejos.find(x=>x.id===manejoId);
   if(!m){ showToast('Manejo não encontrado','error'); return; }
 
@@ -9057,6 +9064,7 @@ function editManejoFase(manejoId){
 }
 
 async function saveEdicaoFase(manejoId){
+  if(!isAdmin())return;
   const m = manejos.find(x=>x.id===manejoId);
   if(!m){ showToast('Manejo não encontrado','error'); return; }
 
@@ -9108,6 +9116,7 @@ async function saveEdicaoFase(manejoId){
 
 // ─── Formulário Nova Fase ───────────────────────────────
 function openManejoForm(loteOrigemSugerido='', faseSugerida='larva'){
+  if(!isAdmin())return;
   // Coleta todos os lotes disponíveis como origem
   const lotesColeta=[...new Set(coletaRecords.filter(r=>r.lote&&!r.overridden).map(r=>r.lote))].sort().reverse();
   const lotesManejo = manejos.map(m=>m.lote_id).filter(Boolean);
@@ -9288,6 +9297,7 @@ function addTamanhoRow(){
 }
 
 async function saveNovaFase(){
+  if(!isAdmin())return;
   const fase = document.getElementById('mf-fase').value;
   const loteId = document.getElementById('mf-lote-id').value.trim();
   const data = document.getElementById('mf-data').value;
