@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.90</title>
+<title>KC System v7.91</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.90</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.91</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1432,14 +1432,14 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="config-field"><label>Nome completo</label><input type="text" id="edit-user-name" placeholder="Nome"></div>
     <div class="config-field"><label>Nova senha <span style="color:var(--text3);font-weight:400;">(deixe em branco para manter)</span></label><input type="password" id="edit-user-pass" placeholder="Nova senha" autocomplete="new-password"></div>
     <div class="config-field"><label>Perfil</label>
-      <select id="edit-user-role">
+      <select id="edit-user-role" onchange="_toggleCampoMetaPerfil()">
         <option value="usuario">Usuário</option>
         <option value="encarregado">Encarregado</option>
         <option value="admin">Administrador</option>
         <option value="visualizador">Visualizador</option>
       </select>
     </div>
-    <div class="config-field"><label>Tipo de meta</label>
+    <div class="config-field" id="edit-user-meta-wrap"><label>Tipo de meta</label>
       <select id="edit-user-meta-perfil">
         <option value="padrao">👷 Colaborador Padrão</option>
         <option value="arracador">🌾 Arraçoador</option>
@@ -5466,7 +5466,12 @@ function openEditUser(login){
   document.getElementById('edit-user-role').value=u.role;
   document.getElementById('edit-user-role').disabled=false;
   document.getElementById('edit-user-meta-perfil').value=u.metaPerfil||'padrao';
+  _toggleCampoMetaPerfil();
   document.getElementById('edit-user-overlay').classList.add('show');
+}
+function _toggleCampoMetaPerfil(){
+  const w=document.getElementById('edit-user-meta-wrap');
+  if(w)w.style.display=document.getElementById('edit-user-role').value==='visualizador'?'none':'';
 }
 function closeEditUser(){
   document.getElementById('edit-user-overlay').classList.remove('show');
@@ -11515,7 +11520,7 @@ async function renderMetas() {
     if (admin) {
       colabSelect.style.display = 'inline-block';
       const prevVal = colabSelect.value;
-      colabSelect.innerHTML = PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado && !METAS_SEM_META.includes(u)).map(u => {
+      colabSelect.innerHTML = PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado && !METAS_SEM_META.includes(u) && !_semMetaPonto(u)).map(u => {
         const info = PONTO_EXTRA_USERS[u] || perfisCache[u] || { name: u };
         return `<option value="${u}">${esc(info.name)}</option>`;
       }).join('');
@@ -11529,6 +11534,11 @@ async function renderMetas() {
     ? (colabSelect?.value || currentUser?.username?.toLowerCase())
     : currentUser?.username?.toLowerCase();
 
+  if (_semMetaPonto(targetUsername)) {
+    const w = document.getElementById('meta-tabela-wrap');
+    if (w) w.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px;">Perfil visualizador não tem metas.</div>';
+    return;
+  }
   if (METAS_SEM_META.includes(targetUsername)) {
     const w = document.getElementById('meta-tabela-wrap');
     if (w) w.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px;">Sem metas mensais — sua remuneração variável é a bonificação de vendas.</div>';
@@ -11815,7 +11825,7 @@ async function renderMetas() {
 // Indicadores do perfil padrão que valem igual para todos — ao salvar em um, replica para os demais
 const METAS_COMPARTILHADAS = ['escape_matrizes', 'limpeza_piscicultura', 'mortalidade_manejo', 'sabados'];
 function _colabsMetaPadrao() {
-  return PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado && !METAS_SEM_META.includes(u)
+  return PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado && !METAS_SEM_META.includes(u) && !_semMetaPonto(u)
     && (perfisCache[u]?.metaPerfil || 'padrao') === 'padrao');
 }
 
@@ -11889,6 +11899,8 @@ const PONTO_USERS = ['giovana', 'kiko', 'bili', 'rodrigo', 'stephanie', 'maicon'
 const PONTO_SEM_CONTROLE = ['giovana', 'kiko'];
 // Fora das Metas: Giovana e Luiz Henrique (kiko) são remunerados pela bonificação de vendas
 const METAS_SEM_META = ['giovana', 'kiko'];
+// Perfil visualizador não participa de Metas nem de Ponto
+function _semMetaPonto(u) { return perfisCache[u]?.role === 'visualizador'; }
 
 // Mapeamento nome do relógio → username KC System
 const PONTO_NAME_MAP = {
@@ -12305,8 +12317,8 @@ function renderPonto() {
 
   // Quais usuários mostrar — lista canônica PONTO_USERS (minúsculas), excluindo bloqueados
   const usersToShow = (isAdmin() || isEncarregado())
-    ? PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado && !PONTO_SEM_CONTROLE.includes(u))
-    : [currentUser?.username?.toLowerCase()].filter(u => u && !PONTO_SEM_CONTROLE.includes(u));
+    ? PONTO_USERS.filter(u => !perfisCache[u]?.bloqueado && !PONTO_SEM_CONTROLE.includes(u) && !_semMetaPonto(u))
+    : [currentUser?.username?.toLowerCase()].filter(u => u && !PONTO_SEM_CONTROLE.includes(u) && !_semMetaPonto(u));
 
   // Todos os dias do mês — domingo/feriado exibidos mas com saldo 0
   const diasUteis = [];
@@ -12378,9 +12390,9 @@ function renderPonto() {
 
   // Detalhe: admin mantém o último visualizado; não-admin sempre vê o próprio
   const _detalheUser = isAdmin()
-    ? (_pontoDetalheUser || currentUser?.username)
+    ? (_pontoDetalheUser || (_semMetaPonto(currentUser?.username) ? usersToShow[0] : currentUser?.username))
     : currentUser?.username;
-  renderPontoDetalhe(_detalheUser, ano, mes, diasUteis);
+  if (_detalheUser) renderPontoDetalhe(_detalheUser, ano, mes, diasUteis);
 }
 
 function renderPontoDetalhe(uname, ano, mes, diasUteis) {
