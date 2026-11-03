@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.89</title>
+<title>KC System v7.90</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.89</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.90</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -703,6 +703,7 @@ input[type="number"]{-moz-appearance:textfield;}
                 <option value="usuario">Usuário</option>
                 <option value="encarregado">Encarregado</option>
                 <option value="admin">Administrador</option>
+                <option value="visualizador">Visualizador</option>
               </select>
             </div>
             <button class="btn-save" onclick="createUser()">Criar Usuário</button>
@@ -1435,6 +1436,7 @@ input[type="number"]{-moz-appearance:textfield;}
         <option value="usuario">Usuário</option>
         <option value="encarregado">Encarregado</option>
         <option value="admin">Administrador</option>
+        <option value="visualizador">Visualizador</option>
       </select>
     </div>
     <div class="config-field"><label>Tipo de meta</label>
@@ -1780,6 +1782,8 @@ function scheduleSessionTimeout(){
   _sessionTimer=setTimeout(()=>{showToast('Sessão encerrada após 8 horas. Faça login novamente.','error');forceLogout();},8*60*60*1000);
 }
 function forceLogout(msg){
+  // Saindo do modo leitura: recarrega para não deixar campos desabilitados para o próximo login
+  if(document.body.classList.contains('modo-leitura')){currentUser=null;_sb.auth.signOut().catch(()=>{}).finally(()=>location.reload());return;}
   _sb.auth.signOut().catch(()=>{});
   stopRealtime();
   _pontoDetalheUser=null;
@@ -2102,6 +2106,11 @@ function toggleModuleMenu(){
 }
 
 function switchModule(mod){
+  if(mod==='config'&&isVisualizador()){
+    showToast('Configurações não disponíveis no perfil visualizador','error');
+    document.getElementById('module-dropdown').style.display='none';
+    return;
+  }
   if((mod==='coleta'||mod==='config'||mod==='financeiro')&&!isAdmin()){
     showToast('Módulo restrito a administradores','error');
     document.getElementById('module-dropdown').style.display='none';
@@ -4087,9 +4096,81 @@ function hideSyncStatus(){
 }
 
 // ===== AUTH =====
-function isAdmin(){return currentUser?.role==='admin';}
+// Visualizador enxerga tudo como o admin (exceto Configurações), mas não grava nada — ver bloco "Modo leitura" abaixo
+function isAdmin(){return currentUser?.role==='admin'||isVisualizador();}
 function isDono(){return currentUser?.id==='daa372d7-d3f3-44ef-b3b7-6e7d7b5df2b0';}
 function isEncarregado(){return currentUser?.role==='encarregado';}
+function isVisualizador(){return currentUser?.role==='visualizador';}
+
+// ── Modo leitura (perfil visualizador) ───────────────────────
+// 3 camadas: RLS no Supabase (garantia real), bloqueio de escrita no fetch e bloqueio na interface
+// (cliques em ações que não sejam de navegação e campos de formulário desabilitados; filtros continuam livres).
+const RO_PERMITIDAS=new Set(['switchModule','switchTab','openDayPopup','openTank','openGroup','goHome','goBack','selectHapa',
+  'toggleUserMenu','toggleModuleMenu','togglePainelHapas','toggleColetaDetail','coletaGrafAdtToggle',
+  'finPainelFiltro','finDRESetPeriodo','finPainelSetSort','finVendasSetSort','finGastosSetSort',
+  '_veiculoFiltro','_manejoFiltro','_feriasFiltroUsuario','_estoquePainelFiltro','applyManejoFiltro','applyEstoqueFiltro',
+  'onDateChange','onChartTankChange','checkAlerts','feriasPrevYear','feriasNextYear',
+  'doLogout','doLogin','toggleLoginPassVis','checkForcedPwd','saveForcedPwd','exportBackup','downloadBackupFromReminder','forceSync',
+  'String','Number','parseInt','parseFloat','encodeURIComponent']);
+const RO_PREFIXOS=/^(render|show(?!Confirm)|close|cal(Week|Month)|shift)/;
+function _roFuncoes(code){
+  return [...String(code||'').matchAll(/(^|[^.\w$])([A-Za-z_$][\w$]*)\s*\(/g)].map(m=>m[2])
+    .filter(n=>!['if','function','return','void','typeof'].includes(n));
+}
+function _roPermitido(code){return _roFuncoes(code).every(n=>RO_PERMITIDAS.has(n)||RO_PREFIXOS.test(n));}
+function _roAvisar(){showToast('👁️ Perfil visualizador — somente leitura','error');}
+
+document.addEventListener('click',e=>{
+  if(!isVisualizador())return;
+  const el=e.target.closest?.('[onclick]');
+  if(!el||_roPermitido(el.getAttribute('onclick')))return;
+  e.preventDefault();e.stopImmediatePropagation();_roAvisar();
+},true);
+
+// Campos de formulário ficam desabilitados; filtros (onchange/oninput só com funções de navegação) seguem ativos
+function _roAplicarCampos(){
+  if(!isVisualizador())return;
+  document.querySelectorAll('input,textarea,select').forEach(el=>{
+    if(el.closest('#forced-pwd-overlay,#login-screen'))return;
+    const h=(el.getAttribute('onchange')||'')+';'+(el.getAttribute('oninput')||'');
+    const filtro=el.type==='search'||(_roFuncoes(h).length&&_roPermitido(h));
+    if(!filtro&&!el.disabled)el.disabled=true;
+  });
+}
+let _roObserver=null,_roAgendado=false;
+function iniciarModoLeitura(){
+  if(!isVisualizador()||_roObserver)return;
+  document.body.classList.add('modo-leitura');
+  _roAplicarCampos();
+  _roObserver=new MutationObserver(()=>{
+    if(_roAgendado)return;_roAgendado=true;
+    requestAnimationFrame(()=>{_roAgendado=false;_roAplicarCampos();});
+  });
+  _roObserver.observe(document.body,{childList:true,subtree:true});
+}
+
+// Rede de segurança: nenhuma escrita REST sai do navegador do visualizador
+// (exceções: audit_log e o próprio registro em perfis — troca de senha / último backup)
+const _fetchOriginal=window.fetch.bind(window);
+window.fetch=function(input,init){
+  if(isVisualizador()){
+    const url=typeof input==='string'?input:(input?.url||'');
+    const metodo=String(init?.method||input?.method||'GET').toUpperCase();
+    if(url.startsWith(SB_URL+'/rest/')&&metodo!=='GET'&&metodo!=='HEAD'&&!_roEscritaPermitida(url,init)){
+      console.info('[visualizador] escrita bloqueada',metodo,url);
+      return Promise.resolve(new Response(JSON.stringify({message:'Perfil visualizador — somente leitura'}),{status:403,headers:{'Content-Type':'application/json'}}));
+    }
+  }
+  return _fetchOriginal(input,init);
+};
+function _roEscritaPermitida(url,init){
+  if(url.includes('/rest/v1/audit_log'))return true;
+  if(!url.includes('/rest/v1/perfis'))return false;
+  try{
+    const rows=[].concat(JSON.parse(init?.body||'[]'));
+    return rows.length>0&&rows.every(r=>r.id===currentUser?.id&&(r.role==null||r.role==='visualizador'));
+  }catch(_){return false;}
+}
 async function enterApp(u,perfil){
   currentUser={id:perfil.id,username:perfil.username,name:perfil.nome,role:perfil.role};
   _modoComercial=!!(perfil.modo_comercial);
@@ -4101,11 +4182,13 @@ async function enterApp(u,perfil){
   document.getElementById('dd-name').textContent=currentUser.name;
   document.getElementById('dd-login').textContent='@'+currentUser.username;
   const roleEl=document.getElementById('dd-role');
-  if(roleEl){roleEl.textContent=isAdmin()?'Administrador':isEncarregado()?'Encarregado':'Usuário';roleEl.style.display='inline-block';}
+  if(roleEl){roleEl.textContent=isVisualizador()?'Visualizador':isAdmin()?'Administrador':isEncarregado()?'Encarregado':'Usuário';roleEl.style.display='inline-block';}
   // Mostra opções admin no menu hamburguer
   document.querySelectorAll('.mod-coleta-only,.mod-admin-only').forEach(el=>el.style.display=isAdmin()?'flex':'none');
   document.querySelectorAll('.mod-estoque-access').forEach(el=>el.style.display=(isAdmin()||isEncarregado())?'flex':'none');
   document.querySelectorAll('.mod-dono-only').forEach(el=>el.style.display=isDono()?'flex':'none');
+  const modCfg=document.getElementById('mod-btn-config');if(modCfg&&isVisualizador())modCfg.style.display='none';
+  iniciarModoLeitura();
   const cbMC=document.getElementById('cfg-modo-comercial');if(cbMC)cbMC.checked=_modoComercial;
 
   // Primeiro renderiza com dados do localStorage para não travar a tela
@@ -4161,7 +4244,7 @@ function _mondayOfThisWeek(){
   return d;
 }
 function checkBackupReminder(perfil){
-  if(!isAdmin())return;
+  if(!isAdmin()||isVisualizador())return;
   const sevenDaysAgo=new Date(_nowBrasilia());
   sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
   const myLast=perfil?.last_backup_at??perfil?.lastBackupAt??null;
@@ -4359,7 +4442,7 @@ function renderAguaView(){
 }
 
 function showView(v){
-  if(v==='settings'&&!isAdmin()){showToast('Acesso restrito a administradores','error');return;}
+  if(v==='settings'&&(!isAdmin()||isVisualizador())){showToast('Acesso restrito a administradores','error');return;}
   // Só mexe nas views do módulo operação (dentro de #main)
   document.querySelectorAll('#main .view').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v)?.classList.add('active');
@@ -5295,9 +5378,9 @@ async function resetRacoesParaPadrao(){
 }
 
 // ===== GERENCIAR USUÁRIOS =====
-const ROLE_LABEL={'admin':'Administrador','encarregado':'Encarregado','usuario':'Usuário'};
-const ROLE_COLOR={'admin':'var(--accent)','encarregado':'var(--warn)','usuario':'var(--ok)'};
-const ROLE_BG={'admin':'rgba(26,58,107,0.1)','encarregado':'rgba(217,119,6,0.1)','usuario':'rgba(22,163,74,0.1)'};
+const ROLE_LABEL={'admin':'Administrador','encarregado':'Encarregado','usuario':'Usuário','visualizador':'Visualizador'};
+const ROLE_COLOR={'admin':'var(--accent)','encarregado':'var(--warn)','usuario':'var(--ok)','visualizador':'#64748b'};
+const ROLE_BG={'admin':'rgba(26,58,107,0.1)','encarregado':'rgba(217,119,6,0.1)','usuario':'rgba(22,163,74,0.1)','visualizador':'rgba(100,116,139,0.12)'};
 let editingUserLogin=null;
 
 function renderUsersList(){
