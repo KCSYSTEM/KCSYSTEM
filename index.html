@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.87</title>
+<title>KC System v7.88</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.87</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.88</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -11348,9 +11348,12 @@ async function fetchMetasAuto(ano, mes, targetUsername) {
     const _pHoje = new Date();
     const _pEhMesAtual = ano === _pHoje.getFullYear() && mes === (_pHoje.getMonth()+1);
     const _pUltimoDia = _pEhMesAtual ? _pHoje.getDate() - 1 : new Date(ano, mes, 0).getDate();
+    // Admitido no meio do mês: dias antes da primeira batida no relógio não contam como falta
+    const _pPrimeira = Object.keys(_pDados).filter(k => _pDados[k]?.batidas?.length).sort()[0] || null;
     let _pUteis = 0, _pPresente = 0;
     for (let d = 1; d <= _pUltimoDia; d++) {
       const ds = `${ano}-${mesStr}-${String(d).padStart(2,'0')}`;
+      if (_pPrimeira && ds < _pPrimeira) continue;
       const dow = new Date(ano, mes-1, d).getDay();
       if (dow === 0 || dow === 6 || FERIADOS.has(ds)) continue;
       _pUteis++;
@@ -11778,6 +11781,10 @@ async function loadMetasFromSupabase() {
 // ── PONTO ────────────────────────────────────────────────────
 // Data mínima válida de batidas (dia de instalação do relógio)
 const PONTO_DATA_INICIO = '2026-05-12';
+// Batidas descartadas (username|data) — não voltam numa reimportação da planilha do relógio
+const PONTO_BATIDAS_IGNORADAS = new Set([
+  'pedro|2026-10-26', // batida avulsa de cadastro no relógio, antes da admissão
+]);
 
 // Lista canônica de usuários do ponto (minúsculas, ordem dos cards)
 const PONTO_USERS = ['giovana', 'kiko', 'bili', 'rodrigo', 'stephanie', 'maicon', 'pedro'];
@@ -11867,6 +11874,7 @@ function normalizePontoKeys() {
     }
   });
   pontoData = norm;
+  PONTO_BATIDAS_IGNORADAS.forEach(chave => { const [u, d] = chave.split('|'); if (pontoData[u]) delete pontoData[u][d]; });
   aplicarBatidasForcadas();
 }
 
@@ -12048,6 +12056,7 @@ async function importarPontoXLS(file) {
 
       const dateKey = `${ano}-${mesStr}-${String(dia).padStart(2, '0')}`;
       if (dateKey < PONTO_DATA_INICIO) return; // antes da instalação do relógio
+      if (PONTO_BATIDAS_IGNORADAS.has(`${username}|${dateKey}`)) return;
       if (!pontoData[username]) pontoData[username] = {};
       if (!pontoData[username][dateKey]) pontoData[username][dateKey] = { batidas: [] };
       horarios.forEach(h => {
