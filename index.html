@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.88</title>
+<title>KC System v7.89</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.88</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.89</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -11340,7 +11340,7 @@ async function fetchMetasAuto(ano, mes, targetUsername) {
 
   // Presença: % de seg–sex úteis (excl. feriados) com ≥2 batidas no ponto
   loadPonto(); loadAtestados();
-  let presencaPct = null;
+  let presencaPct = null, admissao = null;
   const _pUnameRaw = targetUsername || currentUser?.username;
   const _pUname = _pUnameRaw?.toLowerCase();
   const _pDados = pontoData[_pUname] || pontoData[_pUnameRaw] || {};
@@ -11350,6 +11350,7 @@ async function fetchMetasAuto(ano, mes, targetUsername) {
     const _pUltimoDia = _pEhMesAtual ? _pHoje.getDate() - 1 : new Date(ano, mes, 0).getDate();
     // Admitido no meio do mês: dias antes da primeira batida no relógio não contam como falta
     const _pPrimeira = Object.keys(_pDados).filter(k => _pDados[k]?.batidas?.length).sort()[0] || null;
+    admissao = _pPrimeira;
     let _pUteis = 0, _pPresente = 0;
     for (let d = 1; d <= _pUltimoDia; d++) {
       const ds = `${ano}-${mesStr}-${String(d).padStart(2,'0')}`;
@@ -11370,6 +11371,7 @@ async function fetchMetasAuto(ano, mes, targetUsername) {
     pesar_racao:     pesarRacaoPct,
     renovacao_agua:  renovacaoAguaPct,
     presenca:        presencaPct,
+    admissao,        // 1ª batida no relógio — base do valor proporcional
   };
 }
 
@@ -11537,8 +11539,17 @@ async function renderMetas() {
   const meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   let bonusTotal = 0;
 
+  // Valor proporcional: admitido no mês recebe pelos dias corridos a partir da admissão (1ª batida)
+  const diasMes = new Date(ano, mes, 0).getDate();
+  const mesPrefixo = `${ano}-${String(mes).padStart(2,'0')}-`;
+  const diasTrab = autoData.admissao?.startsWith(mesPrefixo)
+    ? diasMes - parseInt(autoData.admissao.slice(8, 10)) + 1
+    : diasMes;
+  const fatorProp = diasTrab / diasMes;
+  const fmtR = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
   let html = `
-    <table style="width:100%;min-width:520px;border-collapse:collapse;font-size:13px;">
+    <table style="width:100%;min-width:620px;border-collapse:collapse;font-size:13px;">
       <thead>
         <tr style="background:var(--bg);">
           <th style="padding:12px 16px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Indicador</th>
@@ -11546,6 +11557,7 @@ async function renderMetas() {
           <th style="padding:12px 10px;text-align:center;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Valor atual</th>
           <th style="padding:12px 10px;text-align:left;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Faixa atingida</th>
           <th style="padding:12px 16px;text-align:right;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Valor (R$)</th>
+          <th style="padding:12px 16px;text-align:right;font-weight:700;color:var(--text2);border-bottom:1.5px solid var(--border);">Proporcional<div style="font-size:10px;font-weight:600;color:var(--text3);">${diasTrab}/${diasMes} dias</div></th>
         </tr>
       </thead>
       <tbody>`;
@@ -11617,6 +11629,7 @@ async function renderMetas() {
         </td>
         <td style="padding:12px 10px;font-size:12px;color:var(--text2);">${faixaDesc}</td>
         <td style="padding:12px 16px;text-align:right;font-weight:800;color:var(--accent);">${valorR !== null && valorR > 0 ? '+R$ '+valorR.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : valorR === 0 ? 'R$ 0,00' : '—'}</td>
+        <td style="padding:12px 16px;text-align:right;font-weight:800;color:var(--accent);">${valorR !== null ? (valorR > 0 ? '+' : '') + fmtR(valorR * fatorProp) : '—'}</td>
       </tr>`;
   });
 
@@ -11626,6 +11639,7 @@ async function renderMetas() {
         <tr style="background:linear-gradient(135deg,var(--accent),#0ea5e9);">
           <td colspan="4" style="padding:14px 16px;font-size:14px;font-weight:800;color:#fff;">🎯 Bônus estimado — ${meses[mes]} ${ano}</td>
           <td style="padding:14px 16px;text-align:right;font-size:18px;font-weight:900;color:#fff;">R$ ${bonusTotal.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+          <td style="padding:14px 16px;text-align:right;font-size:18px;font-weight:900;color:#fff;">${fmtR(bonusTotal * fatorProp)}</td>
         </tr>
       </tfoot>
     </table>`;
@@ -11781,9 +11795,9 @@ async function loadMetasFromSupabase() {
 // ── PONTO ────────────────────────────────────────────────────
 // Data mínima válida de batidas (dia de instalação do relógio)
 const PONTO_DATA_INICIO = '2026-05-12';
-// Batidas descartadas (username|data) — não voltam numa reimportação da planilha do relógio
+// Batidas descartadas (username|data|hora) — não voltam numa reimportação da planilha do relógio
 const PONTO_BATIDAS_IGNORADAS = new Set([
-  'pedro|2026-10-26', // batida avulsa de cadastro no relógio, antes da admissão
+  'pedro|2026-10-26|17:07', // batida avulsa de cadastro no relógio
 ]);
 
 // Lista canônica de usuários do ponto (minúsculas, ordem dos cards)
@@ -11874,7 +11888,13 @@ function normalizePontoKeys() {
     }
   });
   pontoData = norm;
-  PONTO_BATIDAS_IGNORADAS.forEach(chave => { const [u, d] = chave.split('|'); if (pontoData[u]) delete pontoData[u][d]; });
+  PONTO_BATIDAS_IGNORADAS.forEach(chave => {
+    const [u, d, h] = chave.split('|');
+    const reg = pontoData[u]?.[d];
+    if (!reg?.batidas) return;
+    reg.batidas = reg.batidas.filter(x => x !== h);
+    if (!reg.batidas.length) delete pontoData[u][d];
+  });
   aplicarBatidasForcadas();
 }
 
@@ -12056,10 +12076,11 @@ async function importarPontoXLS(file) {
 
       const dateKey = `${ano}-${mesStr}-${String(dia).padStart(2, '0')}`;
       if (dateKey < PONTO_DATA_INICIO) return; // antes da instalação do relógio
-      if (PONTO_BATIDAS_IGNORADAS.has(`${username}|${dateKey}`)) return;
+      const horariosValidos = horarios.filter(h => !PONTO_BATIDAS_IGNORADAS.has(`${username}|${dateKey}|${h}`));
+      if (!horariosValidos.length) return;
       if (!pontoData[username]) pontoData[username] = {};
       if (!pontoData[username][dateKey]) pontoData[username][dateKey] = { batidas: [] };
-      horarios.forEach(h => {
+      horariosValidos.forEach(h => {
         if (!pontoData[username][dateKey].batidas.includes(h)) {
           pontoData[username][dateKey].batidas.push(h);
           resumoPorUser[username] = (resumoPorUser[username] || 0) + 1;
