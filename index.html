@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.93</title>
+<title>KC System v7.94</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.93</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.94</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1140,6 +1140,7 @@ input[type="number"]{-moz-appearance:textfield;}
             <input type="date" id="coleta-date" class="lancamento-date-input">
             <button onclick="shiftColetaDate(1)" style="background:rgba(255,255,255,0.1);border:1.5px solid var(--border2);border-radius:8px;width:30px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);">›</button>
           </div>
+          <button class="lancamento-save-btn" onclick="limparColeta()" style="background:transparent;border:1.5px solid var(--border2);color:var(--text2);margin-right:6px;">Limpar</button>
           <button class="lancamento-save-btn" onclick="saveColeta()">Salvar</button>
         </div>
         <!-- Lote (só para desova) -->
@@ -3207,7 +3208,9 @@ function renderColeta(){
           lastGorados:lastGoradosRec?.ovosGorados??'',lastOvos:lastOvosRec?.ovosPorMl??'',ri:ri++});
       });
     } else {
-      // Modo novo lançamento: usa tanques ativos hoje
+      // Modo novo lançamento: usa tanques ativos hoje.
+      // Campos vêm VAZIOS (exceto ♀ Reprod, que vem da última biometria do hapa);
+      // a coluna "Último" continua mostrando a coleta anterior como referência.
       matTanks.forEach(t=>{
         (t.hapaNames||[]).forEach((nm,i)=>{
           const h=i+1;
@@ -3217,20 +3220,24 @@ function renderColeta(){
           const lastMlRec      = byTs(hapaRecs.filter(r=>r.desovaML!=null))[0];
           const lastGoradosRec = byTs(hapaRecs.filter(r=>r.ovosGorados!=null))[0];
           const lastOvosRec    = byTs(hapaRecs.filter(r=>r.ovosPorMl!=null))[0];
+          const bioFemeas = lastRecHapaMatrizes(t.id,h)?.femeas;
           rows.push({tankId:t.id,tankName:t.name,hapaNum:h,hapaName:nm,
             lastReprod:lastReprodRec?.femeasReprod??'',
             lastFemeas:lastFemeasRec?.desovaFemeas??'',lastMl:lastMlRec?.desovaML??'',
-            lastGorados:lastGoradosRec?.ovosGorados??'',lastOvos:lastOvosRec?.ovosPorMl??'',ri:ri++});
+            lastGorados:lastGoradosRec?.ovosGorados??'',lastOvos:lastOvosRec?.ovosPorMl??'',
+            val:{reprod:bioFemeas??'',femeas:'',ml:'',gorados:'',ovos:''},ri:ri++});
         });
       });
     }
+    // Valores dos inputs: modo edição usa os do lote; modo novo usa r.val
+    rows.forEach(r=>{ if(!r.val) r.val={reprod:r.lastReprod,femeas:r.lastFemeas,ml:r.lastMl,gorados:r.lastGorados,ovos:r.lastOvos}; });
     tbody.innerHTML=rows.map(r=>`<tr>
       <td><div class="lancamento-tank-name">${r.tankName}</div><div class="lancamento-hapa-name">🪣 ${r.hapaName}</div></td>
-      <td><input class="lancamento-input" type="number" id="col-reprod-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeasReprod" placeholder="0" inputmode="numeric" value="${r.lastReprod}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" value="${r.lastFemeas}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" value="${r.lastMl}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="${r.lastGorados}" data-initial="${r.lastGorados}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-ovosml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosPorMl" placeholder="—" step="1" inputmode="decimal" value="${r.lastOvos}" data-initial="${r.lastOvos}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-reprod-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeasReprod" placeholder="0" inputmode="numeric" value="${r.val.reprod}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" value="${r.val.femeas}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" value="${r.val.ml}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="${r.val.gorados}" data-initial="${r.val.gorados}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="lancamento-input" type="number" id="col-ovosml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosPorMl" placeholder="—" step="1" inputmode="decimal" value="${r.val.ovos}" data-initial="${r.val.ovos}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">${r.lastReprod!==''?`<div>♀R ${r.lastReprod}</div>`:''} ${r.lastFemeas!==''?`<div>♀ ${r.lastFemeas}</div>`:''} ${r.lastMl!==''?`<div>💧 ${r.lastMl}mL</div>`:''} ${r.lastGorados!==''?`<div>💀 ${r.lastGorados}%</div>`:''} ${r.lastOvos!==''?`<div>🔬 ${r.lastOvos}/mL</div>`:''} ${r.lastReprod===''&&r.lastFemeas===''&&r.lastMl===''&&r.lastGorados===''&&r.lastOvos===''?'—':''}</td>
     </tr>`).join('');
 
@@ -3283,6 +3290,13 @@ function renderColeta(){
       }).join('');
     }
   }
+}
+
+function limparColeta(){
+  const inps=document.querySelectorAll('#coleta-tbody input.lancamento-input');
+  if(!inps.length)return;
+  inps.forEach(i=>{i.value='';i.classList.remove('filled');});
+  showToast('Campos limpos','success');
 }
 
 async function saveColeta(){
