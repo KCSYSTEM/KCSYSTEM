@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.94</title>
+<title>KC System v7.95</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -330,9 +330,9 @@ canvas.chart-canvas{display:block;}
 .lancamento-table tr.has-hapas td{background:rgba(124,58,237,0.03);}
 .lancamento-tank-name{font-size:13px;font-weight:700;color:var(--text);}
 .lancamento-hapa-name{font-size:11px;color:#7c3aed;font-family:'JetBrains Mono',monospace;}
-.lancamento-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;transition:border-color 0.15s;font-family:'JetBrains Mono',monospace;font-weight:600;}
-.lancamento-input:focus{border-color:var(--accent);background:#fff;}
-.lancamento-input.filled{border-color:var(--ok);background:rgba(22,163,74,0.04);}
+.lancamento-input,.coleta-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;transition:border-color 0.15s;font-family:'JetBrains Mono',monospace;font-weight:600;}
+.lancamento-input:focus,.coleta-input:focus{border-color:var(--accent);background:#fff;}
+.lancamento-input.filled,.coleta-input.filled{border-color:var(--ok);background:rgba(22,163,74,0.04);}
 .lancamento-param-bar{display:flex;gap:8px;align-items:center;padding:12px 13px;border-bottom:1.5px solid var(--border);background:var(--surface);flex-wrap:wrap;}
 .lancamento-param-select{flex:1;min-width:180px;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;font-weight:600;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9db5' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
 .lancamento-date-input{background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:10px 12px;color:var(--text);font-size:15px;outline:none;-webkit-appearance:none;appearance:none;}
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.94</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.95</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -1554,21 +1554,6 @@ function fKg(kg,dec=2){
 }
 // Arredonda kg na precisão de 1 grama (evita lixo de ponto flutuante)
 function kg3(v){return v==null||v===''||isNaN(v)?null:Math.round(Number(v)*1000)/1000;}
-// Converte registro em formato antigo (gramas: racaoIdealG / racaoG / sobra) para kg.
-// Usado na fila offline, em backups antigos e em qualquer objeto vindo de versão anterior.
-const _RACAO_CAMPOS_ANTIGOS={racaoIdealG:'racaoIdealKg',racaoG:'racaoKg',sobra:'sobraKg'};
-function normRecKg(rec){
-  if(!rec||typeof rec!=='object')return rec;
-  for(const [velho,novo] of Object.entries(_RACAO_CAMPOS_ANTIGOS)){
-    if(velho in rec){
-      if(!(novo in rec)||rec[novo]==null)rec[novo]=rec[velho]==null?null:kg3(rec[velho]/1000);
-      delete rec[velho];
-    }
-  }
-  if(Array.isArray(rec._changedFields))rec._changedFields=rec._changedFields.map(f=>_RACAO_CAMPOS_ANTIGOS[f]||f);
-  return rec;
-}
-
 // Formatação de números: ponto como milhar, vírgula como decimal
 function fNum(val,decimals=null){
   if(val==null||val===''||isNaN(val))return'—';
@@ -1657,7 +1642,7 @@ let _sbSessionRecovery=null;
 let _sbResetting=false;
 // Registros que falharam no envio ao Supabase e aguardam reenvio automático
 let _pendingTankRecs=[];
-try{const _p=localStorage.getItem('kc_pending_tank_recs');if(_p)_pendingTankRecs=JSON.parse(_p).map(normRecKg);}catch(_){}
+try{const _p=localStorage.getItem('kc_pending_tank_recs');if(_p)_pendingTankRecs=JSON.parse(_p);}catch(_){}
 function _addPendingRec(rec){
   const idx=_pendingTankRecs.findIndex(r=>r.id===rec.id);
   if(idx>=0)_pendingTankRecs[idx]=rec;else _pendingTankRecs.push(rec);
@@ -1880,7 +1865,6 @@ function loadLimits(){try{const l=JSON.parse(localStorage.getItem('kc_limits'));
 
 // ── Converte objeto rec (camelCase) → row tank_records (snake_case) ──────────
 function recToTankRow(rec, reason){
-  normRecKg(rec);
   const row={
     id:            rec.id,
     tank_id:       rec.tankId||rec.tank_id||null,
@@ -1927,8 +1911,6 @@ function recToTankRow(rec, reason){
   return row;
 }
 
-// Lê coluna em kg; se ainda vazia (registro gravado por versão antiga antes do trigger), usa g/1000
-function _rowKg(kg,g){if(kg!=null&&kg!=='')return kg3(kg);if(g!=null&&g!=='')return kg3(Number(g)/1000);return null;}
 // Converte row tank_records → objeto rec (camelCase) para manter compatibilidade interna
 function tankRowToRec(row){
   return {
@@ -1948,9 +1930,9 @@ function tankRowToRec(row){
     qty:          row.qty,
     bio:          row.bio,
     racao:        row.racao_id,
-    racaoIdealKg: _rowKg(row.racao_ideal_kg,row.racao_ideal_g),
-    sobraKg:      _rowKg(row.sobra_kg,row.sobra_g),
-    racaoKg:      _rowKg(row.racao_kg,row.racao_g),
+    racaoIdealKg: kg3(row.racao_ideal_kg),
+    sobraKg:      kg3(row.sobra_kg),
+    racaoKg:      kg3(row.racao_kg),
     tratosIdeal:  row.tratos_ideal,
     tratos:       row.tratos,
     lote:         row.lote,
@@ -1960,7 +1942,7 @@ function tankRowToRec(row){
     racaoLancada:  row.racao_lancada??null,
     aditivos:      row.aditivos||null,
     overridden:    row.overridden,
-    _changedFields:Array.isArray(row.changed_fields)?row.changed_fields.map(f=>_RACAO_CAMPOS_ANTIGOS[f]||f):undefined,
+    _changedFields:Array.isArray(row.changed_fields)?row.changed_fields:undefined,
     isTrocaAgua:    row.is_troca_agua??null,
     trocaOrigem:    row.troca_origem??null,
     trocaInicio:    row.troca_inicio??null,
@@ -2029,6 +2011,18 @@ async function saveTankRecord_sb(rec){
   if(ok)_removePendingRec(rec.id);
   else _addPendingRec(rec);
   return ok;
+}
+
+// Guarda a versão ANTERIOR de um registro em tank_records_history antes de sobrescrevê-lo.
+// id próprio (id__v<ts>) para manter várias versões do mesmo registro.
+function _historicoVersao(rec){
+  if(!rec?.id)return;
+  try{
+    const row=recToTankRow({...rec,aditivos:rec.aditivos?[...rec.aditivos]:rec.aditivos},'update');
+    row.id=rec.id+'__v'+Date.now()+Math.random().toString(36).slice(2,5);
+    row.archived_by=currentUser?.username||null;
+    sbUpsert('tank_records_history',[row]);
+  }catch(e){console.warn('historicoVersao',e);}
 }
 
 // Arquiva um record operacional em tank_records_history e remove do tank_records
@@ -3233,11 +3227,11 @@ function renderColeta(){
     rows.forEach(r=>{ if(!r.val) r.val={reprod:r.lastReprod,femeas:r.lastFemeas,ml:r.lastMl,gorados:r.lastGorados,ovos:r.lastOvos}; });
     tbody.innerHTML=rows.map(r=>`<tr>
       <td><div class="lancamento-tank-name">${r.tankName}</div><div class="lancamento-hapa-name">🪣 ${r.hapaName}</div></td>
-      <td><input class="lancamento-input" type="number" id="col-reprod-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeasReprod" placeholder="0" inputmode="numeric" value="${r.val.reprod}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" value="${r.val.femeas}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" value="${r.val.ml}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="${r.val.gorados}" data-initial="${r.val.gorados}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
-      <td><input class="lancamento-input" type="number" id="col-ovosml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosPorMl" placeholder="—" step="1" inputmode="decimal" value="${r.val.ovos}" data-initial="${r.val.ovos}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="coleta-input" type="number" id="col-reprod-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeasReprod" placeholder="0" inputmode="numeric" value="${r.val.reprod}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="coleta-input" type="number" id="col-femeas-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="femeas" placeholder="0" inputmode="numeric" value="${r.val.femeas}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="coleta-input" type="number" id="col-ml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ml" placeholder="0" step="0.1" inputmode="decimal" value="${r.val.ml}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="coleta-input" type="number" id="col-gorados-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosGorados" placeholder="—" step="0.1" inputmode="decimal" value="${r.val.gorados}" data-initial="${r.val.gorados}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+      <td><input class="coleta-input" type="number" id="col-ovosml-${r.ri}" data-tank="${r.tankId}" data-hapa="${r.hapaNum}" data-field="ovosPorMl" placeholder="—" step="1" inputmode="decimal" value="${r.val.ovos}" data-initial="${r.val.ovos}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
       <td style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;">${r.lastReprod!==''?`<div>♀R ${r.lastReprod}</div>`:''} ${r.lastFemeas!==''?`<div>♀ ${r.lastFemeas}</div>`:''} ${r.lastMl!==''?`<div>💧 ${r.lastMl}mL</div>`:''} ${r.lastGorados!==''?`<div>💀 ${r.lastGorados}%</div>`:''} ${r.lastOvos!==''?`<div>🔬 ${r.lastOvos}/mL</div>`:''} ${r.lastReprod===''&&r.lastFemeas===''&&r.lastMl===''&&r.lastGorados===''&&r.lastOvos===''?'—':''}</td>
     </tr>`).join('');
 
@@ -3269,7 +3263,7 @@ function renderColeta(){
           <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
           <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${l.femeas}</td>
           <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${fNum(l.ml,1)}</td>
-          <td><input class="lancamento-input" type="number" id="col-ovosml-${i}" data-lote="${l.lote}" data-field="ovosPorMl" placeholder="—" step="0.1" inputmode="decimal" value="${last?.ovosPorMl??''}" data-initial="${last?.ovosPorMl??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+          <td><input class="coleta-input" type="number" id="col-ovosml-${i}" data-lote="${l.lote}" data-field="ovosPorMl" placeholder="—" step="0.1" inputmode="decimal" value="${last?.ovosPorMl??''}" data-initial="${last?.ovosPorMl??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
         </tr>`;
       }).join('');
     } else {
@@ -3285,7 +3279,7 @@ function renderColeta(){
         return`<tr>
           <td><div class="lancamento-tank-name">${l.lote}</div><div style="font-size:10px;color:var(--text3);">${formatDate(l.lastDate)}</div></td>
           <td style="text-align:center;font-size:13px;font-weight:700;color:var(--text2);">${fNum(l.ml,1)}</td>
-          <td><input class="lancamento-input" type="number" id="col-gorados-${i}" data-lote="${l.lote}" data-field="ovosGorados" placeholder="—" min="0" max="100" step="0.1" inputmode="decimal" value="${last?.ovosGorados??''}" data-initial="${last?.ovosGorados??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
+          <td><input class="coleta-input" type="number" id="col-gorados-${i}" data-lote="${l.lote}" data-field="ovosGorados" placeholder="—" min="0" max="100" step="0.1" inputmode="decimal" value="${last?.ovosGorados??''}" data-initial="${last?.ovosGorados??''}" oninput="this.classList.toggle('filled',this.value!=='')"></td>
         </tr>`;
       }).join('');
     }
@@ -3293,7 +3287,7 @@ function renderColeta(){
 }
 
 function limparColeta(){
-  const inps=document.querySelectorAll('#coleta-tbody input.lancamento-input');
+  const inps=document.querySelectorAll('#coleta-tbody input.coleta-input');
   if(!inps.length)return;
   inps.forEach(i=>{i.value='';i.classList.remove('filled');});
   showToast('Campos limpos','success');
@@ -6034,7 +6028,7 @@ function renderLancamentos(){
 function atualizaTotalHapaIdeal(tankId,totalElId){
   const el=document.getElementById(totalElId);
   if(!el)return;
-  const inputs=[...document.querySelectorAll('.lancamento-input[data-hapa]')]
+  const inputs=[...document.querySelectorAll('#lanc-table .lancamento-input[data-hapa]')]
     .filter(inp=>inp.dataset.tank===tankId&&inp.dataset.hapa!=='');
   let soma=0,algum=false;
   inputs.forEach(inp=>{
@@ -6133,7 +6127,7 @@ async function _saveLancamentosInner(){
 
   // ── Troca de Água: caminho próprio ──────────────────────────
   if(param==='trocaAguaIdealH'){
-    const toSaveMeta=[...document.querySelectorAll('.lancamento-input[data-tank]')]
+    const toSaveMeta=[...document.querySelectorAll('#lanc-table .lancamento-input[data-tank]')]
       .filter(el=>el.value.trim()!==''&&!isNaN(parseFloat(el.value)));
     if(!toSaveMeta.length){showToast('Nenhum valor preenchido','error');return;}
     const conflitosIdeal=toSaveMeta.filter(el=>
@@ -6150,6 +6144,7 @@ async function _saveLancamentosInner(){
           // Atualiza registro existente do dia ou cria um novo
           const existing=records.find(r=>r.tankId===tankId&&r.date===date&&r.trocaAguaIdealH!=null&&!r.isTrocaAgua&&!r.overridden);
           if(existing){
+            _historicoVersao(existing);
             existing.trocaAguaIdealH=v;
             await saveTankRecord_sb(existing);
           } else {
@@ -6247,7 +6242,7 @@ async function _saveLancamentosInner(){
   }
 
   // Coleta inputs diretamente — cada input tem data-tank e data-hapa
-  const allInputs=[...document.querySelectorAll('.lancamento-input[data-tank]')];
+  const allInputs=[...document.querySelectorAll('#lanc-table .lancamento-input[data-tank]')];
   const toSave=[];
 
   if(param==='racaoReal'){
@@ -6305,8 +6300,19 @@ async function _saveLancamentosInner(){
   }
   if(!toSave.length){showToast('Nenhum valor preenchido','error');return;}
 
+  // Bloqueio: cada tanque/hapa só pode aparecer uma vez no lançamento.
+  // (Bug de 11–16/11/2026: campos da Coleta entravam aqui e sobrescreviam a ração ideal.)
+  const _vistos=new Set(),_dups=[];
+  toSave.forEach(it=>{const k=it.tankId+'|'+(it.hapaNum??'');if(_vistos.has(k))_dups.push(it);else _vistos.add(k);});
+  if(_dups.length){
+    const nomes=[...new Set(_dups.map(it=>tanks.find(t=>t.id===it.tankId)?.name||it.tankId))].join(', ');
+    showToast('Lançamento bloqueado: campos duplicados ('+nomes+'). Recarregue a página (F5) e tente de novo.','error');
+    console.error('Lançamento bloqueado — itens duplicados',_dups);
+    return;
+  }
+
   // Trava contra valor de ração absurdo (erro crônico: digitar 119/143 num campo em kg)
-  const suspeitos=_racaoSuspeitos(toSave,param);
+  const suspeitos=_racaoSuspeitos(toSave,param,date);
   if(suspeitos.length){
     showConfirm('⚠️ Valor de ração fora do normal',
       'Estes valores estão muito acima do habitual:\n\n'+suspeitos.slice(0,8).join('\n')+(suspeitos.length>8?'\n… e mais '+(suspeitos.length-8):'')+
@@ -6317,27 +6323,43 @@ async function _saveLancamentosInner(){
   _checaConflitosESalva(toSave,param,date);
 }
 
-// Ração Ideal ou Sobra (kg) muito acima do habitual para o tanque/hapa → lista para confirmação
-function _racaoSuspeitos(toSave,param){
+// Ração Ideal / Sobra / Ideal herdada (kg) muito acima do habitual → lista para confirmação.
+// Referência = ideal das datas ANTERIORES à data lançada (nunca de datas posteriores).
+function _diaAnterior(date){const d=new Date(date+'T12:00:00');d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
+function _racaoSuspeitos(toSave,param,date){
   if(param!=='racaoIdealKg'&&param!=='racaoReal')return[];
   const out=[];
+  const antes=date?_diaAnterior(date):null;
+  const fora=(v,ref)=>v!=null&&(v>30||(ref!=null&&ref>0&&v>1&&v>ref*3));
+  const linha=(nome,v,ref,rotulo)=>'• '+nome+(rotulo?' ['+rotulo+']':'')+': '+fNum(v,3)+' kg'+(ref!=null?' (habitual: '+fNum(ref,3)+' kg)':'');
   toSave.forEach(item=>{
-    if(item.value==null||isNaN(item.value))return;
     const tank=tanks.find(t=>t.id===item.tankId);
-    const nome=(tank?.name||'')+(item.hapaNum?' ('+hapaLabel(tank,item.hapaNum)+')':'');
-    const ref=lastValFor(item.tankId,'racaoIdealKg',item.hapaNum??null);
-    // Tanque com hapas no modo ração: o valor digitado é do tanque inteiro → compara com a soma dos hapas
-    let refTotal=ref;
-    if(param==='racaoReal'&&item.hapas>0){
-      let soma=0,algum=false;
-      for(let h=1;h<=item.hapas;h++){const v=lastValFor(item.tankId,'racaoIdealKg',h);if(v!=null){soma+=v;algum=true;}}
-      refTotal=algum?soma:null;
+    if(param==='racaoIdealKg'){
+      if(item.value==null||isNaN(item.value))return;
+      const nome=(tank?.name||'')+(item.hapaNum?' ('+hapaLabel(tank,item.hapaNum)+')':'');
+      const ref=lastValFor(item.tankId,'racaoIdealKg',item.hapaNum??null,antes);
+      if(fora(item.value,ref))out.push(linha(nome,item.value,ref));
+      return;
     }
-    const v=item.value;
-    const absurdo=v>30;
-    const muitoAcima=refTotal!=null&&refTotal>0&&v>1&&v>refTotal*3;
-    if(absurdo||muitoAcima)
-      out.push('• '+nome+': '+fNum(v,3)+' kg'+(refTotal!=null?' (habitual: '+fNum(refTotal,3)+' kg)':''));
+    // Ração Real: confere a sobra digitada (contra o ideal total) E o ideal que será usado
+    if(item.hapas>0){
+      let somaIdeal=0,somaRef=0,algum=false;
+      for(let h=1;h<=item.hapas;h++){
+        const ig=recForDate(item.tankId,date,h)?.racaoIdealKg??lastValFor(item.tankId,'racaoIdealKg',h,date);
+        const ref=lastValFor(item.tankId,'racaoIdealKg',h,antes);
+        if(ig!=null){somaIdeal+=ig;algum=true;}
+        if(ref!=null)somaRef+=ref;
+        if(fora(ig,ref))out.push(linha((tank?.name||'')+' ('+hapaLabel(tank,h)+')',ig,ref,'ideal usado'));
+      }
+      if(item.value!=null&&!isNaN(item.value)&&fora(item.value,algum?somaIdeal:null))
+        out.push(linha(tank?.name||'',item.value,algum?somaIdeal:null,'sobra'));
+    } else {
+      const ig=recForDate(item.tankId,date,null)?.racaoIdealKg??lastValFor(item.tankId,'racaoIdealKg',null,date);
+      const ref=lastValFor(item.tankId,'racaoIdealKg',null,antes);
+      if(fora(ig,ref))out.push(linha(tank?.name||'',ig,ref,'ideal usado'));
+      if(item.value!=null&&!isNaN(item.value)&&fora(item.value,ig))
+        out.push(linha(tank?.name||'',item.value,ig,'sobra'));
+    }
   });
   return out;
 }
@@ -6402,7 +6424,7 @@ async function _doSaveLancamentos(toSave,param,date){
         // item.value vem do input em kg — tudo é armazenado em kg
         finalSobra=kg3(item.value);
         if(!hapaCount){
-          const ideal=existing?.racaoIdealKg??lastR?.racaoIdealKg??null;
+          const ideal=existing?.racaoIdealKg??lastValFor(item.tankId,'racaoIdealKg',null,date)??null;
           if(ideal!=null&&finalSobra!=null) finalRacaoReal=kg3(Math.max(0,ideal-finalSobra));
         }
       }
@@ -6427,7 +6449,7 @@ async function _doSaveLancamentos(toSave,param,date){
       const ideaisHapa=[];
       for(let h=1;h<=hapaCount;h++){
         const exH=recForDate(item.tankId,date,h);
-        const ig=(exH?.racaoIdealKg)??lastValFor(item.tankId,'racaoIdealKg',h)??null;
+        const ig=(exH?.racaoIdealKg)??lastValFor(item.tankId,'racaoIdealKg',h,date)??null;
         ideaisHapa.push(ig);
       }
       const idealTotalKg=ideaisHapa.reduce((s,v)=>s+(v??0),0)||null;
@@ -6469,6 +6491,7 @@ async function _doSaveLancamentos(toSave,param,date){
         };
 
         if(exH){
+          _historicoVersao(exH);
           Object.assign(exH, saveData);
           if(!exH.racaoIdealKg&&idealHapaKg) exH.racaoIdealKg=idealHapaKg;
           exH.user=currentUser.name; exH.username=currentUser.username;
@@ -6503,13 +6526,14 @@ async function _doSaveLancamentos(toSave,param,date){
       finalValueForSave=kg3(finalValue);   // input já é kg
 
     if(existing){
+      _historicoVersao(existing);
       // ── Mescla no registro existente do dia ──────────────
       if(param==='tempO2'){
         existing.temp=item.value; existing.o2=item.o2Value;
       } else if(param==='racaoReal'){
         if(isZero){
           // Alimentação zero: sobra = ideal, real = 0
-          const idealAtual=existing.racaoIdealKg??lastValFor(item.tankId,'racaoIdealKg',null)??0;
+          const idealAtual=existing.racaoIdealKg??lastValFor(item.tankId,'racaoIdealKg',null,date)??0;
           existing.sobraKg=idealAtual; existing.racaoKg=0;
           existing.racaoLancada=true;
         } else if(finalSobra!=null||finalRacaoReal!=null){
@@ -6560,7 +6584,7 @@ async function _doSaveLancamentos(toSave,param,date){
         newRec.temp=item.value; newRec.o2=item.o2Value;
       } else if(param==='racaoReal'){
         if(isZero){
-          const idealAtual=lastValFor(item.tankId,'racaoIdealKg',null)??0;
+          const idealAtual=lastValFor(item.tankId,'racaoIdealKg',null,date)??0;
           newRec.sobraKg=idealAtual; newRec.racaoKg=0;
           newRec.racaoLancada=true;
         } else if(finalSobra!=null||finalRacaoReal!=null){
@@ -7281,7 +7305,6 @@ async function _doImportBackup(backup){
     // 1. Records
     showSaveProgress(0, totalSteps);
     if(backup.records?.length){
-      backup.records.forEach(normRecKg);   // backups antigos guardam ração em gramas
       // Mescla: adiciona apenas records que não existem localmente (por id)
       const existingIds = new Set(records.map(r=>r.id));
       const novos = backup.records.filter(r=>!existingIds.has(r.id));
@@ -7679,8 +7702,7 @@ async function injectHistoricalData(){
       timestamp:d.date+'T08:00:00.000Z',
       lote:'',temp:null,o2:null,amonia:null,ph:null,mort:0,
       qty:d.qty??null,bio:d.bio??null,racao:'',
-      // dados históricos abaixo estão em gramas (idealG/realG) → converte para kg
-      racaoIdealKg:d.idealG!=null?kg3(d.idealG/1000):null,racaoKg:d.realG!=null?kg3(d.realG/1000):null,
+      racaoIdealKg:d.idealKg??null,racaoKg:d.realKg??null,
       tratos:null,obs:'',overridden:false,hapa:null,
     }));
     newRecs.forEach(r=>records.push(r));
@@ -7689,250 +7711,250 @@ async function injectHistoricalData(){
   }
 
   await inject('tank_geo-elevada_40','Tanque 40','tq40',[
-    {date:'2026-02-18',bio:0.02,qty:70000,idealG:89, realG:98},
-    {date:'2026-02-20',bio:0.02,qty:70000,idealG:89, realG:null},
-    {date:'2026-03-04',bio:0.02,qty:70000,idealG:89, realG:89},
-    {date:'2026-03-19',bio:0.81,qty:6326, idealG:948,realG:468},
-    {date:'2026-03-24',bio:0.81,qty:6326, idealG:615,realG:615},
-    {date:'2026-03-25',bio:0.81,qty:6326, idealG:615,realG:287},
-    {date:'2026-03-26',bio:0.81,qty:6326, idealG:615,realG:615},
-    {date:'2026-03-27',bio:0.81,qty:6326, idealG:615,realG:327},
-    {date:'2026-03-28',bio:0.81,qty:6326, idealG:615,realG:615},
-    {date:'2026-04-01',bio:0.81,qty:6326, idealG:891,realG:891},
-    {date:'2026-04-10',bio:1.5, qty:5777, idealG:770,realG:770},
-    {date:'2026-04-11',bio:1.5, qty:5777, idealG:763,realG:341},
-    {date:'2026-04-12',bio:1.5, qty:5777, idealG:763,realG:673},
-    {date:'2026-04-13',bio:1.5, qty:5777, idealG:763,realG:763},
-    {date:'2026-04-14',bio:1.5, qty:5777, idealG:763,realG:763},
-    {date:'2026-04-16',bio:2.4, qty:5777, idealG:763,realG:763},
-    {date:'2026-04-17',bio:2.4, qty:5777, idealG:244,realG:244},
-    {date:'2026-04-18',bio:2.4, qty:5777, idealG:244,realG:172},
-    {date:'2026-04-19',bio:2.4, qty:5777, idealG:244,realG:244},
+    {date:'2026-02-18',bio:0.02,qty:70000,idealKg:0.089, realKg:0.098},
+    {date:'2026-02-20',bio:0.02,qty:70000,idealKg:0.089, realKg:null},
+    {date:'2026-03-04',bio:0.02,qty:70000,idealKg:0.089, realKg:0.089},
+    {date:'2026-03-19',bio:0.81,qty:6326, idealKg:0.948,realKg:0.468},
+    {date:'2026-03-24',bio:0.81,qty:6326, idealKg:0.615,realKg:0.615},
+    {date:'2026-03-25',bio:0.81,qty:6326, idealKg:0.615,realKg:0.287},
+    {date:'2026-03-26',bio:0.81,qty:6326, idealKg:0.615,realKg:0.615},
+    {date:'2026-03-27',bio:0.81,qty:6326, idealKg:0.615,realKg:0.327},
+    {date:'2026-03-28',bio:0.81,qty:6326, idealKg:0.615,realKg:0.615},
+    {date:'2026-04-01',bio:0.81,qty:6326, idealKg:0.891,realKg:0.891},
+    {date:'2026-04-10',bio:1.5, qty:5777, idealKg:0.77,realKg:0.77},
+    {date:'2026-04-11',bio:1.5, qty:5777, idealKg:0.763,realKg:0.341},
+    {date:'2026-04-12',bio:1.5, qty:5777, idealKg:0.763,realKg:0.673},
+    {date:'2026-04-13',bio:1.5, qty:5777, idealKg:0.763,realKg:0.763},
+    {date:'2026-04-14',bio:1.5, qty:5777, idealKg:0.763,realKg:0.763},
+    {date:'2026-04-16',bio:2.4, qty:5777, idealKg:0.763,realKg:0.763},
+    {date:'2026-04-17',bio:2.4, qty:5777, idealKg:0.244,realKg:0.244},
+    {date:'2026-04-18',bio:2.4, qty:5777, idealKg:0.244,realKg:0.172},
+    {date:'2026-04-19',bio:2.4, qty:5777, idealKg:0.244,realKg:0.244},
   ]);
 
   await inject('tank_geo-elevada_41','Tanque 41','tq41',[
-    {date:'2026-02-18',bio:2.6,qty:7062, idealG:1616,realG:1224},
-    {date:'2026-02-20',bio:2.6,qty:7062, idealG:1616,realG:698},
-    {date:'2026-02-21',bio:3.5,qty:7062, idealG:1616,realG:1616},
-    {date:'2026-03-04',bio:3.6,qty:7062, idealG:1780,realG:1780},
-    {date:'2026-03-06',bio:3.6,qty:7062, idealG:1780,realG:1780},
-    {date:'2026-04-02',bio:0.49,qty:10050,idealG:591,realG:454},
-    {date:'2026-04-03',bio:0.49,qty:10050,idealG:591,realG:359},
-    {date:'2026-04-07',bio:0.49,qty:10050,idealG:591,realG:591},
-    {date:'2026-04-08',bio:0.49,qty:10050,idealG:591,realG:591},
-    {date:'2026-04-09',bio:1.5, qty:10050,idealG:591,realG:591},
-    {date:'2026-04-10',bio:1.5, qty:10050,idealG:1327,realG:1327},
-    {date:'2026-04-11',bio:1.5, qty:10050,idealG:1327,realG:831},
-    {date:'2026-04-12',bio:1.5, qty:10050,idealG:1327,realG:1327},
-    {date:'2026-04-13',bio:1.5, qty:10050,idealG:1327,realG:1327},
-    {date:'2026-04-14',bio:1.5, qty:10050,idealG:1327,realG:1327},
-    {date:'2026-04-16',bio:1.5, qty:10050,idealG:1327,realG:1327},
-    {date:'2026-04-17',bio:2.7, qty:10050,idealG:478,realG:478},
-    {date:'2026-04-18',bio:2.7, qty:10050,idealG:478,realG:478},
-    {date:'2026-04-19',bio:2.7, qty:10050,idealG:478,realG:478},
+    {date:'2026-02-18',bio:2.6,qty:7062, idealKg:1.616,realKg:1.224},
+    {date:'2026-02-20',bio:2.6,qty:7062, idealKg:1.616,realKg:0.698},
+    {date:'2026-02-21',bio:3.5,qty:7062, idealKg:1.616,realKg:1.616},
+    {date:'2026-03-04',bio:3.6,qty:7062, idealKg:1.78,realKg:1.78},
+    {date:'2026-03-06',bio:3.6,qty:7062, idealKg:1.78,realKg:1.78},
+    {date:'2026-04-02',bio:0.49,qty:10050,idealKg:0.591,realKg:0.454},
+    {date:'2026-04-03',bio:0.49,qty:10050,idealKg:0.591,realKg:0.359},
+    {date:'2026-04-07',bio:0.49,qty:10050,idealKg:0.591,realKg:0.591},
+    {date:'2026-04-08',bio:0.49,qty:10050,idealKg:0.591,realKg:0.591},
+    {date:'2026-04-09',bio:1.5, qty:10050,idealKg:0.591,realKg:0.591},
+    {date:'2026-04-10',bio:1.5, qty:10050,idealKg:1.327,realKg:1.327},
+    {date:'2026-04-11',bio:1.5, qty:10050,idealKg:1.327,realKg:0.831},
+    {date:'2026-04-12',bio:1.5, qty:10050,idealKg:1.327,realKg:1.327},
+    {date:'2026-04-13',bio:1.5, qty:10050,idealKg:1.327,realKg:1.327},
+    {date:'2026-04-14',bio:1.5, qty:10050,idealKg:1.327,realKg:1.327},
+    {date:'2026-04-16',bio:1.5, qty:10050,idealKg:1.327,realKg:1.327},
+    {date:'2026-04-17',bio:2.7, qty:10050,idealKg:0.478,realKg:0.478},
+    {date:'2026-04-18',bio:2.7, qty:10050,idealKg:0.478,realKg:0.478},
+    {date:'2026-04-19',bio:2.7, qty:10050,idealKg:0.478,realKg:0.478},
   ]);
 
   await inject('tank_geo-elevada_42','Tanque 42','tq42',[
-    {date:'2026-04-02',bio:0.6,qty:10431,idealG:751,realG:751},
-    {date:'2026-04-03',bio:0.6,qty:10431,idealG:751,realG:501},
-    {date:'2026-04-07',bio:0.6,qty:10431,idealG:751,realG:751},
-    {date:'2026-04-08',bio:0.6,qty:10431,idealG:751,realG:751},
-    {date:'2026-04-09',bio:1.1,qty:10431,idealG:751,realG:751},
-    {date:'2026-04-10',bio:1.1,qty:10431,idealG:1377,realG:1377},
-    {date:'2026-04-11',bio:1.1,qty:10431,idealG:1377,realG:433},
-    {date:'2026-04-12',bio:1.1,qty:10431,idealG:1377,realG:1177},
-    {date:'2026-04-13',bio:1.1,qty:10431,idealG:1377,realG:1377},
-    {date:'2026-04-14',bio:1.1,qty:10431,idealG:1377,realG:1377},
-    {date:'2026-04-16',bio:1.1,qty:10431,idealG:1377,realG:1377},
-    {date:'2026-04-17',bio:1.9,qty:10431,idealG:1744,realG:1744},
-    {date:'2026-04-18',bio:1.9,qty:10431,idealG:1744,realG:1204},
-    {date:'2026-04-19',bio:1.9,qty:10431,idealG:1744,realG:1744},
+    {date:'2026-04-02',bio:0.6,qty:10431,idealKg:0.751,realKg:0.751},
+    {date:'2026-04-03',bio:0.6,qty:10431,idealKg:0.751,realKg:0.501},
+    {date:'2026-04-07',bio:0.6,qty:10431,idealKg:0.751,realKg:0.751},
+    {date:'2026-04-08',bio:0.6,qty:10431,idealKg:0.751,realKg:0.751},
+    {date:'2026-04-09',bio:1.1,qty:10431,idealKg:0.751,realKg:0.751},
+    {date:'2026-04-10',bio:1.1,qty:10431,idealKg:1.377,realKg:1.377},
+    {date:'2026-04-11',bio:1.1,qty:10431,idealKg:1.377,realKg:0.433},
+    {date:'2026-04-12',bio:1.1,qty:10431,idealKg:1.377,realKg:1.177},
+    {date:'2026-04-13',bio:1.1,qty:10431,idealKg:1.377,realKg:1.377},
+    {date:'2026-04-14',bio:1.1,qty:10431,idealKg:1.377,realKg:1.377},
+    {date:'2026-04-16',bio:1.1,qty:10431,idealKg:1.377,realKg:1.377},
+    {date:'2026-04-17',bio:1.9,qty:10431,idealKg:1.744,realKg:1.744},
+    {date:'2026-04-18',bio:1.9,qty:10431,idealKg:1.744,realKg:1.204},
+    {date:'2026-04-19',bio:1.9,qty:10431,idealKg:1.744,realKg:1.744},
   ]);
 
   await inject('tank_geo-elevada_43','Tanque 43','tq43',[
-    {date:'2026-02-18',bio:0.7, qty:10910,idealG:916, realG:432},{date:'2026-02-20',bio:0.7, qty:10910,idealG:916, realG:600},
-    {date:'2026-02-21',bio:1.0, qty:10910,idealG:916, realG:916},{date:'2026-03-04',bio:1.2, qty:10910,idealG:1571,realG:1571},
-    {date:'2026-03-06',bio:1.2, qty:10910,idealG:1571,realG:1571},{date:'2026-03-19',bio:0.81,qty:11016,idealG:1071,realG:745},
-    {date:'2026-03-24',bio:0.81,qty:11016,idealG:1070,realG:1071},{date:'2026-03-25',bio:0.81,qty:11016,idealG:1071,realG:605},
-    {date:'2026-03-26',bio:0.81,qty:11016,idealG:1071,realG:1071},{date:'2026-03-27',bio:0.81,qty:11016,idealG:1071,realG:561},
-    {date:'2026-03-28',bio:0.81,qty:11016,idealG:1071,realG:1071},{date:'2026-04-01',bio:1.7, qty:11016,idealG:1648,realG:1648},
+    {date:'2026-02-18',bio:0.7, qty:10910,idealKg:0.916, realKg:0.432},{date:'2026-02-20',bio:0.7, qty:10910,idealKg:0.916, realKg:0.6},
+    {date:'2026-02-21',bio:1.0, qty:10910,idealKg:0.916, realKg:0.916},{date:'2026-03-04',bio:1.2, qty:10910,idealKg:1.571,realKg:1.571},
+    {date:'2026-03-06',bio:1.2, qty:10910,idealKg:1.571,realKg:1.571},{date:'2026-03-19',bio:0.81,qty:11016,idealKg:1.071,realKg:0.745},
+    {date:'2026-03-24',bio:0.81,qty:11016,idealKg:1.07,realKg:1.071},{date:'2026-03-25',bio:0.81,qty:11016,idealKg:1.071,realKg:0.605},
+    {date:'2026-03-26',bio:0.81,qty:11016,idealKg:1.071,realKg:1.071},{date:'2026-03-27',bio:0.81,qty:11016,idealKg:1.071,realKg:0.561},
+    {date:'2026-03-28',bio:0.81,qty:11016,idealKg:1.071,realKg:1.071},{date:'2026-04-01',bio:1.7, qty:11016,idealKg:1.648,realKg:1.648},
   ]);
   await inject('tank_geo-elevada_44','Tanque 44','tq44',[
-    {date:'2026-02-18',bio:3.7, qty:10285,idealG:533, realG:533},{date:'2026-02-20',bio:3.7, qty:10285,idealG:533, realG:213},
-    {date:'2026-02-21',bio:3.8, qty:10285,idealG:533, realG:533},{date:'2026-03-04',bio:4.0, qty:8285, idealG:408, realG:408},
-    {date:'2026-03-06',bio:4.0, qty:8285, idealG:408, realG:408},{date:'2026-03-19',bio:1.96,qty:10657,idealG:1838,realG:968},
-    {date:'2026-03-24',bio:1.96,qty:10657,idealG:1838,realG:1838},{date:'2026-03-25',bio:1.96,qty:10657,idealG:1838,realG:1254},
-    {date:'2026-03-26',bio:1.96,qty:10657,idealG:1838,realG:1838},{date:'2026-03-27',bio:1.96,qty:10657,idealG:1838,realG:1210},
-    {date:'2026-03-28',bio:1.96,qty:10657,idealG:1838,realG:1838},{date:'2026-04-01',bio:null,qty:10657,idealG:2238,realG:2238},
+    {date:'2026-02-18',bio:3.7, qty:10285,idealKg:0.533, realKg:0.533},{date:'2026-02-20',bio:3.7, qty:10285,idealKg:0.533, realKg:0.213},
+    {date:'2026-02-21',bio:3.8, qty:10285,idealKg:0.533, realKg:0.533},{date:'2026-03-04',bio:4.0, qty:8285, idealKg:0.408, realKg:0.408},
+    {date:'2026-03-06',bio:4.0, qty:8285, idealKg:0.408, realKg:0.408},{date:'2026-03-19',bio:1.96,qty:10657,idealKg:1.838,realKg:0.968},
+    {date:'2026-03-24',bio:1.96,qty:10657,idealKg:1.838,realKg:1.838},{date:'2026-03-25',bio:1.96,qty:10657,idealKg:1.838,realKg:1.254},
+    {date:'2026-03-26',bio:1.96,qty:10657,idealKg:1.838,realKg:1.838},{date:'2026-03-27',bio:1.96,qty:10657,idealKg:1.838,realKg:1.21},
+    {date:'2026-03-28',bio:1.96,qty:10657,idealKg:1.838,realKg:1.838},{date:'2026-04-01',bio:null,qty:10657,idealKg:2.238,realKg:2.238},
   ]);
   await inject('tank_geo-elevada_45','Tanque 45','tq45',[
-    {date:'2026-02-18',bio:2.8,qty:4545,idealG:224,realG:224},{date:'2026-02-20',bio:2.8,qty:4545,idealG:224,realG:108},
-    {date:'2026-02-21',bio:3.5,qty:4545,idealG:224,realG:224},{date:'2026-03-04',bio:3.8,qty:4545,idealG:242,realG:242},
-    {date:'2026-03-06',bio:3.8,qty:4545,idealG:242,realG:242},
+    {date:'2026-02-18',bio:2.8,qty:4545,idealKg:0.224,realKg:0.224},{date:'2026-02-20',bio:2.8,qty:4545,idealKg:0.224,realKg:0.108},
+    {date:'2026-02-21',bio:3.5,qty:4545,idealKg:0.224,realKg:0.224},{date:'2026-03-04',bio:3.8,qty:4545,idealKg:0.242,realKg:0.242},
+    {date:'2026-03-06',bio:3.8,qty:4545,idealKg:0.242,realKg:0.242},
   ]);
   await inject('tank_geo-elevada_46','Tanque 46','tq46',[
-    {date:'2026-02-18',bio:0.02,qty:110080,idealG:614,realG:196},{date:'2026-03-04',bio:0.02,qty:110080,idealG:20,realG:20},
+    {date:'2026-02-18',bio:0.02,qty:110080,idealKg:0.614,realKg:0.196},{date:'2026-03-04',bio:0.02,qty:110080,idealKg:0.02,realKg:0.02},
   ]);
   await inject('tank_geo-elevada_47','Tanque 47','tq47',[
-    {date:'2026-02-18',bio:1.2,qty:7967, idealG:1147,realG:531},{date:'2026-02-20',bio:1.2,qty:7967, idealG:1147,realG:731},
-    {date:'2026-02-21',bio:2.0,qty:7967, idealG:1147,realG:1147},{date:'2026-03-04',bio:2.0,qty:7967, idealG:1402,realG:1402},
-    {date:'2026-03-06',bio:2.0,qty:7967, idealG:1402,realG:1402},{date:'2026-03-19',bio:0.81,qty:9835,idealG:956,realG:508},
-    {date:'2026-03-24',bio:0.81,qty:9835,idealG:956,realG:956},{date:'2026-03-25',bio:0.81,qty:9835,idealG:956,realG:536},
-    {date:'2026-03-26',bio:0.81,qty:9835,idealG:956,realG:956},{date:'2026-03-27',bio:0.81,qty:9835,idealG:956,realG:570},
-    {date:'2026-03-28',bio:0.81,qty:9835,idealG:956,realG:956},{date:'2026-04-01',bio:null,qty:9835,idealG:2164,realG:2164},
+    {date:'2026-02-18',bio:1.2,qty:7967, idealKg:1.147,realKg:0.531},{date:'2026-02-20',bio:1.2,qty:7967, idealKg:1.147,realKg:0.731},
+    {date:'2026-02-21',bio:2.0,qty:7967, idealKg:1.147,realKg:1.147},{date:'2026-03-04',bio:2.0,qty:7967, idealKg:1.402,realKg:1.402},
+    {date:'2026-03-06',bio:2.0,qty:7967, idealKg:1.402,realKg:1.402},{date:'2026-03-19',bio:0.81,qty:9835,idealKg:0.956,realKg:0.508},
+    {date:'2026-03-24',bio:0.81,qty:9835,idealKg:0.956,realKg:0.956},{date:'2026-03-25',bio:0.81,qty:9835,idealKg:0.956,realKg:0.536},
+    {date:'2026-03-26',bio:0.81,qty:9835,idealKg:0.956,realKg:0.956},{date:'2026-03-27',bio:0.81,qty:9835,idealKg:0.956,realKg:0.57},
+    {date:'2026-03-28',bio:0.81,qty:9835,idealKg:0.956,realKg:0.956},{date:'2026-04-01',bio:null,qty:9835,idealKg:2.164,realKg:2.164},
   ]);
   await inject('tank_geo-elevada_48','Tanque 48','tq48',[
-    {date:'2026-02-18',bio:6.6, qty:4304, idealG:398, realG:398},{date:'2026-02-20',bio:6.6, qty:4304, idealG:398, realG:176},
-    {date:'2026-02-21',bio:4.1, qty:4304, idealG:398, realG:398},{date:'2026-03-04',bio:4.0, qty:4304, idealG:241, realG:241},
-    {date:'2026-03-06',bio:4.0, qty:4304, idealG:241, realG:241},{date:'2026-03-28',bio:5.05,qty:3775, idealG:267, realG:241},
-    {date:'2026-04-01',bio:5.05,qty:3775, idealG:333, realG:333},{date:'2026-04-02',bio:5.05,qty:null, idealG:539, realG:539},
-    {date:'2026-04-03',bio:5.05,qty:null, idealG:539, realG:257},{date:'2026-04-07',bio:6.3, qty:7621, idealG:539, realG:539},
-    {date:'2026-04-08',bio:6.3, qty:7621, idealG:539, realG:539},{date:'2026-04-09',bio:6.3, qty:7621, idealG:539, realG:539},
-    {date:'2026-04-10',bio:5.8, qty:10742,idealG:953, realG:953},{date:'2026-04-11',bio:5.8, qty:10742,idealG:872, realG:872},
-    {date:'2026-04-12',bio:5.8, qty:10742,idealG:872, realG:872},{date:'2026-04-13',bio:5.8, qty:10742,idealG:872, realG:872},
-    {date:'2026-04-14',bio:5.8, qty:10742,idealG:872, realG:872},{date:'2026-04-16',bio:5.8, qty:10742,idealG:872, realG:872},
-    {date:'2026-04-17',bio:7.8, qty:10742,idealG:1158,realG:1158},{date:'2026-04-18',bio:7.8, qty:10742,idealG:1158,realG:964},
-    {date:'2026-04-19',bio:7.8, qty:10742,idealG:1158,realG:1158},
+    {date:'2026-02-18',bio:6.6, qty:4304, idealKg:0.398, realKg:0.398},{date:'2026-02-20',bio:6.6, qty:4304, idealKg:0.398, realKg:0.176},
+    {date:'2026-02-21',bio:4.1, qty:4304, idealKg:0.398, realKg:0.398},{date:'2026-03-04',bio:4.0, qty:4304, idealKg:0.241, realKg:0.241},
+    {date:'2026-03-06',bio:4.0, qty:4304, idealKg:0.241, realKg:0.241},{date:'2026-03-28',bio:5.05,qty:3775, idealKg:0.267, realKg:0.241},
+    {date:'2026-04-01',bio:5.05,qty:3775, idealKg:0.333, realKg:0.333},{date:'2026-04-02',bio:5.05,qty:null, idealKg:0.539, realKg:0.539},
+    {date:'2026-04-03',bio:5.05,qty:null, idealKg:0.539, realKg:0.257},{date:'2026-04-07',bio:6.3, qty:7621, idealKg:0.539, realKg:0.539},
+    {date:'2026-04-08',bio:6.3, qty:7621, idealKg:0.539, realKg:0.539},{date:'2026-04-09',bio:6.3, qty:7621, idealKg:0.539, realKg:0.539},
+    {date:'2026-04-10',bio:5.8, qty:10742,idealKg:0.953, realKg:0.953},{date:'2026-04-11',bio:5.8, qty:10742,idealKg:0.872, realKg:0.872},
+    {date:'2026-04-12',bio:5.8, qty:10742,idealKg:0.872, realKg:0.872},{date:'2026-04-13',bio:5.8, qty:10742,idealKg:0.872, realKg:0.872},
+    {date:'2026-04-14',bio:5.8, qty:10742,idealKg:0.872, realKg:0.872},{date:'2026-04-16',bio:5.8, qty:10742,idealKg:0.872, realKg:0.872},
+    {date:'2026-04-17',bio:7.8, qty:10742,idealKg:1.158,realKg:1.158},{date:'2026-04-18',bio:7.8, qty:10742,idealKg:1.158,realKg:0.964},
+    {date:'2026-04-19',bio:7.8, qty:10742,idealKg:1.158,realKg:1.158},
   ]);
   await inject('tank_geo-elevada_49','Tanque 49','tq49',[
-    {date:'2026-02-18',bio:0.5, qty:7924,idealG:475,realG:269},{date:'2026-02-20',bio:0.5, qty:7924,idealG:475,realG:323},
-    {date:'2026-02-21',bio:0.5, qty:7924,idealG:475,realG:475},{date:'2026-03-04',bio:0.5, qty:4924,idealG:475,realG:475},
-    {date:'2026-03-06',bio:0.5, qty:4924,idealG:475,realG:475},{date:'2026-03-19',bio:1.96,qty:5576,idealG:962,realG:538},
-    {date:'2026-03-24',bio:1.96,qty:5576,idealG:962,realG:962},{date:'2026-03-28',bio:0.7, qty:6026,idealG:506,realG:506},
-    {date:'2026-04-01',bio:0.7, qty:6026,idealG:506,realG:506},
+    {date:'2026-02-18',bio:0.5, qty:7924,idealKg:0.475,realKg:0.269},{date:'2026-02-20',bio:0.5, qty:7924,idealKg:0.475,realKg:0.323},
+    {date:'2026-02-21',bio:0.5, qty:7924,idealKg:0.475,realKg:0.475},{date:'2026-03-04',bio:0.5, qty:4924,idealKg:0.475,realKg:0.475},
+    {date:'2026-03-06',bio:0.5, qty:4924,idealKg:0.475,realKg:0.475},{date:'2026-03-19',bio:1.96,qty:5576,idealKg:0.962,realKg:0.538},
+    {date:'2026-03-24',bio:1.96,qty:5576,idealKg:0.962,realKg:0.962},{date:'2026-03-28',bio:0.7, qty:6026,idealKg:0.506,realKg:0.506},
+    {date:'2026-04-01',bio:0.7, qty:6026,idealKg:0.506,realKg:0.506},
   ]);
   await inject('tank_geo-elevada_50','Tanque 50','tq50',[
-    {date:'2026-02-18',bio:2.6, qty:13241,idealG:606, realG:606},{date:'2026-02-20',bio:2.6, qty:13241,idealG:606, realG:232},
-    {date:'2026-02-21',bio:2.2, qty:13241,idealG:606, realG:606},{date:'2026-03-04',bio:2.5, qty:13241,idealG:583, realG:583},
-    {date:'2026-03-06',bio:2.5, qty:13241,idealG:583, realG:583},{date:'2026-04-02',bio:null,qty:null, idealG:742, realG:118},
-    {date:'2026-04-03',bio:null,qty:null, idealG:742, realG:424},{date:'2026-04-07',bio:0.49,qty:12616,idealG:742, realG:742},
-    {date:'2026-04-08',bio:0.49,qty:12616,idealG:742, realG:742},{date:'2026-04-09',bio:0.49,qty:12616,idealG:742, realG:742},
-    {date:'2026-04-10',bio:1.5, qty:12616,idealG:1665,realG:1665},{date:'2026-04-11',bio:1.5, qty:12616,idealG:1665,realG:1373},
-    {date:'2026-04-12',bio:1.5, qty:12616,idealG:1665,realG:1365},{date:'2026-04-13',bio:1.5, qty:12616,idealG:1665,realG:891},
-    {date:'2026-04-14',bio:1.5, qty:12616,idealG:1665,realG:1295},{date:'2026-04-16',bio:1.5, qty:12616,idealG:1665,realG:1343},
-    {date:'2026-04-17',bio:2.5, qty:12616,idealG:555, realG:203},{date:'2026-04-18',bio:2.5, qty:12616,idealG:555, realG:493},
-    {date:'2026-04-19',bio:2.5, qty:12616,idealG:555, realG:555},
+    {date:'2026-02-18',bio:2.6, qty:13241,idealKg:0.606, realKg:0.606},{date:'2026-02-20',bio:2.6, qty:13241,idealKg:0.606, realKg:0.232},
+    {date:'2026-02-21',bio:2.2, qty:13241,idealKg:0.606, realKg:0.606},{date:'2026-03-04',bio:2.5, qty:13241,idealKg:0.583, realKg:0.583},
+    {date:'2026-03-06',bio:2.5, qty:13241,idealKg:0.583, realKg:0.583},{date:'2026-04-02',bio:null,qty:null, idealKg:0.742, realKg:0.118},
+    {date:'2026-04-03',bio:null,qty:null, idealKg:0.742, realKg:0.424},{date:'2026-04-07',bio:0.49,qty:12616,idealKg:0.742, realKg:0.742},
+    {date:'2026-04-08',bio:0.49,qty:12616,idealKg:0.742, realKg:0.742},{date:'2026-04-09',bio:0.49,qty:12616,idealKg:0.742, realKg:0.742},
+    {date:'2026-04-10',bio:1.5, qty:12616,idealKg:1.665,realKg:1.665},{date:'2026-04-11',bio:1.5, qty:12616,idealKg:1.665,realKg:1.373},
+    {date:'2026-04-12',bio:1.5, qty:12616,idealKg:1.665,realKg:1.365},{date:'2026-04-13',bio:1.5, qty:12616,idealKg:1.665,realKg:0.891},
+    {date:'2026-04-14',bio:1.5, qty:12616,idealKg:1.665,realKg:1.295},{date:'2026-04-16',bio:1.5, qty:12616,idealKg:1.665,realKg:1.343},
+    {date:'2026-04-17',bio:2.5, qty:12616,idealKg:0.555, realKg:0.203},{date:'2026-04-18',bio:2.5, qty:12616,idealKg:0.555, realKg:0.493},
+    {date:'2026-04-19',bio:2.5, qty:12616,idealKg:0.555, realKg:0.555},
   ]);
   await inject('tank_geo-elevada_51','Tanque 51','tq51',[
-    {date:'2026-02-18',bio:2.3, qty:10017,idealG:2027,realG:1261},{date:'2026-02-20',bio:2.3, qty:10017,idealG:405, realG:175},
-    {date:'2026-02-21',bio:2.6, qty:10017,idealG:405, realG:405},{date:'2026-03-04',bio:2.8, qty:10017,idealG:494, realG:494},
-    {date:'2026-03-06',bio:2.8, qty:10017,idealG:494, realG:494},{date:'2026-03-28',bio:1.97,qty:4178, idealG:724, realG:724},
-    {date:'2026-04-01',bio:1.97,qty:4178, idealG:699, realG:699},{date:'2026-04-02',bio:1.97,qty:10487,idealG:1818,realG:918},
-    {date:'2026-04-03',bio:1.97,qty:10487,idealG:1818,realG:1008},{date:'2026-04-07',bio:1.9, qty:10487,idealG:1818,realG:1290},
-    {date:'2026-04-08',bio:1.9, qty:10487,idealG:867, realG:867},{date:'2026-04-09',bio:1.9, qty:10487,idealG:867, realG:867},
-    {date:'2026-04-10',bio:2.4, qty:3000, idealG:1056,realG:468},{date:'2026-04-11',bio:2.4, qty:3000, idealG:253, realG:133},
-    {date:'2026-04-12',bio:2.4, qty:3000, idealG:253, realG:253},{date:'2026-04-13',bio:2.4, qty:3000, idealG:253, realG:253},
-    {date:'2026-04-14',bio:2.4, qty:3000, idealG:253, realG:253},{date:'2026-04-16',bio:2.4, qty:3000, idealG:253, realG:253},
-    {date:'2026-04-17',bio:2.7, qty:3000, idealG:285, realG:285},{date:'2026-04-18',bio:2.7, qty:3000, idealG:285, realG:271},
-    {date:'2026-04-19',bio:2.7, qty:3000, idealG:285, realG:285},
+    {date:'2026-02-18',bio:2.3, qty:10017,idealKg:2.027,realKg:1.261},{date:'2026-02-20',bio:2.3, qty:10017,idealKg:0.405, realKg:0.175},
+    {date:'2026-02-21',bio:2.6, qty:10017,idealKg:0.405, realKg:0.405},{date:'2026-03-04',bio:2.8, qty:10017,idealKg:0.494, realKg:0.494},
+    {date:'2026-03-06',bio:2.8, qty:10017,idealKg:0.494, realKg:0.494},{date:'2026-03-28',bio:1.97,qty:4178, idealKg:0.724, realKg:0.724},
+    {date:'2026-04-01',bio:1.97,qty:4178, idealKg:0.699, realKg:0.699},{date:'2026-04-02',bio:1.97,qty:10487,idealKg:1.818,realKg:0.918},
+    {date:'2026-04-03',bio:1.97,qty:10487,idealKg:1.818,realKg:1.008},{date:'2026-04-07',bio:1.9, qty:10487,idealKg:1.818,realKg:1.29},
+    {date:'2026-04-08',bio:1.9, qty:10487,idealKg:0.867, realKg:0.867},{date:'2026-04-09',bio:1.9, qty:10487,idealKg:0.867, realKg:0.867},
+    {date:'2026-04-10',bio:2.4, qty:3000, idealKg:1.056,realKg:0.468},{date:'2026-04-11',bio:2.4, qty:3000, idealKg:0.253, realKg:0.133},
+    {date:'2026-04-12',bio:2.4, qty:3000, idealKg:0.253, realKg:0.253},{date:'2026-04-13',bio:2.4, qty:3000, idealKg:0.253, realKg:0.253},
+    {date:'2026-04-14',bio:2.4, qty:3000, idealKg:0.253, realKg:0.253},{date:'2026-04-16',bio:2.4, qty:3000, idealKg:0.253, realKg:0.253},
+    {date:'2026-04-17',bio:2.7, qty:3000, idealKg:0.285, realKg:0.285},{date:'2026-04-18',bio:2.7, qty:3000, idealKg:0.285, realKg:0.271},
+    {date:'2026-04-19',bio:2.7, qty:3000, idealKg:0.285, realKg:0.285},
   ]);
   await inject('tank_escavados_6','Tanque 6','tq06',[
-    {date:'2026-02-18',bio:0.4, qty:153000,idealG:7344,realG:2074},{date:'2026-02-20',bio:0.4, qty:153000,idealG:2400,realG:1518},
-    {date:'2026-02-21',bio:0.8, qty:50000, idealG:2400,realG:1540},{date:'2026-03-04',bio:0.9, qty:50000, idealG:2400,realG:2400},
-    {date:'2026-03-06',bio:0.9, qty:50000, idealG:2400,realG:1188},{date:'2026-03-19',bio:0.8, qty:50000, idealG:4800,realG:3102},
-    {date:'2026-03-24',bio:0.8, qty:50000, idealG:4800,realG:4800},{date:'2026-03-25',bio:0.8, qty:50000, idealG:4800,realG:3362},
-    {date:'2026-04-08',bio:0.02,qty:79499, idealG:191, realG:528},{date:'2026-04-09',bio:0.02,qty:79499, idealG:191, realG:346},
-    {date:'2026-04-10',bio:0.02,qty:79499, idealG:191, realG:648},{date:'2026-04-11',bio:0.02,qty:79499, idealG:636, realG:274},
-    {date:'2026-04-12',bio:0.02,qty:79499, idealG:795, realG:795},{date:'2026-04-13',bio:0.02,qty:79499, idealG:954, realG:954},
-    {date:'2026-04-14',bio:0.12,qty:79499, idealG:1113,realG:667},{date:'2026-04-16',bio:0.15,qty:79499, idealG:1453,realG:1453},
-    {date:'2026-04-17',bio:0.17,qty:79499, idealG:1590,realG:1386},{date:'2026-04-18',bio:0.18,qty:79499, idealG:1749,realG:1125},
-    {date:'2026-04-19',bio:0.2, qty:79499, idealG:1908,realG:1908},
+    {date:'2026-02-18',bio:0.4, qty:153000,idealKg:7.344,realKg:2.074},{date:'2026-02-20',bio:0.4, qty:153000,idealKg:2.4,realKg:1.518},
+    {date:'2026-02-21',bio:0.8, qty:50000, idealKg:2.4,realKg:1.54},{date:'2026-03-04',bio:0.9, qty:50000, idealKg:2.4,realKg:2.4},
+    {date:'2026-03-06',bio:0.9, qty:50000, idealKg:2.4,realKg:1.188},{date:'2026-03-19',bio:0.8, qty:50000, idealKg:4.8,realKg:3.102},
+    {date:'2026-03-24',bio:0.8, qty:50000, idealKg:4.8,realKg:4.8},{date:'2026-03-25',bio:0.8, qty:50000, idealKg:4.8,realKg:3.362},
+    {date:'2026-04-08',bio:0.02,qty:79499, idealKg:0.191, realKg:0.528},{date:'2026-04-09',bio:0.02,qty:79499, idealKg:0.191, realKg:0.346},
+    {date:'2026-04-10',bio:0.02,qty:79499, idealKg:0.191, realKg:0.648},{date:'2026-04-11',bio:0.02,qty:79499, idealKg:0.636, realKg:0.274},
+    {date:'2026-04-12',bio:0.02,qty:79499, idealKg:0.795, realKg:0.795},{date:'2026-04-13',bio:0.02,qty:79499, idealKg:0.954, realKg:0.954},
+    {date:'2026-04-14',bio:0.12,qty:79499, idealKg:1.113,realKg:0.667},{date:'2026-04-16',bio:0.15,qty:79499, idealKg:1.453,realKg:1.453},
+    {date:'2026-04-17',bio:0.17,qty:79499, idealKg:1.59,realKg:1.386},{date:'2026-04-18',bio:0.18,qty:79499, idealKg:1.749,realKg:1.125},
+    {date:'2026-04-19',bio:0.2, qty:79499, idealKg:1.908,realKg:1.908},
   ]);
   await inject('tank_escavados_7','Tanque 7','tq07',[
-    {date:'2026-02-18',bio:0.3,qty:118769,idealG:4276,realG:1644},{date:'2026-02-20',bio:0.4,qty:118769,idealG:4276,realG:2782},
-    {date:'2026-02-21',bio:0.4,qty:118769,idealG:4276,realG:3346},{date:'2026-03-04',bio:0.7,qty:118769,idealG:4276,realG:4276},
-    {date:'2026-03-06',bio:0.7,qty:118769,idealG:4276,realG:2260},{date:'2026-03-19',bio:0.4,qty:118769,idealG:5701,realG:2925},
-    {date:'2026-03-24',bio:0.4,qty:118769,idealG:5701,realG:5701},{date:'2026-03-25',bio:0.4,qty:118769,idealG:5701,realG:4337},
-    {date:'2026-03-26',bio:0.4,qty:118769,idealG:5701,realG:5701},{date:'2026-03-27',bio:0.4,qty:118769,idealG:5701,realG:4269},
-    {date:'2026-03-28',bio:0.4,qty:118769,idealG:5701,realG:5701},
+    {date:'2026-02-18',bio:0.3,qty:118769,idealKg:4.276,realKg:1.644},{date:'2026-02-20',bio:0.4,qty:118769,idealKg:4.276,realKg:2.782},
+    {date:'2026-02-21',bio:0.4,qty:118769,idealKg:4.276,realKg:3.346},{date:'2026-03-04',bio:0.7,qty:118769,idealKg:4.276,realKg:4.276},
+    {date:'2026-03-06',bio:0.7,qty:118769,idealKg:4.276,realKg:2.26},{date:'2026-03-19',bio:0.4,qty:118769,idealKg:5.701,realKg:2.925},
+    {date:'2026-03-24',bio:0.4,qty:118769,idealKg:5.701,realKg:5.701},{date:'2026-03-25',bio:0.4,qty:118769,idealKg:5.701,realKg:4.337},
+    {date:'2026-03-26',bio:0.4,qty:118769,idealKg:5.701,realKg:5.701},{date:'2026-03-27',bio:0.4,qty:118769,idealKg:5.701,realKg:4.269},
+    {date:'2026-03-28',bio:0.4,qty:118769,idealKg:5.701,realKg:5.701},
   ]);
   await inject('tank_escavados_8','Tanque 8','tq08',[
-    {date:'2026-02-11',bio:0.5, qty:80000,idealG:1200,realG:1200},{date:'2026-02-21',bio:0.02,qty:97200,idealG:null,realG:null},
-    {date:'2026-03-04',bio:0.02,qty:97200,idealG:233, realG:233},{date:'2026-03-25',bio:0.02,qty:97200,idealG:233, realG:155},
-    {date:'2026-03-26',bio:0.02,qty:97200,idealG:233, realG:630},{date:'2026-03-27',bio:0.02,qty:97200,idealG:233, realG:446},
-    {date:'2026-03-28',bio:0.02,qty:97200,idealG:233, realG:1366},{date:'2026-04-01',bio:0.02,qty:97200,idealG:233, realG:264},
-    {date:'2026-04-02',bio:0.02,qty:97200,idealG:233, realG:628},{date:'2026-04-03',bio:0.02,qty:97200,idealG:233, realG:604},
-    {date:'2026-04-07',bio:0.02,qty:97200,idealG:233, realG:718},{date:'2026-04-08',bio:0.5, qty:97200,idealG:233, realG:4960},
-    {date:'2026-04-09',bio:0.5, qty:97200,idealG:1458,realG:1042},{date:'2026-04-10',bio:0.5, qty:97200,idealG:840, realG:2530},
-    {date:'2026-04-12',bio:0.5, qty:80000,idealG:1200,realG:1075},{date:'2026-04-13',bio:0.5, qty:80000,idealG:1200,realG:1200},
-    {date:'2026-04-14',bio:0.5, qty:80000,idealG:1200,realG:1200},{date:'2026-04-16',bio:0.5, qty:80000,idealG:1200,realG:1200},
-    {date:'2026-04-17',bio:1.0, qty:80000,idealG:1200,realG:1200},{date:'2026-04-18',bio:1.0, qty:80000,idealG:1200,realG:774},
-    {date:'2026-04-19',bio:1.0, qty:80000,idealG:1200,realG:1200},
+    {date:'2026-02-11',bio:0.5, qty:80000,idealKg:1.2,realKg:1.2},{date:'2026-02-21',bio:0.02,qty:97200,idealKg:null,realKg:null},
+    {date:'2026-03-04',bio:0.02,qty:97200,idealKg:0.233, realKg:0.233},{date:'2026-03-25',bio:0.02,qty:97200,idealKg:0.233, realKg:0.155},
+    {date:'2026-03-26',bio:0.02,qty:97200,idealKg:0.233, realKg:0.63},{date:'2026-03-27',bio:0.02,qty:97200,idealKg:0.233, realKg:0.446},
+    {date:'2026-03-28',bio:0.02,qty:97200,idealKg:0.233, realKg:1.366},{date:'2026-04-01',bio:0.02,qty:97200,idealKg:0.233, realKg:0.264},
+    {date:'2026-04-02',bio:0.02,qty:97200,idealKg:0.233, realKg:0.628},{date:'2026-04-03',bio:0.02,qty:97200,idealKg:0.233, realKg:0.604},
+    {date:'2026-04-07',bio:0.02,qty:97200,idealKg:0.233, realKg:0.718},{date:'2026-04-08',bio:0.5, qty:97200,idealKg:0.233, realKg:4.96},
+    {date:'2026-04-09',bio:0.5, qty:97200,idealKg:1.458,realKg:1.042},{date:'2026-04-10',bio:0.5, qty:97200,idealKg:0.84, realKg:2.53},
+    {date:'2026-04-12',bio:0.5, qty:80000,idealKg:1.2,realKg:1.075},{date:'2026-04-13',bio:0.5, qty:80000,idealKg:1.2,realKg:1.2},
+    {date:'2026-04-14',bio:0.5, qty:80000,idealKg:1.2,realKg:1.2},{date:'2026-04-16',bio:0.5, qty:80000,idealKg:1.2,realKg:1.2},
+    {date:'2026-04-17',bio:1.0, qty:80000,idealKg:1.2,realKg:1.2},{date:'2026-04-18',bio:1.0, qty:80000,idealKg:1.2,realKg:0.774},
+    {date:'2026-04-19',bio:1.0, qty:80000,idealKg:1.2,realKg:1.2},
   ]);
   await inject('tank_escavados_14','Tanque 14','tq14',[
-    {date:'2026-02-18',bio:0.2,qty:164650,idealG:13180,realG:4356},{date:'2026-02-20',bio:1.4,qty:164650,idealG:13172,realG:6616},
-    {date:'2026-02-21',bio:1.4,qty:164650,idealG:13172,realG:11382},{date:'2026-03-04',bio:1.6,qty:164650,idealG:13172,realG:13172},
-    {date:'2026-03-06',bio:1.6,qty:164650,idealG:13172,realG:10034},
+    {date:'2026-02-18',bio:0.2,qty:164650,idealKg:13.18,realKg:4.356},{date:'2026-02-20',bio:1.4,qty:164650,idealKg:13.172,realKg:6.616},
+    {date:'2026-02-21',bio:1.4,qty:164650,idealKg:13.172,realKg:11.382},{date:'2026-03-04',bio:1.6,qty:164650,idealKg:13.172,realKg:13.172},
+    {date:'2026-03-06',bio:1.6,qty:164650,idealKg:13.172,realKg:10.034},
   ]);
   await inject('tank_geomembrana_16','Tanque 16','tq16',[
-    {date:'2026-02-18',bio:0.05,qty:124434,idealG:1244,realG:878},{date:'2026-02-20',bio:0.05,qty:124434,idealG:1244,realG:1244},
-    {date:'2026-02-21',bio:0.05,qty:124434,idealG:1244,realG:886},{date:'2026-03-04',bio:0.05,qty:124434,idealG:1244,realG:1244},
-    {date:'2026-03-06',bio:0.3, qty:124434,idealG:1244,realG:768},{date:'2026-03-19',bio:0.05,qty:124434,idealG:1244,realG:666},
-    {date:'2026-03-24',bio:0.05,qty:124434,idealG:1244,realG:1244},{date:'2026-03-25',bio:0.05,qty:124434,idealG:1244,realG:732},
-    {date:'2026-03-26',bio:0.05,qty:124434,idealG:1244,realG:1244},{date:'2026-03-27',bio:0.05,qty:124434,idealG:1244,realG:894},
+    {date:'2026-02-18',bio:0.05,qty:124434,idealKg:1.244,realKg:0.878},{date:'2026-02-20',bio:0.05,qty:124434,idealKg:1.244,realKg:1.244},
+    {date:'2026-02-21',bio:0.05,qty:124434,idealKg:1.244,realKg:0.886},{date:'2026-03-04',bio:0.05,qty:124434,idealKg:1.244,realKg:1.244},
+    {date:'2026-03-06',bio:0.3, qty:124434,idealKg:1.244,realKg:0.768},{date:'2026-03-19',bio:0.05,qty:124434,idealKg:1.244,realKg:0.666},
+    {date:'2026-03-24',bio:0.05,qty:124434,idealKg:1.244,realKg:1.244},{date:'2026-03-25',bio:0.05,qty:124434,idealKg:1.244,realKg:0.732},
+    {date:'2026-03-26',bio:0.05,qty:124434,idealKg:1.244,realKg:1.244},{date:'2026-03-27',bio:0.05,qty:124434,idealKg:1.244,realKg:0.894},
   ]);
   await inject('tank_geomembrana_17','Tanque 17','tq17',[
-    {date:'2026-03-19',bio:0.05,qty:38566,idealG:231,realG:null},{date:'2026-03-25',bio:0.05,qty:38566,idealG:231,realG:153},
-    {date:'2026-03-26',bio:0.05,qty:38566,idealG:233,realG:630},{date:'2026-03-27',bio:0.05,qty:38556,idealG:231,realG:142},
-    {date:'2026-04-01',bio:0.5,qty:38556,idealG:2314,realG:222},{date:'2026-04-02',bio:0.5,qty:38556,idealG:2314,realG:608},
-    {date:'2026-04-03',bio:0.5,qty:38556,idealG:2314,realG:508},{date:'2026-04-07',bio:0.5,qty:38556,idealG:2314,realG:716},
-    {date:'2026-04-08',bio:0.5,qty:38556,idealG:2314,realG:1994},{date:'2026-04-09',bio:0.5,qty:38556,idealG:2314,realG:2314},
-    {date:'2026-04-10',bio:0.6,qty:38556,idealG:1388,realG:964},{date:'2026-04-11',bio:0.6,qty:38556,idealG:2777,realG:2611},
-    {date:'2026-04-12',bio:0.6,qty:38556,idealG:2770,realG:2470},{date:'2026-04-13',bio:0.6,qty:38556,idealG:2770,realG:2770},
-    {date:'2026-04-14',bio:0.6,qty:38556,idealG:2770,realG:2770},{date:'2026-04-16',bio:0.6,qty:38556,idealG:2770,realG:2770},
-    {date:'2026-04-17',bio:1.6,qty:38556,idealG:2777,realG:2777},{date:'2026-04-18',bio:1.6,qty:38556,idealG:2770,realG:2532},
-    {date:'2026-04-19',bio:1.6,qty:38556,idealG:2770,realG:2770},
+    {date:'2026-03-19',bio:0.05,qty:38566,idealKg:0.231,realKg:null},{date:'2026-03-25',bio:0.05,qty:38566,idealKg:0.231,realKg:0.153},
+    {date:'2026-03-26',bio:0.05,qty:38566,idealKg:0.233,realKg:0.63},{date:'2026-03-27',bio:0.05,qty:38556,idealKg:0.231,realKg:0.142},
+    {date:'2026-04-01',bio:0.5,qty:38556,idealKg:2.314,realKg:0.222},{date:'2026-04-02',bio:0.5,qty:38556,idealKg:2.314,realKg:0.608},
+    {date:'2026-04-03',bio:0.5,qty:38556,idealKg:2.314,realKg:0.508},{date:'2026-04-07',bio:0.5,qty:38556,idealKg:2.314,realKg:0.716},
+    {date:'2026-04-08',bio:0.5,qty:38556,idealKg:2.314,realKg:1.994},{date:'2026-04-09',bio:0.5,qty:38556,idealKg:2.314,realKg:2.314},
+    {date:'2026-04-10',bio:0.6,qty:38556,idealKg:1.388,realKg:0.964},{date:'2026-04-11',bio:0.6,qty:38556,idealKg:2.777,realKg:2.611},
+    {date:'2026-04-12',bio:0.6,qty:38556,idealKg:2.77,realKg:2.47},{date:'2026-04-13',bio:0.6,qty:38556,idealKg:2.77,realKg:2.77},
+    {date:'2026-04-14',bio:0.6,qty:38556,idealKg:2.77,realKg:2.77},{date:'2026-04-16',bio:0.6,qty:38556,idealKg:2.77,realKg:2.77},
+    {date:'2026-04-17',bio:1.6,qty:38556,idealKg:2.777,realKg:2.777},{date:'2026-04-18',bio:1.6,qty:38556,idealKg:2.77,realKg:2.532},
+    {date:'2026-04-19',bio:1.6,qty:38556,idealKg:2.77,realKg:2.77},
   ]);
   await inject('tank_geomembrana_18','Tanque 18','tq18',[
-    {date:'2026-03-26',bio:0.02,qty:45000,idealG:108, realG:480},{date:'2026-03-27',bio:0.02,qty:45000,idealG:108, realG:162},
-    {date:'2026-04-01',bio:0.02,qty:45000,idealG:108, realG:208},{date:'2026-04-02',bio:0.02,qty:45000,idealG:108, realG:96},
-    {date:'2026-04-03',bio:0.02,qty:45000,idealG:108, realG:384},{date:'2026-04-07',bio:0.02,qty:45000,idealG:108, realG:324},
-    {date:'2026-04-08',bio:0.02,qty:45000,idealG:108, realG:454},{date:'2026-04-09',bio:0.02,qty:45000,idealG:108, realG:1602},
-    {date:'2026-04-10',bio:0.02,qty:45000,idealG:108, realG:430},{date:'2026-04-11',bio:0.02,qty:45000,idealG:1530,realG:368},
-    {date:'2026-04-12',bio:0.32,qty:45000,idealG:1620,realG:1501},{date:'2026-04-13',bio:0.32,qty:45000,idealG:1710,realG:1430},
-    {date:'2026-04-14',bio:0.33,qty:45000,idealG:1800,realG:724},{date:'2026-04-16',bio:0.33,qty:45000,idealG:2700,realG:2410},
-    {date:'2026-04-17',bio:1.0, qty:45000,idealG:2700,realG:2374},{date:'2026-04-18',bio:1.0, qty:45000,idealG:2700,realG:1742},
-    {date:'2026-04-19',bio:1.0, qty:45000,idealG:2700,realG:1599},
+    {date:'2026-03-26',bio:0.02,qty:45000,idealKg:0.108, realKg:0.48},{date:'2026-03-27',bio:0.02,qty:45000,idealKg:0.108, realKg:0.162},
+    {date:'2026-04-01',bio:0.02,qty:45000,idealKg:0.108, realKg:0.208},{date:'2026-04-02',bio:0.02,qty:45000,idealKg:0.108, realKg:0.096},
+    {date:'2026-04-03',bio:0.02,qty:45000,idealKg:0.108, realKg:0.384},{date:'2026-04-07',bio:0.02,qty:45000,idealKg:0.108, realKg:0.324},
+    {date:'2026-04-08',bio:0.02,qty:45000,idealKg:0.108, realKg:0.454},{date:'2026-04-09',bio:0.02,qty:45000,idealKg:0.108, realKg:1.602},
+    {date:'2026-04-10',bio:0.02,qty:45000,idealKg:0.108, realKg:0.43},{date:'2026-04-11',bio:0.02,qty:45000,idealKg:1.53,realKg:0.368},
+    {date:'2026-04-12',bio:0.32,qty:45000,idealKg:1.62,realKg:1.501},{date:'2026-04-13',bio:0.32,qty:45000,idealKg:1.71,realKg:1.43},
+    {date:'2026-04-14',bio:0.33,qty:45000,idealKg:1.8,realKg:0.724},{date:'2026-04-16',bio:0.33,qty:45000,idealKg:2.7,realKg:2.41},
+    {date:'2026-04-17',bio:1.0, qty:45000,idealKg:2.7,realKg:2.374},{date:'2026-04-18',bio:1.0, qty:45000,idealKg:2.7,realKg:1.742},
+    {date:'2026-04-19',bio:1.0, qty:45000,idealKg:2.7,realKg:1.599},
   ]);
   await inject('tank_geomembrana_19','Tanque 19','tq19',[
-    {date:'2026-03-27',bio:0.02,qty:34300,idealG:82,  realG:264},{date:'2026-04-01',bio:0.02,qty:34300,idealG:82,  realG:266},
-    {date:'2026-04-02',bio:0.02,qty:34300,idealG:82,  realG:400},{date:'2026-04-03',bio:0.02,qty:34300,idealG:82,  realG:336},
-    {date:'2026-04-07',bio:0.02,qty:34300,idealG:82,  realG:412},{date:'2026-04-08',bio:0.02,qty:34300,idealG:82,  realG:348},
-    {date:'2026-04-09',bio:0.02,qty:34300,idealG:82,  realG:1905},{date:'2026-04-10',bio:0.02,qty:34300,idealG:82,  realG:372},
-    {date:'2026-04-11',bio:0.02,qty:34300,idealG:1166,realG:430},{date:'2026-04-12',bio:0.32,qty:34300,idealG:1235,realG:1147},
-    {date:'2026-04-13',bio:0.32,qty:34300,idealG:1303,realG:1083},{date:'2026-04-14',bio:0.33,qty:34300,idealG:1372,realG:670},
-    {date:'2026-04-16',bio:0.33,qty:34300,idealG:1338,realG:1092},{date:'2026-04-17',bio:0.65,qty:34300,idealG:1338,realG:1338},
-    {date:'2026-04-18',bio:0.65,qty:34300,idealG:1338,realG:380},{date:'2026-04-19',bio:0.65,qty:34300,idealG:1338,realG:1338},
+    {date:'2026-03-27',bio:0.02,qty:34300,idealKg:0.082,  realKg:0.264},{date:'2026-04-01',bio:0.02,qty:34300,idealKg:0.082,  realKg:0.266},
+    {date:'2026-04-02',bio:0.02,qty:34300,idealKg:0.082,  realKg:0.4},{date:'2026-04-03',bio:0.02,qty:34300,idealKg:0.082,  realKg:0.336},
+    {date:'2026-04-07',bio:0.02,qty:34300,idealKg:0.082,  realKg:0.412},{date:'2026-04-08',bio:0.02,qty:34300,idealKg:0.082,  realKg:0.348},
+    {date:'2026-04-09',bio:0.02,qty:34300,idealKg:0.082,  realKg:1.905},{date:'2026-04-10',bio:0.02,qty:34300,idealKg:0.082,  realKg:0.372},
+    {date:'2026-04-11',bio:0.02,qty:34300,idealKg:1.166,realKg:0.43},{date:'2026-04-12',bio:0.32,qty:34300,idealKg:1.235,realKg:1.147},
+    {date:'2026-04-13',bio:0.32,qty:34300,idealKg:1.303,realKg:1.083},{date:'2026-04-14',bio:0.33,qty:34300,idealKg:1.372,realKg:0.67},
+    {date:'2026-04-16',bio:0.33,qty:34300,idealKg:1.338,realKg:1.092},{date:'2026-04-17',bio:0.65,qty:34300,idealKg:1.338,realKg:1.338},
+    {date:'2026-04-18',bio:0.65,qty:34300,idealKg:1.338,realKg:0.38},{date:'2026-04-19',bio:0.65,qty:34300,idealKg:1.338,realKg:1.338},
   ]);
   await inject('tank_escavados_1','Tanque 1','tq01',[
-    {date:'2026-02-18',bio:201,qty:1927,idealG:23398,realG:9506},{date:'2026-02-20',bio:201,qty:1927,idealG:30107,realG:13569},
-    {date:'2026-02-21',bio:201,qty:1927,idealG:30107,realG:26869},{date:'2026-03-04',bio:201,qty:1927,idealG:28026,realG:28026},
-    {date:'2026-03-06',bio:201,qty:1927,idealG:28026,realG:21628},{date:'2026-03-24',bio:201,qty:1965,idealG:28026,realG:23162},
-    {date:'2026-03-25',bio:201,qty:1965,idealG:28579,realG:8305},{date:'2026-03-27',bio:201,qty:1965,idealG:35647,realG:22361},
-    {date:'2026-04-01',bio:201,qty:1965,idealG:35647,realG:13533},{date:'2026-04-02',bio:201,qty:1965,idealG:35647,realG:35647},
-    {date:'2026-04-03',bio:201,qty:1965,idealG:35647,realG:13629},{date:'2026-04-07',bio:201,qty:1965,idealG:35647,realG:13887},
-    {date:'2026-04-08',bio:201,qty:1965,idealG:35647,realG:29637},{date:'2026-04-09',bio:201,qty:1965,idealG:35647,realG:26450},
-    {date:'2026-04-10',bio:201,qty:1965,idealG:35647,realG:0},{date:'2026-04-11',bio:331,qty:465,idealG:11082,realG:4024},
-    {date:'2026-04-13',bio:331,qty:465,idealG:1847,realG:1847},{date:'2026-04-14',bio:331,qty:465,idealG:1847,realG:1847},
+    {date:'2026-02-18',bio:201,qty:1927,idealKg:23.398,realKg:9.506},{date:'2026-02-20',bio:201,qty:1927,idealKg:30.107,realKg:13.569},
+    {date:'2026-02-21',bio:201,qty:1927,idealKg:30.107,realKg:26.869},{date:'2026-03-04',bio:201,qty:1927,idealKg:28.026,realKg:28.026},
+    {date:'2026-03-06',bio:201,qty:1927,idealKg:28.026,realKg:21.628},{date:'2026-03-24',bio:201,qty:1965,idealKg:28.026,realKg:23.162},
+    {date:'2026-03-25',bio:201,qty:1965,idealKg:28.579,realKg:8.305},{date:'2026-03-27',bio:201,qty:1965,idealKg:35.647,realKg:22.361},
+    {date:'2026-04-01',bio:201,qty:1965,idealKg:35.647,realKg:13.533},{date:'2026-04-02',bio:201,qty:1965,idealKg:35.647,realKg:35.647},
+    {date:'2026-04-03',bio:201,qty:1965,idealKg:35.647,realKg:13.629},{date:'2026-04-07',bio:201,qty:1965,idealKg:35.647,realKg:13.887},
+    {date:'2026-04-08',bio:201,qty:1965,idealKg:35.647,realKg:29.637},{date:'2026-04-09',bio:201,qty:1965,idealKg:35.647,realKg:26.45},
+    {date:'2026-04-10',bio:201,qty:1965,idealKg:35.647,realKg:0},{date:'2026-04-11',bio:331,qty:465,idealKg:11.082,realKg:4.024},
+    {date:'2026-04-13',bio:331,qty:465,idealKg:1.847,realKg:1.847},{date:'2026-04-14',bio:331,qty:465,idealKg:1.847,realKg:1.847},
   ]);
   await inject('tank_escavados_2','Tanque 2','tq02',[
-    {date:'2026-03-06',bio:213,qty:720,idealG:11318,realG:8152},{date:'2026-03-27',bio:213,qty:371,idealG:5690,realG:1096},
-    {date:'2026-04-01',bio:213,qty:371,idealG:5690,realG:5690},{date:'2026-04-02',bio:213,qty:371,idealG:5690,realG:5690},
-    {date:'2026-04-03',bio:213,qty:371,idealG:5690,realG:3884},{date:'2026-04-07',bio:213,qty:371,idealG:5690,realG:2740},
-    {date:'2026-04-08',bio:213,qty:371,idealG:5690,realG:4024},{date:'2026-04-09',bio:213,qty:371,idealG:5690,realG:1656},
-    {date:'2026-04-10',bio:213,qty:371,idealG:5690,realG:312},{date:'2026-04-11',bio:211,qty:526,idealG:7991,realG:3763},
-    {date:'2026-04-13',bio:211,qty:526,idealG:1332,realG:1332},{date:'2026-04-14',bio:211,qty:526,idealG:1332,realG:1332},
-    {date:'2026-04-16',bio:211,qty:568,idealG:2397,realG:2397},{date:'2026-04-17',bio:211,qty:568,idealG:2397,realG:2397},
-    {date:'2026-04-18',bio:211,qty:568,idealG:2397,realG:1339},{date:'2026-04-19',bio:211,qty:568,idealG:2397,realG:2397},
+    {date:'2026-03-06',bio:213,qty:720,idealKg:11.318,realKg:8.152},{date:'2026-03-27',bio:213,qty:371,idealKg:5.69,realKg:1.096},
+    {date:'2026-04-01',bio:213,qty:371,idealKg:5.69,realKg:5.69},{date:'2026-04-02',bio:213,qty:371,idealKg:5.69,realKg:5.69},
+    {date:'2026-04-03',bio:213,qty:371,idealKg:5.69,realKg:3.884},{date:'2026-04-07',bio:213,qty:371,idealKg:5.69,realKg:2.74},
+    {date:'2026-04-08',bio:213,qty:371,idealKg:5.69,realKg:4.024},{date:'2026-04-09',bio:213,qty:371,idealKg:5.69,realKg:1.656},
+    {date:'2026-04-10',bio:213,qty:371,idealKg:5.69,realKg:0.312},{date:'2026-04-11',bio:211,qty:526,idealKg:7.991,realKg:3.763},
+    {date:'2026-04-13',bio:211,qty:526,idealKg:1.332,realKg:1.332},{date:'2026-04-14',bio:211,qty:526,idealKg:1.332,realKg:1.332},
+    {date:'2026-04-16',bio:211,qty:568,idealKg:2.397,realKg:2.397},{date:'2026-04-17',bio:211,qty:568,idealKg:2.397,realKg:2.397},
+    {date:'2026-04-18',bio:211,qty:568,idealKg:2.397,realKg:1.339},{date:'2026-04-19',bio:211,qty:568,idealKg:2.397,realKg:2.397},
   ]);
   await inject('tank_escavados_3','Tanque 3','tq03',[
-    {date:'2026-02-18',bio:213,qty:2124,idealG:23398,realG:9506},{date:'2026-02-20',bio:213,qty:2124,idealG:23398,realG:6868},
-    {date:'2026-02-21',bio:213,qty:2124,idealG:23398,realG:19226},{date:'2026-03-04',bio:213,qty:2124,idealG:29209,realG:29209},
-    {date:'2026-03-06',bio:213,qty:1238,idealG:19060,realG:15024},{date:'2026-03-24',bio:213,qty:1238,idealG:18249,realG:18249},
-    {date:'2026-04-11',bio:331,qty:1831,idealG:43636,realG:16545},{date:'2026-04-13',bio:331,qty:1831,idealG:7273,realG:7273},
-    {date:'2026-04-14',bio:331,qty:1831,idealG:7273,realG:7273},{date:'2026-04-16',bio:331,qty:2192,idealG:5804,realG:5804},
-    {date:'2026-04-17',bio:331,qty:2192,idealG:5804,realG:5804},{date:'2026-04-18',bio:331,qty:2192,idealG:5804,realG:5804},
-    {date:'2026-04-19',bio:331,qty:2192,idealG:5804,realG:5804},
+    {date:'2026-02-18',bio:213,qty:2124,idealKg:23.398,realKg:9.506},{date:'2026-02-20',bio:213,qty:2124,idealKg:23.398,realKg:6.868},
+    {date:'2026-02-21',bio:213,qty:2124,idealKg:23.398,realKg:19.226},{date:'2026-03-04',bio:213,qty:2124,idealKg:29.209,realKg:29.209},
+    {date:'2026-03-06',bio:213,qty:1238,idealKg:19.06,realKg:15.024},{date:'2026-03-24',bio:213,qty:1238,idealKg:18.249,realKg:18.249},
+    {date:'2026-04-11',bio:331,qty:1831,idealKg:43.636,realKg:16.545},{date:'2026-04-13',bio:331,qty:1831,idealKg:7.273,realKg:7.273},
+    {date:'2026-04-14',bio:331,qty:1831,idealKg:7.273,realKg:7.273},{date:'2026-04-16',bio:331,qty:2192,idealKg:5.804,realKg:5.804},
+    {date:'2026-04-17',bio:331,qty:2192,idealKg:5.804,realKg:5.804},{date:'2026-04-18',bio:331,qty:2192,idealKg:5.804,realKg:5.804},
+    {date:'2026-04-19',bio:331,qty:2192,idealKg:5.804,realKg:5.804},
   ]);
 
   console.log('Dados históricos injetados.');
