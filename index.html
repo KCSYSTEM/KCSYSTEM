@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>KC System v7.96</title>
+<title>KC System v7.97</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐟</text></svg>">
   <!-- PWA / Add to Home Screen -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYmciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMWUzYTVmO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwZjRjOGE7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0idXJsKCNiZykiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjMxMCIgZm9udC1zaXplPSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppIj7wn5CfPC90ZXh0Pgo8L3N2Zz4=">
@@ -453,7 +453,7 @@ input[type="number"]{-moz-appearance:textfield;}
     <div class="topbar-right">
       <!-- Versão + sync -->
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
-        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.96</div>
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.5px;">v7.97</div>
         <div id="sync-indicator" style="display:flex;align-items:center;gap:3px;cursor:pointer;" onclick="forceSync()" title="Clique para sincronizar">
           <span id="sync-dot" style="width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;"></span>
           <span id="sync-text" style="font-size:8px;color:rgba(255,255,255,0.35);white-space:nowrap;">—</span>
@@ -925,6 +925,7 @@ input[type="number"]{-moz-appearance:textfield;}
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Biometria (g/peixe)</label><input id="fv-bio" type="number" min="0" step="0.1" placeholder="0,0" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Valor unitário (R$/milheiro)</label><input id="fv-vunit" type="number" min="0" step="0.01" placeholder="0,00" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Quebra (%)</label><input id="fv-quebra" type="number" min="0" max="100" step="0.1" placeholder="0,0" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
+          <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Custos recobrados (R$)</label><input id="fv-custos" type="number" min="0" step="0.01" placeholder="0,00" title="Custos repassados ao cliente — somados ao valor total" oninput="finCalcVenda()" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Valor Total (R$)</label><input id="fv-vtotal" type="text" readonly placeholder="—" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2,#f1f5f9);color:var(--accent);font-size:13px;font-weight:700;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Impostos 4% (R$)</label><input id="fv-impostos" type="text" readonly placeholder="—" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2,#f1f5f9);color:var(--text2);font-size:13px;"></div>
           <div><label style="font-size:11px;font-weight:600;color:var(--text2);">Data da Venda</label><input id="fv-dvenda" type="date" style="width:100%;box-sizing:border-box;margin-top:4px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;"></div>
@@ -9605,18 +9606,19 @@ function finCalcVenda(){
   const qtd=parseFloat(document.getElementById('fv-qtd')?.value)||0;
   const vunit=parseFloat(document.getElementById('fv-vunit')?.value)||0;
   const quebra=parseFloat(document.getElementById('fv-quebra')?.value)||0;
-  const total=qtd*vunit*(1-quebra/100);
+  const custos=parseFloat(document.getElementById('fv-custos')?.value)||0;
+  const total=qtd*vunit*(1-quebra/100)+custos;
   const semNF=document.getElementById('fv-semnf')?.checked;
   const impostos=semNF?0:total*0.04;
   const fmtBR=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const vtEl=document.getElementById('fv-vtotal');const imEl=document.getElementById('fv-impostos');
-  if(vtEl)vtEl.value=qtd||vunit?'R$ '+fmtBR(total):'';
-  if(imEl)imEl.value=qtd||vunit?'R$ '+fmtBR(semNF?0:impostos):'';
+  if(vtEl)vtEl.value=qtd||vunit||custos?'R$ '+fmtBR(total):'';
+  if(imEl)imEl.value=qtd||vunit||custos?'R$ '+fmtBR(semNF?0:impostos):'';
 }
 
 function finCancelarVenda(){
   _finVendaEditId=null;
-  ['fv-cliente','fv-doc','fv-lote','fv-qtd','fv-bio','fv-vunit','fv-quebra','fv-vtotal','fv-impostos','fv-dvenda','fv-dvenc','fv-dpag','fv-nf','fv-gta','fv-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['fv-cliente','fv-doc','fv-lote','fv-qtd','fv-bio','fv-vunit','fv-quebra','fv-custos','fv-vtotal','fv-impostos','fv-dvenda','fv-dvenc','fv-dpag','fv-nf','fv-gta','fv-obs'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   fvDocTipo('cnpj');
   const fpEl=document.getElementById('fv-fpag');if(fpEl)fpEl.value='';
   const snf=document.getElementById('fv-semnf');if(snf)snf.checked=false;
@@ -9632,7 +9634,7 @@ function finEditVenda(id){
   _finVendaEditId=id;
   const set=(elId,val)=>{const el=document.getElementById(elId);if(el)el.value=val||'';};
   set('fv-cliente',v.cliente);set('fv-doc',v.doc);set('fv-lote',v.lote);set('fv-qtd',v.qtd);set('fv-bio',v.bio);set('fv-vunit',v.vunit);
-  set('fv-quebra',v.quebra);set('fv-dvenda',v.dvenda);set('fv-dvenc',v.dvenc);set('fv-dpag',v.dpag);
+  set('fv-quebra',v.quebra);set('fv-custos',v.custos);set('fv-dvenda',v.dvenda);set('fv-dvenc',v.dvenc);set('fv-dpag',v.dpag);
   set('fv-fpag',v.fpag);set('fv-obs',v.obs);
   fvDocTipo(v.doc_tipo||'cnpj');
   const snf=document.getElementById('fv-semnf');if(snf)snf.checked=!!v.semNF;
@@ -9652,7 +9654,8 @@ async function finSalvarVenda(){
   const qtd=parseFloat(document.getElementById('fv-qtd')?.value)||0;
   const vunit=parseFloat(document.getElementById('fv-vunit')?.value)||0;
   const quebra=parseFloat(document.getElementById('fv-quebra')?.value)||0;
-  const total=qtd*vunit*(1-quebra/100);
+  const custos=parseFloat(document.getElementById('fv-custos')?.value)||0;
+  const total=qtd*vunit*(1-quebra/100)+custos;
   const dvenc=get('fv-dvenc');const dpag=get('fv-dpag');
   let diasAtraso=null;
   if(dvenc){
@@ -9664,7 +9667,7 @@ async function finSalvarVenda(){
   const docEl=document.getElementById('fv-doc');
   const docTipo=docEl?.dataset.docTipo||'cnpj';
   const doc=docEl?.value.trim()||null;
-  const venda={id,cliente,doc_tipo:docTipo,doc,lote:get('fv-lote')||null,qtd,bio:parseFloat(document.getElementById('fv-bio')?.value)||null,vunit,quebra,total,impostos:semNF?0:total*0.04,semNF,dvenda,dvenc,dpag,fpag:get('fv-fpag'),diasAtraso,nf:semNF?'':get('fv-nf'),gta:semNF?'':get('fv-gta'),obs:get('fv-obs'),criadoEm:_finVendaEditId?finVendas.find(x=>x.id===_finVendaEditId)?.criadoEm:new Date().toISOString()};
+  const venda={id,cliente,doc_tipo:docTipo,doc,lote:get('fv-lote')||null,qtd,bio:parseFloat(document.getElementById('fv-bio')?.value)||null,vunit,quebra,custos,total,impostos:semNF?0:total*0.04,semNF,dvenda,dvenc,dpag,fpag:get('fv-fpag'),diasAtraso,nf:semNF?'':get('fv-nf'),gta:semNF?'':get('fv-gta'),obs:get('fv-obs'),criadoEm:_finVendaEditId?finVendas.find(x=>x.id===_finVendaEditId)?.criadoEm:new Date().toISOString()};
   _startActionPopup(_finVendaEditId?'Atualizando venda...':'Salvando venda...');
   try{
     const ok=await sbUpsert('financeiro_vendas',{id,data:venda});
@@ -9718,7 +9721,7 @@ function renderFinVendasHist(){
       <td style="padding:9px 8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;white-space:nowrap;">${v.semNF?'<span style="color:var(--text3);">Sem NF</span>':esc(v.nf||'—')}</td>
       <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.qtd?Number(mc3(v.qtd)).toLocaleString('pt-BR',{maximumFractionDigits:3}):'—'}</td>
       <td style="padding:9px 8px;text-align:right;color:var(--text);">${v.vunit?'R$'+fmtR(v.vunit):'—'}</td>
-      <td style="padding:9px 8px;text-align:right;color:var(--accent);font-weight:700;">R$${fmtR(mc3(v.total))}</td>
+      <td style="padding:9px 8px;text-align:right;color:var(--accent);font-weight:700;"${v.custos?` title="Peixe R$ ${fmtR(v.total-v.custos)} + custos recobrados R$ ${fmtR(v.custos)}"`:''}>R$${fmtR(mc3(v.total))}${v.custos?`<div style="font-size:10px;font-weight:500;color:var(--text3);">+R$${fmtR(v.custos)} custos</div>`:''}</td>
       <td style="padding:9px 8px;text-align:center;color:var(--text2);">${v.dpag?'✓':fmtD(v.dvenc)}</td>
       <td style="padding:9px 8px;text-align:center;">${atrasoStr}</td>
       <td style="padding:9px 8px;text-align:center;white-space:nowrap;">
